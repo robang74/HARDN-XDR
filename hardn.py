@@ -217,9 +217,9 @@ def secure_grub():
     exec_command("grub-mkpasswd-pbkdf2 | tee /etc/grub.d/00_password", status_gui)
     exec_command("update-grub", status_gui)    
     
-def enable_aide():
-    exec_command("apt install -y aide aide-common", status_gui)
-    exec_command("aideinit && mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db", status_gui)
+#def enable_aide():
+ #   exec_command("apt install -y aide aide-common", status_gui)
+  #  exec_command("aideinit && mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db", status_gui)
 
 def harden_sysctl():
     exec_command("sysctl -w net.ipv4.conf.all.accept_redirects=0", status_gui)
@@ -253,7 +253,7 @@ def start_hardening():
         configure_firewall()
         exec_command("apt install -y rkhunter", status_gui)
         exec_command("rkhunter --update && rkhunter --propupd", status_gui)
-        enable_aide()
+        #enable_aide()
         exec_command("lynis audit system", status_gui)
         harden_sysctl()
         secure_grub()
