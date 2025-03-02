@@ -93,6 +93,7 @@ sudo ./setup.sh
 ---
 ## Contributing
 - Please do 🙂
+- Contact directly for access 
 ---
 
 ## License
