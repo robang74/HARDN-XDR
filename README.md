@@ -52,3 +52,5 @@ By following these guidelines, you will enhance system security, maintain stabil
 
 ## License
 
+- MIT License
+
