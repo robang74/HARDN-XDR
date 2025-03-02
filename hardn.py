@@ -66,21 +66,27 @@ class StatusGUI:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("HARDN Security Hardening")
-        self.root.geometry("500x300")
+        self.root.geometry("600x400")
+        self.root.configure(bg='#333333')
 
-        self.label = ttk.Label(self.root, text="HARDN is securing your system...", font=("Helvetica", 12))
+        self.label = ttk.Label(self.root, text="HARDN is securing your system...", font=("Helvetica", 12), background='#333333', foreground='white')
         self.label.pack(pady=20)
 
-        self.progress = ttk.Progressbar(self.root, length=400, mode="indeterminate")
+        self.progress = ttk.Progressbar(self.root, length=500, mode="indeterminate")
         self.progress.pack(pady=10)
         self.progress.start()
 
         self.status_text = tk.StringVar()
-        self.status_label = ttk.Label(self.root, textvariable=self.status_text)
+        self.status_label = ttk.Label(self.root, textvariable=self.status_text, background='#333333', foreground='white')
         self.status_label.pack(pady=5)
+
+        self.log_text = tk.Text(self.root, height=10, width=70, bg='#222222', fg='white')
+        self.log_text.pack(pady=10)
 
     def update_status(self, message):
         self.status_text.set(message)
+        self.log_text.insert(tk.END, message + "\n")
+        self.log_text.see(tk.END)
         self.root.update_idletasks()
 
     def complete(self):
@@ -90,6 +96,22 @@ class StatusGUI:
     def run(self):
         self.root.mainloop()
 
+def exec_command(command, status_gui=None):
+    try:
+        if status_gui:
+            status_gui.update_status(f"Executing: {command}")
+        print(f"Executing: {command}")
+        process = subprocess.run(
+            command, shell=True, check=True, text=True,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        if status_gui:
+            status_gui.update_status(f"Completed: {command}")
+        print(process.stdout)
+    except subprocess.CalledProcessError as e:
+        if status_gui:
+            status_gui.update_status(f"Error executing '{command}': {e.stderr}")
+        print(f"Error executing command '{command}': {e.stderr}")
 
 # SECURITY HARDENING FUNCTIONS
 def configure_apparmor():
@@ -102,25 +124,18 @@ def configure_firejail():
     exec_command("apt install -y firejail")
     exec_command("firejail --list")
     
-# CALLED Proc - runs shell using subrocess.run()
-def exec_command(command):
-    try:
-        print(f"Executing: {command}")
-        process = subprocess.run(
-            command, shell=True, check=True, text=True,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-        print(process.stdout)
-    except subprocess.CalledProcessError as e:
-        print(f"Error executing command '{command}': {e.stderr}")
-    
-
 # SECURITY TOOLS
 def remove_clamav():
     status_gui.update_status("Removing ClamAV...")
     exec_command("apt remove --purge -y clamav clamav-daemon")
     exec_command("rm -rf /var/lib/clamav")
-
+    
+def install_rkhunter():
+    status_gui.update_status("Installing Rootkit Hunter (rkhunter)...")
+    exec_command("apt install -y rkhunter", status_gui)
+    exec_command("rkhunter --update", status_gui)
+    exec_command("rkhunter --propupd", status_gui)
+    
 def install_eset_nod32():
     status_gui.update_status("Installing ESET NOD32 (ES32) Antivirus...")
     exec_command("wget -q https://download.eset.com/com/eset/apps/home/av/linux/latest/eset_nod32av_64bit.deb -O /tmp/eset.deb")
@@ -146,6 +161,10 @@ def configure_fail2ban():
     exec_command("apt install -y fail2ban")
     exec_command("systemctl restart fail2ban")
     exec_command("systemctl enable --now fail2ban")
+    
+def run_lynis_audit():
+    status_gui.update_status("Running Lynis security audit...")
+    exec_command("lynis audit system", status_gui)    
 
 import shutil
 import subprocess
@@ -189,20 +208,20 @@ def scan_with_eset():
 # START HARDENING PROCESS
 def start_hardening():
     threading.Thread(target=lambda: [
-        remove_clamav(), # Remove ClamAV
-        install_eset_nod32(), # Install ES32
-        setup_auto_updates(), # Enable auto-updates for security packages
-        configure_tcp_wrappers(), # Put in TCP Wrappers #thanks @kiukcat
-        configure_fail2ban(), # Build Fail2Ban
-        configure_grub(), # Pump and pimp the GRUB
-        configure_firewall(), # Set UFW
-        configure_apparmor(), # Add AppArmor 
-        configure_firejail(), # Add Firejail 
-        disable_usb(), # Stop all USB
-        software_integrity_check(), # Check software
-        run_audits(), # Lynis audits
-        scan_with_eset(), # Run ES32 malware scan
-        status_gui.complete() # GUI finish 
+        print_ascii_art(),
+        status_gui.update_status("Starting security hardening..."),
+        exec_command("apt update && apt upgrade -y", status_gui),
+        exec_command("apt install -y fail2ban", status_gui),
+        exec_command("systemctl enable --now fail2ban", status_gui),
+        exec_command("ufw default deny incoming", status_gui),
+        exec_command("ufw default allow outgoing", status_gui),
+        exec_command("ufw allow out 80,443/tcp", status_gui),
+        exec_command("ufw --force enable && ufw reload", status_gui),
+        configure_apparmor(),
+        configure_grub(),
+        install_rkhunter(),
+        run_lynis_audit(),
+        status_gui.complete()
     ], daemon=True).start()
 
 # MAIN
