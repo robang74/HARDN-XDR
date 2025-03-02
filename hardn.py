@@ -212,7 +212,7 @@ def scan_with_eset():
 
 # START HARDENING PROCESS
 def start_hardening():
-    threading.Thread(target=lambda: [
+    def run_tasks():
         print_ascii_art(),
         status_gui.update_status("Starting security hardening..."),
         exec_command("apt update && apt upgrade -y", status_gui),
@@ -227,7 +227,8 @@ def start_hardening():
         install_rkhunter(),
         run_lynis_audit(),
         status_gui.complete()
-    ], daemon=True).start()
+    
+    threading.Thread(target=run_tasks, daemon=True).start()
 
 # MAIN
 def main():
