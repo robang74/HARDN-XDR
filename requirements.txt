@@ -1,0 +1,25 @@
+# Core system libraries
+shlex
+subprocess
+sys
+os
+logging
+threading
+datetime
+
+# GUI 
+tkinter
+pyttk
+
+# SEC/MONITOR
+lynis
+fail2ban
+ufw
+apparmor
+firejail
+debsums
+tcpd
+
+# PKG MANAGER/ TOOLS
+requests
+setuptools
