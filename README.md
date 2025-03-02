@@ -35,23 +35,52 @@ By following these guidelines, you will enhance system security, maintain stabil
 - AppArmor,Mandatory Access Control (MAC) for enforcing policies.
 - ESET_Nod32,(Soon to be replaced by Legion) Open-source antivirus software.
 - Firejail,Sandboxing tool for application isolation.
-- Cron, to keep it all updated.
+- Cron, to keep it all omaintenance**:  
 
+1. **HARDN the System** – Applies firewall rules, intrusion detection, malware protection, and access control automatically.  
+2. **Monitor & Defend** – Uses heuristic analysis, security audits, and automated updates to **stay ahead of threats**.  (LEGION to come)
+3. **Stay Updated** – Built-in automation via `cron` ensures **constant updates and maintenance** without user intervention.  
+
+Once installed, **HARDN runs in the background**—keeping your system tight **without slowing you down**.
+
+we are working on a 'headless' option to remove the gui, for server functionality. 
 ---
-## How it works
 
----
-## Getting Started
+## **Getting Started**  
 
+### Clone the Repository**  
+```bash
+git clone https://github.com/opensource-for-freedom/HARDN.git
+cd hardn
+```
+### Youll need Python 3 
+```bash
+pip install -r requirements.txt
+```
+### Install hardn system wide
+```bash
+pip install -e .
+```
+### HARDN
+```bash
+hardn
+```
+## To update system
+rerun
+```bash
+sudo ./setup.sh
+```
 ---
 ## Goals
-
+- Replacing ESET with `Legion` – A dedicated malware scanner optimized for Linux.
+- Integrating Wazuh SIEM – Expanding system-wide monitoring for better incident response.
+- Expanding container security – Locking down VMs and containers without affecting performance.
+- Making it easier to use – Simplifying configurations for both end-users and professionals.
 ---
 ## Contributing
-
+- Please do 🙂
 ---
 
 ## License
 
 - MIT License
-
