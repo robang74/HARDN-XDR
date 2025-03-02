@@ -47,7 +47,7 @@ def print_ascii_art():
                          License: MIT License
                             Version: 1.5.6
                            Dev: Tim "TANK" Burns
-      GitHub: https://github.com/OpenSource-For-Freedom/Linux.git
+      GitHub: https://github.com/OpenSource-For-Freedom/HARDN.git
     """
     print(art)
 
