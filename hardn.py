@@ -72,9 +72,8 @@ class StatusGUI:
         self.label = ttk.Label(self.root, text="HARDN is securing your system...", font=("Helvetica", 12), background='#333333', foreground='white')
         self.label.pack(pady=20)
 
-        self.progress = ttk.Progressbar(self.root, length=500, mode="indeterminate")
+        self.progress = ttk.Progressbar(self.root, length=500, mode="determinate")
         self.progress.pack(pady=10)
-        self.progress.start()
 
         self.status_text = tk.StringVar()
         self.status_label = ttk.Label(self.root, textvariable=self.status_text, background='#333333', foreground='white')
@@ -82,16 +81,21 @@ class StatusGUI:
 
         self.log_text = tk.Text(self.root, height=10, width=70, bg='#222222', fg='white')
         self.log_text.pack(pady=10)
+        
+        self.task_count = 0
+        self.total_tasks = 10  # UPDATES - with actual steps and follows process bar
 
     def update_status(self, message):
+        self.task_count += 1
+        self.progress["value"] = (self.task_count / self.total_tasks) * 100
         self.status_text.set(message)
         self.log_text.insert(tk.END, message + "\n")
         self.log_text.see(tk.END)
         self.root.update_idletasks()
 
     def complete(self):
+        self.progress["value"] = 100
         self.status_text.set("Hardening complete!")
-        self.progress.stop()
 
     def run(self):
         self.root.mainloop()
@@ -112,7 +116,8 @@ def exec_command(command, status_gui=None):
         if status_gui:
             status_gui.update_status(f"Error executing '{command}': {e.stderr}")
         print(f"Error executing command '{command}': {e.stderr}")
-
+        
+        
 # SECURITY HARDENING FUNCTIONS
 def configure_apparmor():
     status_gui.update_status("Configuring AppArmor for Mandatory Access Control...")
