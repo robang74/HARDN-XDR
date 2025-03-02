@@ -14,6 +14,17 @@ from datetime import datetime
 # ROOT 
 # Added VM compatibility 
 # thanks @kiukcat
+import os
+import subprocess
+import sys
+import shlex
+import logging
+import threading
+import shutil
+import tkinter as tk
+from tkinter import ttk, messagebox  
+from datetime import datetime
+
 def ensure_root():
     if os.geteuid() != 0:
         print("Restarting as root...")
@@ -24,6 +35,27 @@ def ensure_root():
         sys.exit(0)
 
 ensure_root()
+
+def exec_command(command, status_gui=None):
+    try:
+        if status_gui:
+            status_gui.update_status(f"Executing: {command}")
+        print(f"Executing: {command}")
+        process = subprocess.run(
+            command, shell=True, check=True, text=True,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120
+        )
+        if status_gui:
+            status_gui.update_status(f"Completed: {command}")
+        print(process.stdout)
+    except subprocess.CalledProcessError as e:
+        if status_gui:
+            status_gui.update_status(f"Error executing '{command}': {e.stderr}")
+        print(f"Error executing command '{command}': {e.stderr}")
+    except subprocess.TimeoutExpired:
+        if status_gui:
+            status_gui.update_status(f"Command timed out: {command}")
+        print(f"Command timed out: {command}")
 
 # NASTY
 def print_ascii_art():
@@ -96,26 +128,9 @@ class StatusGUI:
     def complete(self):
         self.progress["value"] = 100
         self.status_text.set("Hardening complete!")
-
+        
     def run(self):
         self.root.mainloop()
-
-def exec_command(command, status_gui=None):
-    try:
-        if status_gui:
-            status_gui.update_status(f"Executing: {command}")
-        print(f"Executing: {command}")
-        process = subprocess.run(
-            command, shell=True, check=True, text=True,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-        if status_gui:
-            status_gui.update_status(f"Completed: {command}")
-        print(process.stdout)
-    except subprocess.CalledProcessError as e:
-        if status_gui:
-            status_gui.update_status(f"Error executing '{command}': {e.stderr}")
-        print(f"Error executing command '{command}': {e.stderr}")
         
         
 # SECURITY HARDENING FUNCTIONS
