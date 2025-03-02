@@ -61,6 +61,36 @@ HARDN_DARK_PATH = os.path.join(script_dir, "HARDN_dark.py")
 print("HARDN_QUBE_PATH:", HARDN_QUBE_PATH)
 print("HARDN_DARK_PATH:", HARDN_DARK_PATH)
 
+# GUI
+class StatusGUI:
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.title("HARDN Security Hardening")
+        self.root.geometry("500x300")
+
+        self.label = ttk.Label(self.root, text="HARDN is securing your system...", font=("Helvetica", 12))
+        self.label.pack(pady=20)
+
+        self.progress = ttk.Progressbar(self.root, length=400, mode="indeterminate")
+        self.progress.pack(pady=10)
+        self.progress.start()
+
+        self.status_text = tk.StringVar()
+        self.status_label = ttk.Label(self.root, textvariable=self.status_text)
+        self.status_label.pack(pady=5)
+
+    def update_status(self, message):
+        self.status_text.set(message)
+        self.root.update_idletasks()
+
+    def complete(self):
+        self.status_text.set("Hardening complete!")
+        self.progress.stop()
+
+    def run(self):
+        self.root.mainloop()
+
+
 # SECURITY HARDENING FUNCTIONS
 def configure_apparmor():
     status_gui.update_status("Configuring AppArmor for Mandatory Access Control...")
@@ -71,6 +101,19 @@ def configure_firejail():
     status_gui.update_status("Configuring Firejail for Application Sandboxing...")
     exec_command("apt install -y firejail")
     exec_command("firejail --list")
+    
+# CALLED Proc - runs shell using subrocess.run()
+def exec_command(command):
+    try:
+        print(f"Executing: {command}")
+        process = subprocess.run(
+            command, shell=True, check=True, text=True,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        print(process.stdout)
+    except subprocess.CalledProcessError as e:
+        print(f"Error executing command '{command}': {e.stderr}")
+    
 
 # SECURITY TOOLS
 def remove_clamav():
