@@ -2,6 +2,7 @@ import os
 import subprocess
 import sys
 import shlex
+import pexpect
 import logging
 import threading
 import tkinter as tk
@@ -214,8 +215,31 @@ def configure_firewall(): # simplified for use, not most secure version at this 
     exec_command("ufw --force enable && ufw reload")
     
 def secure_grub():
-    exec_command("grub-mkpasswd-pbkdf2 | tee /etc/grub.d/00_password", status_gui)
-    exec_command("update-grub", status_gui)    
+    status_gui.update_status("Configuring GRUB Secure Boot Password...")
+    grub_password = "SuperSecurePassword123!"
+    child = pexpect.spawn("grub-mkpasswd-pbkdf2")
+    child.expect("Enter password: ")
+    child.sendline(grub_password)
+    child.expect("Reenter password: ")
+    child.sendline(grub_password)
+    child.expect(pexpect.EOF)
+    output = child.before.decode()
+    
+    hashed_password = ""
+    for line in output.split("\n"):
+        if "PBKDF2 hash of your password is" in line:
+            hashed_password = line.split("is ")[1].strip()
+            break
+    
+    if not hashed_password:
+        status_gui.update_status("Failed to generate GRUB password hash.")
+        return
+    
+    grub_config = f"set superusers=\"admin\"\npassword_pbkdf2 admin {hashed_password}\n"
+    with open("/etc/grub.d/00_password", "w") as f:
+        f.write(grub_config)
+    
+    exec_command("update-grub", status_gui)
     
 #def enable_aide():
  #   exec_command("apt install -y aide aide-common", status_gui)
