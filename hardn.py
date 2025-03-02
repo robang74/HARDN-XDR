@@ -129,6 +129,11 @@ def configure_firejail():
     exec_command("apt install -y firejail")
     exec_command("firejail --list")
     
+def enforce_password_policies():
+    exec_command("apt install -y libpam-pwquality", status_gui)
+    exec_command("echo 'password requisite pam_pwquality.so retry=3 minlen=12 difok=3' >> /etc/pam.d/common-password", status_gui)
+    
+    
 # SECURITY TOOLS
 def remove_clamav():
     status_gui.update_status("Removing ClamAV...")
@@ -192,6 +197,18 @@ def configure_firewall(): # simplified for use, not most secure version at this 
     exec_command("ufw default allow outgoing")
     exec_command("ufw allow out 80,443/tcp")
     exec_command("ufw --force enable && ufw reload")
+    
+def secure_grub():
+    exec_command("grub-mkpasswd-pbkdf2 | tee /etc/grub.d/00_password", status_gui)
+    exec_command("update-grub", status_gui)    
+    
+def enable_aide():
+    exec_command("apt install -y aide aide-common", status_gui)
+    exec_command("aideinit && mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db", status_gui)
+
+def harden_sysctl():
+    exec_command("sysctl -w net.ipv4.conf.all.accept_redirects=0", status_gui)
+    exec_command("sysctl -w net.ipv4.conf.all.send_redirects=0", status_gui)    
 
 def disable_usb(): # We can set this to just put in monitor mode*
     status_gui.update_status("Locking down USB devices...")
@@ -213,19 +230,20 @@ def scan_with_eset():
 # START HARDENING PROCESS
 def start_hardening():
     def run_tasks():
-        print_ascii_art(),
-        status_gui.update_status("Starting security hardening..."),
-        exec_command("apt update && apt upgrade -y", status_gui),
-        exec_command("apt install -y fail2ban", status_gui),
-        exec_command("systemctl enable --now fail2ban", status_gui),
-        exec_command("ufw default deny incoming", status_gui),
-        exec_command("ufw default allow outgoing", status_gui),
-        exec_command("ufw allow out 80,443/tcp", status_gui),
-        exec_command("ufw --force enable && ufw reload", status_gui),
-        configure_apparmor(),
-        configure_grub(),
-        install_rkhunter(),
-        run_lynis_audit(),
+        print_ascii_art()
+        exec_command("apt update && apt upgrade -y", status_gui)
+        enforce_password_policies()
+        exec_command("apt install -y fail2ban", status_gui)
+        exec_command("systemctl enable --now fail2ban", status_gui)
+        configure_firewall()
+        exec_command("apt install -y rkhunter", status_gui)
+        exec_command("rkhunter --update && rkhunter --propupd", status_gui)
+        enable_aide()
+        exec_command("lynis audit system", status_gui)
+        harden_sysctl()
+        secure_grub()
+        exec_command("apt install -y apparmor apparmor-profiles apparmor-utils", status_gui)
+        exec_command("systemctl enable --now apparmor", status_gui)
         status_gui.complete()
     
     threading.Thread(target=run_tasks, daemon=True).start()
