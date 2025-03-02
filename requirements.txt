@@ -6,6 +6,9 @@ os
 logging
 threading
 datetime
+pexpect
+shutil
+
 
 # GUI 
 tkinter
