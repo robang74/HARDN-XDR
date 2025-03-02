@@ -26,3 +26,5 @@ tcpd
 # PKG MANAGER/ TOOLS
 requests
 setuptools
+
+# run "pip freeze > requirements.txt" to ensure all are listed. 
