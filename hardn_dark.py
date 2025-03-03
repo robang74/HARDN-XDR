@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-# HARDN_DARK
+
+# ---------------------------
+# ~~~~~~~~HARDN_DARK~~~~~~~~|
+# MAC swapping.             |
+# TOR routing.              |
+# Directory lockdown        |
+# SELinux & Grsecurity check|
+#----------------------------
 import os
 import shutil
 import subprocess
@@ -7,9 +14,9 @@ import logging
 from datetime import datetime
 import argparse
 
-LOG_FILE = "/var/log/hardn_deep.log"
+LOG_FILE = "/var/log/hardn_dark.log"
 
-# logging
+# LOGGING
 logging.basicConfig(filename=LOG_FILE, level=logging.INFO, format="%(asctime)s - %(message)s")
 
 def log(message):
@@ -28,7 +35,7 @@ def run_command(command, description="", test_mode=False):
     except subprocess.CalledProcessError as e:
         log(f"[-] ERROR: {description} failed: {e}")
         exit(1)
-
+# BACKUP
 def backup_file(file_path, test_mode=False):
     """Backup a file before modification"""
     if os.path.isfile(file_path):
@@ -41,17 +48,6 @@ def backup_file(file_path, test_mode=False):
     else:
         log(f"[-] {file_path} does not exist. Skipping backup.")
 
-def restore_backups():
-    """Restore backups if needed"""
-    log("[+] Restoring backups...")
-    for root, _, files in os.walk("/etc/security/"):
-        for file in files:
-            if file.endswith(".bak"):
-                original_file = os.path.join(root, file[:-4])
-                backup_file = os.path.join(root, file)
-                shutil.move(backup_file, original_file)
-                log(f"[+] Restored: {original_file}")
-# check system comp
 def check_compatibility():
     """Check if the system is Debian-based"""
     try:
@@ -67,103 +63,114 @@ def check_compatibility():
         log("[-] Failed to detect OS. Ensure 'lsb_release' is installed.")
         exit(1)
 
+# SYSTEM START
 def disable_core_dumps(test_mode=False):
     """Disable core dumps system-wide"""
     log("[+] Disabling core dumps...")
     backup_file("/etc/security/limits.conf", test_mode)
     run_command("echo '* hard core 0' | sudo tee -a /etc/security/limits.conf > /dev/null", "Core dumps disabled", test_mode)
-
-# removed tcp wrappers here becasue its in main file (hardn.py)
-
-def restrict_non_local_logins(test_mode=False):
-    """Restrict non-local logins except SSH"""
-    log("[+] Restricting non-local logins...")
-    if os.path.isfile("/etc/security/access.conf"):
-        backup_file("/etc/security/access.conf", test_mode)
-        run_command("echo '-:ALL:ALL EXCEPT LOCAL,sshd' | sudo tee -a /etc/security/access.conf > /dev/null", "Restricted non-local logins", test_mode)
-    else:
-        log("[-] /etc/security/access.conf does not exist. Skipping.")
-
-def secure_files(test_mode=False): # sandbox dir
-    """Secure critical system files"""
-    log("[+] Securing system configuration files...")
-    files_to_secure = [
-        "/etc/security/limits.conf",
-        "/etc/hosts.deny",
-        "/etc/security/access.conf"
+    
+# DIR LOCK
+def protect_critical_dirs(test_mode=False):
+    """Apply strict security measures to system-critical directories"""
+    log("[+] Hardening critical system directories...")
+    run_command("sudo chattr -R +i /sbin", "Made /sbin immutable", test_mode)
+    run_command("sudo chmod 700 /root", "Restricted /root to root-only", test_mode)
+    run_command("sudo chattr -R +i /etc", "Made /etc immutable", test_mode)
+    run_command("sudo chattr -R +a /var/log", "Made /var/log append-only", test_mode)
+    log("[+] Critical system directories locked down.")
+    
+# KERNAL LOCK
+def enable_kernel_protection(test_mode=False):
+    """Enable additional kernel-level protections"""
+    log("[+] Applying kernel security enhancements...")
+    kernel_hardening_cmds = [
+        "sudo sysctl -w kernel.dmesg_restrict=1",
+        "sudo sysctl -w kernel.kptr_restrict=2",
+        "sudo sysctl -w fs.protected_symlinks=1",
+        "sudo sysctl -w fs.protected_hardlinks=1",
+        "sudo sysctl -w kernel.yama.ptrace_scope=2",
+        "sudo sysctl -w kernel.exec-shield=1",
+        "sudo sysctl -w kernel.randomize_va_space=2"
     ]
-    
-    for file in files_to_secure:
-        if os.path.isfile(file):
-            backup_file(file, test_mode)
-            run_command(f"sudo chmod 600 {file}", f"Secured {file}", test_mode)
-        else:
-            log(f"[-] {file} does not exist. Skipping.")
+    for cmd in kernel_hardening_cmds:
+        run_command(cmd, f"Applied: {cmd.split('=')[0]}", test_mode)
+    log("[+] Kernel security hardened.")
 
-def setup_cron_job(): # daily
-    """Setup cron job to run HARDN DARK daily"""
-    log("[+] Configuring automatic security hardening cron job...")
+def enable_selinux(test_mode=False):
+    """Ensure SELinux is enabled"""
+    log("[+] Checking SELinux status...")
+    try:
+        result = subprocess.run(["getenforce"], capture_output=True, text=True, check=True)
+        if result.stdout.strip() != "Enforcing":
+            run_command("sudo setenforce 1", "Enabled SELinux", test_mode)
+            run_command("sudo sed -i 's/SELINUX=permissive/SELINUX=enforcing/' /etc/selinux/config", "Configured SELinux at boot", test_mode)
+        log("[+] SELinux is enforcing.")
+    except subprocess.CalledProcessError:
+        log("[-] SELinux is not installed.")
+# GRS CONF
+def enable_grsecurity(test_mode=False):
+    """Enable grsecurity (if installed)"""
+    log("[+] Enabling grsecurity...")
+    grsec_settings = [
+        "kernel.grsecurity.deny_new_usb=1",
+        "kernel.grsecurity.ptrace_restrict=1",
+        "kernel.grsecurity.chroot_deny_chmod=1",
+        "kernel.grsecurity.chroot_deny_mknod=1",
+        "kernel.grsecurity.chroot_deny_mount=1"
+    ]
+    for setting in grsec_settings:
+        run_command(f"echo '{setting}' | sudo tee -a /etc/sysctl.d/99-grsecurity.conf", f"Applied: {setting}", test_mode)
+    run_command("sudo sysctl -p", "Loaded grsecurity settings", test_mode)
+    
+    
+# MAC 
+def randomize_mac(test_mode=False):
+    """Randomize MAC address for anonymity"""
+    log("[+] Randomizing MAC addresses...")
+    interfaces = ["eth0", "wlan0"]
+    for interface in interfaces:
+        run_command(f"sudo ip link set {interface} down", f"Disabling {interface}", test_mode)
+        run_command(f"sudo macchanger -r {interface}", f"Randomizing MAC for {interface}", test_mode)
+        run_command(f"sudo ip link set {interface} up", f"Re-enabling {interface}", test_mode)
+
+def force_tor_traffic(test_mode=False):
+    """Route all traffic through TOR"""
+    log("[+] Configuring system to use TOR...")
+    run_command("sudo systemctl enable --now tor", "Enabled TOR service", test_mode)
+
+def prevent_file_executions(test_mode=False):
+    """Prevent execution of unauthorized binaries"""
+    log("[+] Locking down executable paths...")
+    lockdown_cmds = [
+        "sudo mount -o remount,ro /sbin",
+        "sudo mount -o remount,ro /usr/sbin",
+        "sudo mount -o remount,ro /bin",
+        "sudo mount -o remount,ro /usr/bin"
+    ]
+    for cmd in lockdown_cmds:
+        run_command(cmd, "Locked down binary execution paths", test_mode)
+
+def setup_cron_job():
+    """Schedule daily security enforcement"""
+    log("[+] Configuring daily security tasks...")
     cron_job = f"0 3 * * * /usr/bin/python3 {os.path.abspath(__file__)} >> /var/log/hardn_cron.log 2>&1"
-    
-    # Check if exists and load 
-    cron_jobs = subprocess.run(["crontab", "-l"], capture_output=True, text=True).stdout
-    if cron_job not in cron_jobs:
-        run_command(f"(crontab -l 2>/dev/null; echo \"{cron_job}\") | crontab -", "Added HARDN DARK cron job")
-    else:
-        log("[+] Cron job already exists. Skipping.")
+    run_command(f"(crontab -l 2>/dev/null; echo \"{cron_job}\") | crontab -", "Added cron job")
 
-#def disable_usb_storage(test_mode=False):
- #   """Disable USB storage devices"""
-  #  log("[+] Disabling USB storage devices...")
-   # usb_rule = "/etc/modprobe.d/usb-storage.conf"
-    #backup_file(usb_rule, test_mode)
-    r#un_command("echo 'blacklist usb-storage' | sudo tee /etc/modprobe.d/usb-storage.conf > /dev/null", "USB storage blocked", test_mode)
-    #run_command("modprobe -r usb-storage", "Unloaded USB storage module", test_mode)
-
-def restrict_su_command(test_mode=False):
-    """Restrict su command to only admin group members"""
-    log("[+] Restricting 'su' command...")
-    backup_file("/etc/pam.d/su", test_mode)
-    run_command("echo 'auth required pam_wheel.so' | sudo tee -a /etc/pam.d/su > /dev/null", "Restricted 'su' to admin group", test_mode)
-
-def restart_services(test_mode=False):
-    """Restart necessary services"""
-    log("[+] Restarting necessary services...")
-    services = ["ssh", "fail2ban", "systemd-logind"]
-    for service in services:
-        run_command(f"systemctl restart {service}", f"Restarted {service} service", test_mode)
-
+# MAIN
 def main():
-    # Arg's and stuff 
-    parser = argparse.ArgumentParser(description="HARDN DARK - Deep Security Hardening for Debian-based Systems")
-    parser.add_argument("--test", action="store_true", help="Run in test mode without applying changes")
-    parser.add_argument("--restore", action="store_true", help="Restore backups (rollback)")
-    args = parser.parse_args()
-    
-    test_mode = args.test # test
-
-    log("[+] Starting HARDN DARK - Hold on Tight...")
-    
-    if args.restore:
-        restore_backups()
-        log("[+] Backups restored. Exiting.")
-        exit(0)
-
-    if test_mode:
-        log("[TEST MODE] No changes will be applied. This is a dry run.")
-
+    log("[+] Starting HARDN DARK - System Lockdown Initiated...")
     check_compatibility()
-    disable_core_dumps(test_mode)
-    # configure_tcp_wrappers(test_mode)
-    restrict_non_local_logins(test_mode)
-    secure_files(test_mode)
-    # disable_usb_storage(test_mode)
-    restrict_su_command(test_mode)
-    restart_services(test_mode)
+    disable_core_dumps()
+    protect_critical_dirs()
+    enable_kernel_protection()
+    enable_selinux()
+    enable_grsecurity()
+    randomize_mac()
+    force_tor_traffic()
+    prevent_file_executions()
     setup_cron_job()
+    log("[+] HARDN DARK security enforcement completed.")
 
-    log("[+] HARDN DARK hardening completed successfully.")
-
-# main 
 if __name__ == "__main__":
     main()
