@@ -18,7 +18,8 @@ if [[ $EUID -ne 0 ]]; then
    echo "This script must be run as root. Use: sudo ./setup.sh"
    exit 1
 fi
-# be sure to clone repo first 
+
+# Be sure to clone repo first 
 # MOVE - assuming you alreasy cloned repo
 cd "$(dirname "$0")"
 
@@ -34,6 +35,13 @@ pip install -r requirements.txt
 echo "[+] Installing HARDN as a system-wide command..."
 pip install -e .
 
+# DEPENDENCY - to check for requirements 
+if [[ -f "requirements.txt" ]]; then
+    pip install -r requirements.txt
+else
+    echo "[-] Missing requirements.txt. Skipping Python dependency installation."
+fi
+
 # SECURITY 
 
 # UFW (update) 
@@ -41,6 +49,10 @@ ufw allow out 53,80,443/tcp
 ufw allow out 53,123/udp
 ufw allow out 67,68/udp  # DHCP because static Ip's are 1993
 ufw allow out icmp  # ping
+ufw reload
+ufw status verbose
+# UFW - reload 
+ufw reload || { echo "[-] UFW failed to reload."; exit 1; }
 
 echo "[+] Setting up Fail2Ban..."
 systemctl enable --now fail2ban
@@ -60,20 +72,30 @@ rm -f "$ESET_DEB"
 echo "[+] Reloading AppArmor profiles..."
 apparmor_parser -r /etc/apparmor.d/*
 
-
-
 # CRON (update)
 echo "[+] Configuring cron jobs..."
+touch /var/log/lynis_cron.log
+chmod 600 /var/log/lynis_cron.log
+
+# CRON - old and remove 
+crontab -l 2>/dev/null | grep -v "lynis audit system --cronjob" | grep -v "apt update && apt upgrade -y" | grep -v "/opt/eset/esets/sbin/esets_update" | crontab -
+
+# CRON - add new 
 (crontab -l 2>/dev/null; echo "
 0 1 * * * lynis audit system --cronjob >> /var/log/lynis_cron.log 2>&1
 0 2 * * * apt update && apt upgrade -y
 0 3 * * * /opt/eset/esets/sbin/esets_update
 ") | crontab -
 
-# USB disable 
+# USB disable - all 
+echo "[+] Checking if USB storage module is disabled..."
+lsmod | grep usb_storage && echo "[-] Warning: USB storage is still active!" || echo "[+] USB storage successfully disabled."
 echo "[+] Disabling USB storage (optional)..."
 echo 'blacklist usb-storage' >> /etc/modprobe.d/usb-storage.conf
 modprobe -r usb-storage || echo "USB storage module in use, cannot unload."
+
+# UPDATE
+apt update && apt upgrade -y || { echo "[-] System update failed."; exit 1; }
 
 echo "-------------------------------------"
 echo "[+] Setup complete!"
