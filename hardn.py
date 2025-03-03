@@ -77,10 +77,8 @@ def print_ascii_art():
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # FILE PATH - to dependents 
-HARDN_QUBE_PATH = os.path.join(script_dir, "HARDN_qubes.py")
 HARDN_DARK_PATH = os.path.join(script_dir, "HARDN_dark.py")
 
-print("HARDN_QUBE_PATH:", HARDN_QUBE_PATH)
 print("HARDN_DARK_PATH:", HARDN_DARK_PATH)
 
 # GUI
