@@ -16,6 +16,7 @@ pyttk
 
 # SEC/MONITOR
 lynis
+selinux
 fail2ban
 ufw
 apparmor
