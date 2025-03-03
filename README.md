@@ -44,6 +44,7 @@ By following these guidelines, you will enhance system security, maintain stabil
 
 - Lynis,Security auditing tool for Unix-based systems.
 - Fail2Ban,Protects against brute-force attacks.
+- SELinux, a security feature in Linux that enforces strict access controls to protect the system from unauthorized actions, even by compromised or malicious processes.
 - UFW,Easy-to-configure firewall utility.
 - Lynis Audit- to keep the base secure posture validated
 - AppArmor,Mandatory Access Control (MAC) for enforcing policies.
