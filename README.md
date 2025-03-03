@@ -46,11 +46,13 @@ By following these guidelines, you will enhance system security, maintain stabil
 - Fail2Ban,Protects against brute-force attacks.
 - SELinux, a security feature in Linux that enforces strict access controls to protect the system from unauthorized actions, even by compromised or malicious processes.
 - UFW,Easy-to-configure firewall utility.
+- TCP wrappers, to bundle outbound/ inbound and predefined rules monitoring tool, host based. 
 - Lynis Audit- to keep the base secure posture validated
 - AppArmor,Mandatory Access Control (MAC) for enforcing policies.
 - ESET_Nod32,(Soon to be replaced by Legion) Open-source antivirus software.
 - Firejail,Sandboxing tool for application isolation.
-- Cron, to keep it all omaintenance**:  
+- Cron, to keep it all omaintenance**
+- Pex*, used for GRUB has password automation 
 
 1. **HARDN the System** – Applies firewall rules, intrusion detection, malware protection, and access control automatically.  
 2. **Monitor & Defend** – Uses heuristic analysis, security audits, and automated updates to **stay ahead of threats**.  (LEGION to come)
