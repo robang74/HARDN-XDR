@@ -93,6 +93,7 @@ sudo ./setup.sh
 - Replacing ESET with `Legion` – A dedicated malware scanner optimized for Linux.
 > [LEGION](https://github.com/opensource-for-freedom/LEGION.git)
 - Integrating Wazuh SIEM – Expanding system-wide monitoring for better incident response.
+- Test and implement GRS, to help fully secure the Kernal. 
 - Expanding container security – Locking down VMs and containers without affecting performance.
 - Making it easier to use – Simplifying configurations for both end-users and professionals.
 ---
