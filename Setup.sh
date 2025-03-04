@@ -24,7 +24,7 @@ fi
 cd "$(dirname "$0")"
 
 echo "[+] Updating system packages..."
-apt update && apt upgrade -y
+apt update && apt install -y python3 python3-pip
 
 echo "[+] Installing required system dependencies..."
 apt install -y python3 python3-pip ufw fail2ban apparmor apparmor-profiles apparmor-utils firejail tcpd lynis debsums 
