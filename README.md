@@ -14,7 +14,7 @@
 
 # HARDN
 ---
-A single **Debian** tool to fully secure an OS using  automation, monitoring, heuristics and keep availability high.
+A single **Debian** tool to fully secure an OS using  automation, monitoring, heuristics and availability.
 ---
 # Table of Contents
 ## Table of Contents
@@ -26,17 +26,15 @@ A single **Debian** tool to fully secure an OS using  automation, monitoring, he
 - [Contributing](#contributing)
 - [License](#license)
 ---
-# **Overview**  
+# **Overview and Reciept of Mission**  
 
-In the development of this repo, we aim to include all facets of **kernel hardening**, **penetration testing**, and **OS security** for Debian Linux systems, ensuring both security and stability.
+- Kernel Hardening – Fortifying the Linux kernel to block exploits, enforce strict access controls, and minimize attack surfaces.
 
-We will always take suggestions and mentioning of how to keep Linux secure and productivity high. 
+- Penetration Testing – Proactively scanning and testing for vulnerabilities to find weaknesses before attackers do.
 
-This document outlines the pre-release activities that need to be completed before finalizing the project release.
+- Automation – Reducing manual security tasks with scripts and tools that streamline system protection and performance tuning.
 
-These tasks are designed to reinforce security, improve performance, and streamline user management.
-
-By following these guidelines, you will enhance system security, maintain stability, and optimize Debian-based systems for performance and resilience.
+- OS Security – Locking down vulnerabilities while ensuring stability, speed, and reliability for Debian systems
 
 ---
 
@@ -52,15 +50,16 @@ By following these guidelines, you will enhance system security, maintain stabil
 - ESET_Nod32,(Soon to be replaced by Legion) Open-source antivirus software.
 - Firejail,Sandboxing tool for application isolation.
 - Cron, to keep it all omaintenance**
-- Pex*, used for GRUB has password automation 
+- Pex*, used for GRUB password hash automation 
 
-1. **HARDN the System** – Applies firewall rules, intrusion detection, malware protection, and access control automatically.  
-2. **Monitor & Defend** – Uses heuristic analysis, security audits, and automated updates to **stay ahead of threats**.  (LEGION to come)
+1. **Secure the System** – Applies firewall rules, intrusion detection, malware protection, and access control automatically.  
+2. **Monitor & Defend** – Uses heuristic analysis, security audits, and automated updates to **stay ahead of threats**.  (LEGION)
 3. **Stay Updated** – Built-in automation via `cron` ensures **constant updates and maintenance** without user intervention.  
 
 Once installed, **HARDN runs in the background**—keeping your system tight **without slowing you down**.
 
-we are working on a 'headless' option to remove the gui, for server functionality. 
+> we are working on a 'headless' option to remove the gui, for server functionality. 
+> We are working on server and container compatibility.
 ---
 
 ## **Getting Started**  
@@ -95,7 +94,6 @@ sudo ./setup.sh
 - Making it easier to use – Simplifying configurations for both end-users and professionals.
 ---
 ## Contributing
-- Please do 🙂
 - Contact directly for access 
 ---
 
