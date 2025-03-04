@@ -20,7 +20,7 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 # Be sure to clone repo first 
-# MOVE - assuming you alreasy cloned repo
+# INSTALL 
 cd "$(dirname "$0")"
 
 echo "[+] Updating system packages..."
@@ -53,7 +53,7 @@ apt install -y \
    
 # PY Libraries 
 echo "[+] Installing Python dependencies..."
-pip install pexpect
+pip install pexpect # Kernal password hashing file
 
 
 # SECURITY 
@@ -61,7 +61,7 @@ pip install pexpect
 # UFW (update) 
 ufw allow out 53,80,443/tcp
 ufw allow out 53,123/udp
-ufw allow out 67,68/udp  # DHCP because static Ip's are 1993
+ufw allow out 67,68/udp  # because static Ip's are 1993
 ufw allow out icmp  # ping
 ufw reload
 ufw status verbose
