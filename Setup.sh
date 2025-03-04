@@ -42,6 +42,20 @@ else
     echo "[-] Missing requirements.txt. Skipping Python dependency installation."
 fi
 
+# SYSTEM PACKS
+echo "[+] Installing all needed system dependencies..."
+apt install -y \
+    python3 python3-pip ufw fail2ban apparmor apparmor-profiles apparmor-utils firejail \
+    tcpd lynis debsums rkhunter pexpect libpam-pwquality \
+    libvirt-daemon-system libvirt-clients qemu-kvm \
+    docker.io docker-compose \
+    openssh-server
+   
+# PY Libraries 
+echo "[+] Installing Python dependencies..."
+pip install pexpect
+
+
 # SECURITY 
 
 # UFW (update) 
