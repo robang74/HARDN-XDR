@@ -53,10 +53,10 @@ A single **Debian** tool to fully secure an OS using  automation, monitoring, he
 - Pex*, used for GRUB password hash automation 
 
 1. **Secure the System** – Applies firewall rules, intrusion detection, malware protection, and access control automatically.  
-2. **Monitor & Defend** – Uses heuristic analysis, security audits, and automated updates to **stay ahead of threats**.  (LEGION)
+2. **Monitor & Defend** – Soon to use heuristic analysis, security audits, and automated updates to **stay ahead of threats**.  (`Legion`)
 3. **Stay Updated** – Built-in automation via `cron` ensures **constant updates and maintenance** without user intervention.  
 
-Once installed, **HARDN runs in the background**—keeping your system tight **without slowing you down**.
+**The Goal** - Once installed, **HARDN runs in the background**—keeping your system tight **without slowing you down**.
 
 > we are working on a 'headless' option to remove the gui, for server functionality. 
 > We are working on server and container compatibility.
