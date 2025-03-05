@@ -105,4 +105,4 @@ sudo ./setup.sh
 
 - MIT License
 
-![Alt text](https://raw.githubusercontent.com/username/repository/main/Images/github-header-image.png)
+
