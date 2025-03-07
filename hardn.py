@@ -63,15 +63,15 @@ def print_ascii_art():
              ░  ░  ░      ░  ░   ░        ░             ░ 
                                 ░                 
                 "HARDN" - The Linux Security Project
-                ----------------------------------------
-                 A project focused on improving Linux
-                security by automating, containerizing
-                            Hardening and
-                     System protection measures.
-                         License: MIT License
-                            Version: 1.5.6
-                           Dev: Tim "TANK" Burns
-      GitHub: https://github.com/OpenSource-For-Freedom/HARDN.git
+             -------------------------------------------
+                A single Debian tool to fully secure 
+                 an OS using  automation, monitoring, 
+                    heuristics and availability.
+                            License: MIT
+                           Dev: Tim Burns
+             -------------------------------------------
+                          
+      
     """
     return art
 
@@ -91,7 +91,7 @@ class StatusGUI:
         self.root.geometry("800x600")
         self.root.configure(bg='#333333')
 
-        self.canvas = tk.Canvas(self.root, width=800, height=600, bg='#333333')
+        self.canvas = tk.Canvas(self.root, width=800, height=600, bg='#333333', highlightthickness=0)
         self.canvas.pack(fill="both", expand=True)
 
         self.progress = ttk.Progressbar(self.root, length=700, mode="determinate")
@@ -101,17 +101,17 @@ class StatusGUI:
         self.status_label = ttk.Label(self.root, textvariable=self.status_text, background='#333333', foreground='white')
         self.status_label_window = self.canvas.create_window(400, 580, window=self.status_label)
 
-        self.log_text = tk.Text(self.root, height=20, width=90, bg='#222222', fg='white')
-        self.log_text_window = self.canvas.create_window(400, 300, window=self.log_text)
+        self.log_text = tk.Text(self.root, height=10, width=90, bg='#222222', fg='white', highlightthickness=0)
+        self.log_text_window = self.canvas.create_window(400, 400, window=self.log_text)
 
         self.task_count = 0
-        self.total_tasks = 15  # Updated with actual steps
+        self.total_tasks = 15  
 
         self.display_ascii_art()
 
     def display_ascii_art(self):
         ascii_art = print_ascii_art()
-        self.canvas.create_text(400, 150, text=ascii_art, fill="white", font=("Courier", 8), anchor="center")
+        self.canvas.create_text(400, 200, text=ascii_art, fill="white", font=("Courier", 8), anchor="center")
 
     def update_status(self, message):
         self.task_count += 1
@@ -130,8 +130,27 @@ class StatusGUI:
         
     def run(self):
         self.root.mainloop()
-        
-        
+
+    def get_grub_password(self):
+        self.password_window = tk.Toplevel(self.root)
+        self.password_window.title("Enter GRUB Password")
+        self.password_window.geometry("300x150")
+        self.password_window.configure(bg='#333333')
+
+        self.password_label = ttk.Label(self.password_window, text="Enter GRUB Password:", background='#333333', foreground='white')
+        self.password_label.pack(pady=10)
+
+        self.password_entry = ttk.Entry(self.password_window, show="*")
+        self.password_entry.pack(pady=10)
+
+        self.submit_button = ttk.Button(self.password_window, text="Submit", command=self.submit_password)
+        self.submit_button.pack(pady=10)
+
+    def submit_password(self):
+        self.grub_password = self.password_entry.get()
+        self.password_window.destroy()
+        secure_grub(self)
+
 # SECURITY HARDENING FUNCTIONS
 def configure_apparmor():
     status_gui.update_status("Configuring AppArmor for Mandatory Access Control...")
@@ -201,7 +220,10 @@ def configure_grub():
     grub_cmd = shutil.which("update-grub") or shutil.which("grub-mkconfig")
 
     if grub_cmd:
-        subprocess.run([grub_cmd, "-o", "/boot/grub/grub.cfg"], check=True)
+        try:
+            subprocess.run([grub_cmd, "-o", "/boot/grub/grub.cfg"], check=True, timeout=120)
+        except subprocess.TimeoutExpired:
+            status_gui.update_status("Command timed out: update-grub")
     else:
         print("Warning: GRUB update command not found. Skipping GRUB update.")
         print("If running inside a VM, this may not be necessary.")
@@ -215,7 +237,7 @@ def configure_firewall(status_gui): # simplified for use, not most secure versio
     
 def secure_grub(status_gui):
     status_gui.update_status("Configuring GRUB Secure Boot Password...")
-    grub_password = input("Enter GRUB password: ")
+    grub_password = status_gui.grub_password
     child = pexpect.spawn("grub-mkpasswd-pbkdf2")
     child.expect("Enter password: ")
     child.sendline(grub_password)
@@ -247,7 +269,10 @@ def enable_aide(status_gui):
     threading.Thread(target=run_aideinit, args=(status_gui,)).start()
 
 def run_aideinit(status_gui):
-    exec_command("aideinit && mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db", status_gui)
+    try:
+        exec_command("aideinit && mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db", status_gui)
+    except subprocess.TimeoutExpired:
+        status_gui.update_status("Command timed out: aideinit && mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db")
 
 def harden_sysctl(status_gui):
     exec_command("sysctl -w net.ipv4.conf.all.accept_redirects=0", status_gui)
@@ -316,7 +341,7 @@ def start_hardening():
         enable_aide(status_gui)
         harden_sysctl(status_gui)
         disable_usb(status_gui)
-        secure_grub(status_gui)
+        status_gui.get_grub_password()
         exec_command("apt install -y apparmor apparmor-profiles apparmor-utils", status_gui)
         exec_command("systemctl enable --now apparmor", status_gui)
         configure_postfix(status_gui)
