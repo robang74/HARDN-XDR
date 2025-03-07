@@ -59,7 +59,7 @@ A single **Debian** tool to fully secure an OS using  automation, monitoring, he
 **The Goal** - Once installed, **HARDN runs in the background**—keeping your system tight **without slowing you down**.
 
 > we are working on a 'headless' option to remove the gui, for server functionality. 
-> We are working on server and container compatibility.
+> We are also working on server and container compatibility.
 ---
 
 ## **Getting Started**  
