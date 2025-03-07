@@ -32,7 +32,7 @@ def exec_command(command, status_gui=None):
         print(f"Executing: {command}")
         process = subprocess.run(
             command, shell=True, check=True, text=True,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=300  # Increased timeout to 300 seconds
         )
         if status_gui:
             status_gui.update_status(f"Completed: {command}")
@@ -127,7 +127,9 @@ class StatusGUI:
             self.status_text.set(f"Hardening complete! Lynis score: {lynis_score}")
         else:
             self.status_text.set("Hardening complete!")
-        
+        self.log_text.insert(tk.END, f"Lynis score: {lynis_score}\n")
+        self.log_text.see(tk.END)
+
     def run(self):
         self.root.mainloop()
 
@@ -327,6 +329,7 @@ def run_lynis_audit(status_gui):
             lynis_score = line.split(":")[1].strip()
             return lynis_score
     return None
+
 # CHECK ALL - flet we needed this in the parent file
 def check_and_install_dependencies():
     dependencies = [
@@ -347,10 +350,25 @@ def check_and_install_dependencies():
             status_gui.update_status(f"{package} not found. Installing...")
             exec_command(f"apt install -y {package}", status_gui)
 
+def check_and_install_python_packages():
+    python_packages = [
+        "pexpect", "tkinter"
+    ]
+    
+    for package in python_packages:
+        try:
+            status_gui.update_status(f"Checking for Python package {package}...")
+            subprocess.run([sys.executable, "-m", "pip", "show", package], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            status_gui.update_status(f"Python package {package} is already installed.")
+        except subprocess.CalledProcessError:
+            status_gui.update_status(f"Python package {package} not found. Installing...")
+            subprocess.run([sys.executable, "-m", "pip", "install", package], check=True)
+
 # START HARDENING PROCESS
 def start_hardening():
     def run_tasks():
         check_and_install_dependencies()
+        check_and_install_python_packages()
         exec_command("apt update && apt upgrade -y", status_gui)
         enforce_password_policies()
         exec_command("apt install -y fail2ban", status_gui)
