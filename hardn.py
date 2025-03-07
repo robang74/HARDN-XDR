@@ -1,9 +1,3 @@
-# Tie in wazuh SIEM
-# Tie in VM support and containerization 
-# Tie in API response and SSH again
-# ROOT 
-# Added VM compatibility 
-# thanks @kiukcat
 import os
 import subprocess
 import sys
@@ -25,26 +19,26 @@ def ensure_root():
 
 ensure_root()
 
-def exec_command(command, status_gui=None):
+def exec_command(command, args, status_gui=None):
     try:
         if status_gui:
-            status_gui.update_status(f"Executing: {command}")
-        print(f"Executing: {command}")
+            status_gui.update_status(f"Executing: {command} {' '.join(args)}")
+        print(f"Executing: {command} {' '.join(args)}")
         process = subprocess.run(
-            command, shell=True, check=True, text=True,
+            [command] + args, check=True, text=True,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=300  # Increased timeout to 300 seconds
         )
         if status_gui:
-            status_gui.update_status(f"Completed: {command}")
+            status_gui.update_status(f"Completed: {command} {' '.join(args)}")
         print(process.stdout)
     except subprocess.CalledProcessError as e:
         if status_gui:
-            status_gui.update_status(f"Error executing '{command}': {e.stderr}")
-        print(f"Error executing command '{command}': {e.stderr}")
+            status_gui.update_status(f"Error executing '{command} {' '.join(args)}': {e.stderr}")
+        print(f"Error executing command '{command} {' '.join(args)}': {e.stderr}")
     except subprocess.TimeoutExpired:
         if status_gui:
-            status_gui.update_status(f"Command timed out: {command}")
-        print(f"Command timed out: {command}")
+            status_gui.update_status(f"Command timed out: {command} {' '.join(args)}")
+        print(f"Command timed out: {command} {' '.join(args)}")
     except Exception as e:
         if status_gui:
             status_gui.update_status(f"Unexpected error: {str(e)}")
@@ -63,15 +57,8 @@ def print_ascii_art():
              ░  ░  ░      ░  ░   ░        ░             ░ 
                                 ░                 
                 "HARDN" - The Linux Security Project
-             -------------------------------------------
-                A single Debian tool to fully secure 
-                 an OS using  automation, monitoring, 
-                    heuristics and availability.
-                            License: MIT
-                           Dev: Tim Burns
-             -------------------------------------------
-                          
-      
+                ----------------------------------------
+      GitHub: https://github.com/OpenSource-For-Freedom/HARDN.git
     """
     return art
 
@@ -156,36 +143,37 @@ class StatusGUI:
 # SECURITY HARDENING FUNCTIONS
 def configure_apparmor():
     status_gui.update_status("Configuring AppArmor for Mandatory Access Control...")
-    exec_command("apt install -y apparmor apparmor-profiles apparmor-utils")
-    exec_command("systemctl enable --now apparmor")
+    exec_command("apt", ["install", "-y", "apparmor", "apparmor-profiles", "apparmor-utils"], status_gui)
+    exec_command("systemctl", ["enable", "--now", "apparmor"], status_gui)
 
 def configure_firejail():
     status_gui.update_status("Configuring Firejail for Application Sandboxing...")
-    exec_command("apt install -y firejail")
-    exec_command("firejail --list")
+    exec_command("apt", ["install", "-y", "firejail"], status_gui)
+    exec_command("firejail", ["--list"], status_gui)
     
 def enforce_password_policies():
-    exec_command("apt install -y libpam-pwquality", status_gui)
-    exec_command("echo 'password requisite pam_pwquality.so retry=3 minlen=12 difok=3' >> /etc/pam.d/common-password", status_gui)
+    exec_command("apt", ["install", "-y", "libpam-pwquality"], status_gui)
+    exec_command("sh", ["-c", "echo 'password requisite pam_pwquality.so retry=3 minlen=12 difok=3' >> /etc/pam.d/common-password"], status_gui)
     
     
 # SECURITY TOOLS
 def remove_clamav():
     status_gui.update_status("Removing ClamAV...")
-    exec_command("apt remove --purge -y clamav clamav-daemon")
-    exec_command("rm -rf /var/lib/clamav")
+    exec_command("apt", ["remove", "--purge", "-y", "clamav", "clamav-daemon"], status_gui)
+    exec_command("rm", ["-rf", "/var/lib/clamav"], status_gui)
     
 def install_rkhunter():
     status_gui.update_status("Installing Rootkit Hunter (rkhunter)...")
-    exec_command("apt install -y rkhunter", status_gui)
-    exec_command("rkhunter --update", status_gui)
-    exec_command("rkhunter --propupd", status_gui)
+    exec_command("apt", ["install", "-y", "rkhunter"], status_gui)
+    exec_command("rkhunter", ["--update"], status_gui)
+    exec_command("rkhunter", ["--propupd"], status_gui)
     
 def install_eset_nod32():
     status_gui.update_status("Installing ESET NOD32 (ES32) Antivirus...")
-    exec_command("wget -q https://download.eset.com/com/eset/apps/home/av/linux/latest/eset_nod32av_64bit.deb -O /tmp/eset.deb")
-    exec_command("dpkg -i /tmp/eset.deb || apt --fix-broken install -y")
-    exec_command("rm -f /tmp/eset.deb")
+    exec_command("wget", ["-q", "https://download.eset.com/com/eset/apps/home/av/linux/latest/eset_nod32av_64bit.deb", "-O", "/tmp/eset.deb"], status_gui)
+    exec_command("dpkg", ["-i", "/tmp/eset.deb"], status_gui)
+    exec_command("apt", ["--fix-broken", "install", "-y"], status_gui)
+    exec_command("rm", ["-f", "/tmp/eset.deb"], status_gui)
 
 def setup_auto_updates():
     status_gui.update_status("Configuring Auto-Update for Security Packages...")
@@ -195,21 +183,21 @@ def setup_auto_updates():
         "0 1 * * * lynis audit system --cronjob >> /var/log/lynis_cron.log 2>&1"
     ]
     for job in cron_jobs:
-        exec_command(f"(crontab -l 2>/dev/null; echo '{job}') | crontab -")
+        exec_command("sh", ["-c", f"(crontab -l 2>/dev/null; echo '{job}') | crontab -"], status_gui)
 
 def configure_tcp_wrappers(): # thank you Kiukcat :)
     status_gui.update_status("Configuring TCP Wrappers...")
-    exec_command("apt install -y tcpd")
+    exec_command("apt", ["install", "-y", "tcpd"], status_gui)
 
 def configure_fail2ban():
     status_gui.update_status("Setting up Fail2Ban...")
-    exec_command("apt install -y fail2ban")
-    exec_command("systemctl restart fail2ban")
-    exec_command("systemctl enable --now fail2ban")
+    exec_command("apt", ["install", "-y", "fail2ban"], status_gui)
+    exec_command("systemctl", ["restart", "fail2ban"], status_gui)
+    exec_command("systemctl", ["enable", "--now", "fail2ban"], status_gui)
     
 def run_lynis_audit():
     status_gui.update_status("Running Lynis security audit...")
-    exec_command("lynis audit system", status_gui)    
+    exec_command("lynis", ["audit", "system"], status_gui)    
 
 import shutil
 import subprocess
@@ -232,10 +220,11 @@ def configure_grub():
 
 def configure_firewall(status_gui): # simplified for use, not most secure version at this time
     status_gui.update_status("Configuring Firewall...")
-    exec_command("ufw default deny incoming", status_gui)
-    exec_command("ufw default allow outgoing", status_gui)
-    exec_command("ufw allow out 80,443/tcp", status_gui)
-    exec_command("ufw --force enable && ufw reload", status_gui)
+    exec_command("ufw", ["default", "deny", "incoming"], status_gui)
+    exec_command("ufw", ["default", "allow", "outgoing"], status_gui)
+    exec_command("ufw", ["allow", "out", "80,443/tcp"], status_gui)
+    exec_command("ufw", ["--force", "enable"], status_gui)
+    exec_command("ufw", ["reload"], status_gui)
     
 def secure_grub(status_gui):
     status_gui.update_status("Configuring GRUB Secure Boot Password...")
@@ -262,55 +251,56 @@ def secure_grub(status_gui):
     with open("/etc/grub.d/00_password", "w") as f:
         f.write(grub_config)
     
-    exec_command("update-grub", status_gui)
+    exec_command("update-grub", [], status_gui)
     
 def enable_aide(status_gui):
     status_gui.update_status("Installing and configuring AIDE...")
-    exec_command("apt install -y aide aide-common", status_gui)
+    exec_command("apt", ["install", "-y", "aide", "aide-common"], status_gui)
     status_gui.update_status("Initializing AIDE database (this may take a while)...")
     threading.Thread(target=run_aideinit, args=(status_gui,)).start()
 
 def run_aideinit(status_gui):
     try:
-        exec_command("aideinit && mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db", status_gui)
+        exec_command("aideinit", [], status_gui)
+        exec_command("mv", ["/var/lib/aide/aide.db.new", "/var/lib/aide/aide.db"], status_gui)
     except subprocess.TimeoutExpired:
         status_gui.update_status("Command timed out: aideinit && mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db")
 
 def harden_sysctl(status_gui):
-    exec_command("sysctl -w net.ipv4.conf.all.accept_redirects=0", status_gui)
-    exec_command("sysctl -w net.ipv4.conf.all.send_redirects=0", status_gui)    
+    exec_command("sysctl", ["-w", "net.ipv4.conf.all.accept_redirects=0"], status_gui)
+    exec_command("sysctl", ["-w", "net.ipv4.conf.all.send_redirects=0"], status_gui)    
 
 def disable_usb(status_gui): # We can set this to just put in monitor mode*
     status_gui.update_status("Locking down USB devices...")
-    exec_command("echo 'blacklist usb-storage' >> /etc/modprobe.d/usb-storage.conf", status_gui)
-    exec_command("modprobe -r usb-storage || echo 'USB storage module in use, cannot unload.'", status_gui)
+    exec_command("sh", ["-c", "echo 'blacklist usb-storage' >> /etc/modprobe.d/usb-storage.conf"], status_gui)
+    exec_command("modprobe", ["-r", "usb-storage"], status_gui)
 # if usb is in use it won't allow any changes 
 def software_integrity_check(status_gui):
     status_gui.update_status("Software Integrity Check...")
-    exec_command("debsums -s")
+    exec_command("debsums", ["-s"], status_gui)
 
 def run_audits(status_gui):
     status_gui.update_status("Running Security Audits...")
-    exec_command("lynis audit system --quick | tee /var/log/lynis_audit.log")
+    exec_command("lynis", ["audit", "system", "--quick"], status_gui)
 
 def scan_with_eset(status_gui):
     status_gui.update_status("Scanning system with ESET NOD32 (ES32) Antivirus...")
-    exec_command("/opt/eset/esets/sbin/esets_scan /home")
+    exec_command("/opt/eset/esets/sbin/esets_scan", ["/home"], status_gui)
 
 def configure_postfix(status_gui):
     status_gui.update_status("Configuring Postfix to hide mail_name...")
-    exec_command("postconf -e 'smtpd_banner=$myhostname ESMTP $mail_name'", status_gui)
-    exec_command("systemctl restart postfix", status_gui)
+    exec_command("postconf", ["-e", "smtpd_banner=$myhostname ESMTP $mail_name"], status_gui)
+    exec_command("systemctl", ["restart", "postfix"], status_gui)
 
 def purge_old_packages(status_gui):
     status_gui.update_status("Purging old/removed packages...")
-    exec_command("aptitude purge ~c", status_gui)
+    exec_command("aptitude", ["purge", "~c"], status_gui)
 
 def configure_password_hashing_rounds(status_gui):
     status_gui.update_status("Configuring password hashing rounds...")
-    exec_command("sed -i 's/^ENCRYPT_METHOD.*/ENCRYPT_METHOD SHA512/' /etc/login.defs", status_gui)
-    exec_command("sed -i 's/^SHA_CRYPT_MIN_ROUNDS.*/SHA_CRYPT_MIN_ROUNDS 5000/' /etc/login.defs", status_gui)
-    exec_command("sed -i 's/^SHA_CRYPT_MAX_ROUNDS.*/SHA_CRYPT_MAX_ROUNDS 5000/' /etc/login.defs", status_gui)
+    exec_command("sed", ["-i", "s/^ENCRYPT_METHOD.*/ENCRYPT_METHOD SHA512/", "/etc/login.defs"], status_gui)
+    exec_command("sed", ["-i", "s/^SHA_CRYPT_MIN_ROUNDS.*/SHA_CRYPT_MIN_ROUNDS 5000/", "/etc/login.defs"], status_gui)
+    exec_command("sed", ["-i", "s/^SHA_CRYPT_MAX_ROUNDS.*/SHA_CRYPT_MAX_ROUNDS 5000/", "/etc/login.defs"], status_gui)
 
 def add_legal_banners(status_gui):
     status_gui.update_status("Adding legal banners...")
@@ -326,12 +316,11 @@ def parse_lynis_output():
             if "Suggestion" in line or "Warning" in line:
                 fixes.append(line.strip())
     return fixes
-#LOGIC - for lynis  
+
 def apply_fixes(fixes):
     for fix in fixes:
         if "Suggestion" in fix:
             # LOGIC
-            
             pass
         elif "Warning" in fix:
             # LOGIC - for warnings
@@ -339,7 +328,7 @@ def apply_fixes(fixes):
 
 def run_lynis_audit(status_gui):
     status_gui.update_status("Running Lynis security audit...")
-    result = subprocess.run("lynis audit system --quick", shell=True, capture_output=True, text=True)
+    result = subprocess.run(["lynis", "audit", "system", "--quick"], capture_output=True, text=True)
     with open("/var/log/lynis_audit.log", "w") as log_file:
         log_file.write(result.stdout)
     for line in result.stdout.split("\n"):
@@ -352,7 +341,7 @@ def run_lynis_audit(status_gui):
 def check_and_install_dependencies():
     dependencies = [
         "apparmor", "apparmor-profiles", "apparmor-utils", "firejail", "libpam-pwquality",
-        "tcpd", "fail2ban", "rkhunter", "aide", "aide-common", "ufw", "postfix", "debsums"
+        "tcpd", "fail2ban", "rkhunter", "aide", "aide-common", "ufw", "postfix", "debsums", "python3-pexpect", "python3-tk"
     ]
     
     for package in dependencies:
@@ -361,45 +350,30 @@ def check_and_install_dependencies():
             result = subprocess.run(f"dpkg -s {package}", shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if "install ok installed" not in result.stdout.decode():
                 status_gui.update_status(f"{package} not found. Installing...")
-                exec_command(f"apt install -y {package}", status_gui)
+                exec_command("apt", ["install", "-y", package], status_gui)
             else:
                 status_gui.update_status(f"{package} is already installed.")
         except subprocess.CalledProcessError:
             status_gui.update_status(f"{package} not found. Installing...")
-            exec_command(f"apt install -y {package}", status_gui)
-
-def check_and_install_python_packages():
-    python_packages = [
-        "pexpect", "tkinter"
-    ]
-    
-    for package in python_packages:
-        try:
-            status_gui.update_status(f"Checking for Python package {package}...")
-            subprocess.run([sys.executable, "-m", "pip", "show", package], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            status_gui.update_status(f"Python package {package} is already installed.")
-        except subprocess.CalledProcessError:
-            status_gui.update_status(f"Python package {package} not found. Installing...")
-            subprocess.run([sys.executable, "-m", "pip", "install", package], check=True)
+            exec_command("apt", ["install", "-y", package], status_gui)
 
 # START HARDENING PROCESS
 def start_hardening():
     def run_tasks():
         check_and_install_dependencies()
-        check_and_install_python_packages()
-        exec_command("apt update && apt upgrade -y", status_gui)
+        exec_command("apt", ["update", "&&", "apt", "upgrade", "-y"], status_gui)
         enforce_password_policies()
-        exec_command("apt install -y fail2ban", status_gui)
-        exec_command("systemctl enable --now fail2ban", status_gui)
+        exec_command("apt", ["install", "-y", "fail2ban"], status_gui)
+        exec_command("systemctl", ["enable", "--now", "fail2ban"], status_gui)
         configure_firewall(status_gui)
-        exec_command("apt install -y rkhunter", status_gui)
-        exec_command("rkhunter --update && rkhunter --propupd", status_gui)
+        exec_command("apt", ["install", "-y", "rkhunter"], status_gui)
+        exec_command("rkhunter", ["--update", "&&", "rkhunter", "--propupd"], status_gui)
         enable_aide(status_gui)
         harden_sysctl(status_gui)
         disable_usb(status_gui)
         status_gui.get_grub_password()
-        exec_command("apt install -y apparmor apparmor-profiles apparmor-utils", status_gui)
-        exec_command("systemctl enable --now apparmor", status_gui)
+        exec_command("apt", ["install", "-y", "apparmor", "apparmor-profiles", "apparmor-utils"], status_gui)
+        exec_command("systemctl", ["enable", "--now", "apparmor"], status_gui)
         configure_postfix(status_gui)
         purge_old_packages(status_gui)
         configure_password_hashing_rounds(status_gui)
