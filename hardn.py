@@ -7,13 +7,12 @@
 import os
 import subprocess
 import sys
-import shlex
-import logging
 import threading
 import shutil
 import tkinter as tk
 from tkinter import ttk, messagebox  
 from datetime import datetime
+import pexpect
 
 def ensure_root():
     if os.geteuid() != 0:
@@ -46,8 +45,11 @@ def exec_command(command, status_gui=None):
         if status_gui:
             status_gui.update_status(f"Command timed out: {command}")
         print(f"Command timed out: {command}")
+    except Exception as e:
+        if status_gui:
+            status_gui.update_status(f"Unexpected error: {str(e)}")
+        print(f"Unexpected error: {str(e)}")
 
-# NASTY
 def print_ascii_art():
     art = """
              ██░ ██  ▄▄▄       ██▀███  ▓█████▄  ███▄    █ 
@@ -71,7 +73,7 @@ def print_ascii_art():
                            Dev: Tim "TANK" Burns
       GitHub: https://github.com/OpenSource-For-Freedom/HARDN.git
     """
-    print(art)
+    return art
 
 # GET DIR
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -89,21 +91,30 @@ class StatusGUI:
         self.root.geometry("600x400")
         self.root.configure(bg='#333333')
 
+        self.canvas = tk.Canvas(self.root, width=600, height=400, bg='#333333')
+        self.canvas.pack(fill="both", expand=True)
+
         self.label = ttk.Label(self.root, text="HARDN is securing your system...", font=("Helvetica", 12), background='#333333', foreground='white')
-        self.label.pack(pady=20)
+        self.label_window = self.canvas.create_window(300, 20, window=self.label)
 
         self.progress = ttk.Progressbar(self.root, length=500, mode="determinate")
-        self.progress.pack(pady=10)
+        self.progress_window = self.canvas.create_window(300, 60, window=self.progress)
 
         self.status_text = tk.StringVar()
         self.status_label = ttk.Label(self.root, textvariable=self.status_text, background='#333333', foreground='white')
-        self.status_label.pack(pady=5)
+        self.status_label_window = self.canvas.create_window(300, 100, window=self.status_label)
 
         self.log_text = tk.Text(self.root, height=10, width=70, bg='#222222', fg='white')
-        self.log_text.pack(pady=10)
-        
+        self.log_text_window = self.canvas.create_window(300, 250, window=self.log_text)
+
         self.task_count = 0
-        self.total_tasks = 10  # UPDATES - with actual steps and follows process bar
+        self.total_tasks = 15  # Updated with actual steps
+
+        self.display_ascii_art()
+
+    def display_ascii_art(self):
+        ascii_art = print_ascii_art()
+        self.canvas.create_text(300, 200, text=ascii_art, fill="white", font=("Courier", 8), anchor="center")
 
     def update_status(self, message):
         self.task_count += 1
@@ -113,9 +124,12 @@ class StatusGUI:
         self.log_text.see(tk.END)
         self.root.update_idletasks()
 
-    def complete(self):
+    def complete(self, lynis_score=None):
         self.progress["value"] = 100
-        self.status_text.set("Hardening complete!")
+        if lynis_score:
+            self.status_text.set(f"Hardening complete! Lynis score: {lynis_score}")
+        else:
+            self.status_text.set("Hardening complete!")
         
     def run(self):
         self.root.mainloop()
@@ -181,6 +195,7 @@ def run_lynis_audit():
 
 import shutil
 import subprocess
+import pexpect
 # Added VM compatibility in case it's running boot loader or EFI- thanks Alex :)
 def configure_grub():
     status_gui.update_status("Configuring GRUB Security Settings...")
@@ -194,16 +209,16 @@ def configure_grub():
         print("Warning: GRUB update command not found. Skipping GRUB update.")
         print("If running inside a VM, this may not be necessary.")
 
-def configure_firewall(): # simplified for use, not most secure version at this time
+def configure_firewall(status_gui): # simplified for use, not most secure version at this time
     status_gui.update_status("Configuring Firewall...")
-    exec_command("ufw default deny incoming")
-    exec_command("ufw default allow outgoing")
-    exec_command("ufw allow out 80,443/tcp")
-    exec_command("ufw --force enable && ufw reload")
+    exec_command("ufw default deny incoming", status_gui)
+    exec_command("ufw default allow outgoing", status_gui)
+    exec_command("ufw allow out 80,443/tcp", status_gui)
+    exec_command("ufw --force enable && ufw reload", status_gui)
     
-def secure_grub():
+def secure_grub(status_gui):
     status_gui.update_status("Configuring GRUB Secure Boot Password...")
-    grub_password = "SuperSecurePassword123!"
+    grub_password = input("Enter GRUB password: ")
     child = pexpect.spawn("grub-mkpasswd-pbkdf2")
     child.expect("Enter password: ")
     child.sendline(grub_password)
@@ -228,30 +243,68 @@ def secure_grub():
     
     exec_command("update-grub", status_gui)
     
-#def enable_aide():
- #   exec_command("apt install -y aide aide-common", status_gui)
-  #  exec_command("aideinit && mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db", status_gui)
+def enable_aide(status_gui):
+    status_gui.update_status("Installing and configuring AIDE...")
+    exec_command("apt install -y aide aide-common", status_gui)
+    status_gui.update_status("Initializing AIDE database (this may take a while)...")
+    threading.Thread(target=run_aideinit, args=(status_gui,)).start()
 
-def harden_sysctl():
+def run_aideinit(status_gui):
+    exec_command("aideinit && mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db", status_gui)
+
+def harden_sysctl(status_gui):
     exec_command("sysctl -w net.ipv4.conf.all.accept_redirects=0", status_gui)
     exec_command("sysctl -w net.ipv4.conf.all.send_redirects=0", status_gui)    
 
-def disable_usb(): # We can set this to just put in monitor mode*
+def disable_usb(status_gui): # We can set this to just put in monitor mode*
     status_gui.update_status("Locking down USB devices...")
-    exec_command("echo 'blacklist usb-storage' >> /etc/modprobe.d/usb-storage.conf")
-    exec_command("modprobe -r usb-storage || echo 'USB storage module in use, cannot unload.'")
+    exec_command("echo 'blacklist usb-storage' >> /etc/modprobe.d/usb-storage.conf", status_gui)
+    exec_command("modprobe -r usb-storage || echo 'USB storage module in use, cannot unload.'", status_gui)
 # if usb is in use it won't allow any changes 
-def software_integrity_check():
+def software_integrity_check(status_gui):
     status_gui.update_status("Software Integrity Check...")
     exec_command("debsums -s")
 
-def run_audits():
+def run_audits(status_gui):
     status_gui.update_status("Running Security Audits...")
     exec_command("lynis audit system --quick | tee /var/log/lynis_audit.log")
 
-def scan_with_eset():
+def scan_with_eset(status_gui):
     status_gui.update_status("Scanning system with ESET NOD32 (ES32) Antivirus...")
     exec_command("/opt/eset/esets/sbin/esets_scan /home")
+
+def configure_postfix(status_gui):
+    status_gui.update_status("Configuring Postfix to hide mail_name...")
+    exec_command("postconf -e 'smtpd_banner=$myhostname ESMTP $mail_name'", status_gui)
+    exec_command("systemctl restart postfix", status_gui)
+
+def purge_old_packages(status_gui):
+    status_gui.update_status("Purging old/removed packages...")
+    exec_command("aptitude purge ~c", status_gui)
+
+def configure_password_hashing_rounds(status_gui):
+    status_gui.update_status("Configuring password hashing rounds...")
+    exec_command("sed -i 's/^ENCRYPT_METHOD.*/ENCRYPT_METHOD SHA512/' /etc/login.defs", status_gui)
+    exec_command("sed -i 's/^SHA_CRYPT_MIN_ROUNDS.*/SHA_CRYPT_MIN_ROUNDS 5000/' /etc/login.defs", status_gui)
+    exec_command("sed -i 's/^SHA_CRYPT_MAX_ROUNDS.*/SHA_CRYPT_MAX_ROUNDS 5000/' /etc/login.defs", status_gui)
+
+def add_legal_banners(status_gui):
+    status_gui.update_status("Adding legal banners...")
+    with open("/etc/issue", "w") as f:
+        f.write("Authorized uses only. All activity may be monitored and reported.\n")
+    with open("/etc/issue.net", "w") as f:
+        f.write("Authorized uses only. All activity may be monitored and reported.\n")
+
+def run_lynis_audit(status_gui):
+    status_gui.update_status("Running Lynis security audit...")
+    result = subprocess.run("lynis audit system --quick", shell=True, capture_output=True, text=True)
+    with open("/var/log/lynis_audit.log", "w") as log_file:
+        log_file.write(result.stdout)
+    for line in result.stdout.split("\n"):
+        if "Hardening index" in line:
+            lynis_score = line.split(":")[1].strip()
+            return lynis_score
+    return None
 
 # START HARDENING PROCESS
 def start_hardening():
@@ -261,16 +314,21 @@ def start_hardening():
         enforce_password_policies()
         exec_command("apt install -y fail2ban", status_gui)
         exec_command("systemctl enable --now fail2ban", status_gui)
-        configure_firewall()
+        configure_firewall(status_gui)
         exec_command("apt install -y rkhunter", status_gui)
         exec_command("rkhunter --update && rkhunter --propupd", status_gui)
-        #enable_aide()
-        exec_command("lynis audit system", status_gui)
-        harden_sysctl()
-        secure_grub()
+        enable_aide(status_gui)
+        harden_sysctl(status_gui)
+        disable_usb(status_gui)
+        secure_grub(status_gui)
         exec_command("apt install -y apparmor apparmor-profiles apparmor-utils", status_gui)
         exec_command("systemctl enable --now apparmor", status_gui)
-        status_gui.complete()
+        configure_postfix(status_gui)
+        purge_old_packages(status_gui)
+        configure_password_hashing_rounds(status_gui)
+        add_legal_banners(status_gui)
+        lynis_score = run_lynis_audit(status_gui)
+        status_gui.complete(lynis_score)
     
     threading.Thread(target=run_tasks, daemon=True).start()
 
