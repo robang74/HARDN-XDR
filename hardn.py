@@ -319,6 +319,24 @@ def add_legal_banners(status_gui):
     with open("/etc/issue.net", "w") as f:
         f.write("Authorized uses only. All activity may be monitored and reported.\n")
 
+def parse_lynis_output():
+    fixes = []
+    with open("/var/log/lynis_audit.log", "r") as log_file:
+        for line in log_file:
+            if "Suggestion" in line or "Warning" in line:
+                fixes.append(line.strip())
+    return fixes
+#LOGIC - for lynis  
+def apply_fixes(fixes):
+    for fix in fixes:
+        if "Suggestion" in fix:
+            # LOGIC
+             status_gui)
+            pass
+        elif "Warning" in fix:
+            # logic for only warnings
+            pass
+
 def run_lynis_audit(status_gui):
     status_gui.update_status("Running Lynis security audit...")
     result = subprocess.run("lynis audit system --quick", shell=True, capture_output=True, text=True)
@@ -330,7 +348,7 @@ def run_lynis_audit(status_gui):
             return lynis_score
     return None
 
-# CHECK ALL - flet we needed this in the parent file
+# CHECK ALL -  we needed this in the parent file
 def check_and_install_dependencies():
     dependencies = [
         "apparmor", "apparmor-profiles", "apparmor-utils", "firejail", "libpam-pwquality",
@@ -387,6 +405,8 @@ def start_hardening():
         configure_password_hashing_rounds(status_gui)
         add_legal_banners(status_gui)
         lynis_score = run_lynis_audit(status_gui)
+        fixes = parse_lynis_output()
+        apply_fixes(fixes)
         status_gui.complete(lynis_score)
     
     threading.Thread(target=run_tasks, daemon=True).start()
