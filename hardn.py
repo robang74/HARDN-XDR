@@ -58,7 +58,13 @@ def print_ascii_art():
                                 ░                 
                 "HARDN" - The Linux Security Project
                 ----------------------------------------
-      GitHub: https://github.com/OpenSource-For-Freedom/HARDN.git
+                "A single Debian tool to fully secure an 
+               OS using automation, monitoring, heuristics 
+                           and availability.
+                           
+                         DEV: Tim "Tank" Burns
+                             License: MIT
+                ----------------------------------------
     """
     return art
 
