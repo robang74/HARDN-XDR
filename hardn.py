@@ -327,10 +327,30 @@ def run_lynis_audit(status_gui):
             lynis_score = line.split(":")[1].strip()
             return lynis_score
     return None
+# CHECK ALL - flet we needed this in the parent file
+def check_and_install_dependencies():
+    dependencies = [
+        "apparmor", "apparmor-profiles", "apparmor-utils", "firejail", "libpam-pwquality",
+        "tcpd", "fail2ban", "rkhunter", "aide", "aide-common", "ufw", "postfix", "debsums"
+    ]
+    
+    for package in dependencies:
+        try:
+            status_gui.update_status(f"Checking for {package}...")
+            result = subprocess.run(f"dpkg -s {package}", shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if "install ok installed" not in result.stdout.decode():
+                status_gui.update_status(f"{package} not found. Installing...")
+                exec_command(f"apt install -y {package}", status_gui)
+            else:
+                status_gui.update_status(f"{package} is already installed.")
+        except subprocess.CalledProcessError:
+            status_gui.update_status(f"{package} not found. Installing...")
+            exec_command(f"apt install -y {package}", status_gui)
 
 # START HARDENING PROCESS
 def start_hardening():
     def run_tasks():
+        check_and_install_dependencies()
         exec_command("apt update && apt upgrade -y", status_gui)
         enforce_password_policies()
         exec_command("apt install -y fail2ban", status_gui)
