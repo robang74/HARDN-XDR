@@ -87,25 +87,22 @@ print("HARDN_DARK_PATH:", HARDN_DARK_PATH)
 class StatusGUI:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("HARDN Security Hardening")
-        self.root.geometry("600x400")
+        self.root.title("HARDN")
+        self.root.geometry("800x600")
         self.root.configure(bg='#333333')
 
-        self.canvas = tk.Canvas(self.root, width=600, height=400, bg='#333333')
+        self.canvas = tk.Canvas(self.root, width=800, height=600, bg='#333333')
         self.canvas.pack(fill="both", expand=True)
 
-        self.label = ttk.Label(self.root, text="HARDN is securing your system...", font=("Helvetica", 12), background='#333333', foreground='white')
-        self.label_window = self.canvas.create_window(300, 20, window=self.label)
-
-        self.progress = ttk.Progressbar(self.root, length=500, mode="determinate")
-        self.progress_window = self.canvas.create_window(300, 60, window=self.progress)
+        self.progress = ttk.Progressbar(self.root, length=700, mode="determinate")
+        self.progress_window = self.canvas.create_window(400, 550, window=self.progress)
 
         self.status_text = tk.StringVar()
         self.status_label = ttk.Label(self.root, textvariable=self.status_text, background='#333333', foreground='white')
-        self.status_label_window = self.canvas.create_window(300, 100, window=self.status_label)
+        self.status_label_window = self.canvas.create_window(400, 580, window=self.status_label)
 
-        self.log_text = tk.Text(self.root, height=10, width=70, bg='#222222', fg='white')
-        self.log_text_window = self.canvas.create_window(300, 250, window=self.log_text)
+        self.log_text = tk.Text(self.root, height=20, width=90, bg='#222222', fg='white')
+        self.log_text_window = self.canvas.create_window(400, 300, window=self.log_text)
 
         self.task_count = 0
         self.total_tasks = 15  # Updated with actual steps
@@ -114,7 +111,7 @@ class StatusGUI:
 
     def display_ascii_art(self):
         ascii_art = print_ascii_art()
-        self.canvas.create_text(300, 200, text=ascii_art, fill="white", font=("Courier", 8), anchor="center")
+        self.canvas.create_text(400, 150, text=ascii_art, fill="white", font=("Courier", 8), anchor="center")
 
     def update_status(self, message):
         self.task_count += 1
@@ -309,7 +306,6 @@ def run_lynis_audit(status_gui):
 # START HARDENING PROCESS
 def start_hardening():
     def run_tasks():
-        print_ascii_art()
         exec_command("apt update && apt upgrade -y", status_gui)
         enforce_password_policies()
         exec_command("apt install -y fail2ban", status_gui)
@@ -335,7 +331,6 @@ def start_hardening():
 # MAIN
 def main():
     global status_gui  # global
-    print_ascii_art()
     status_gui = StatusGUI()  
     status_gui.root.after(100, start_hardening)
     status_gui.run()
