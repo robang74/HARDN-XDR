@@ -331,10 +331,10 @@ def apply_fixes(fixes):
     for fix in fixes:
         if "Suggestion" in fix:
             # LOGIC
-             status_gui)
+            
             pass
         elif "Warning" in fix:
-            # logic for only warnings
+            # LOGIC - for warnings
             pass
 
 def run_lynis_audit(status_gui):
