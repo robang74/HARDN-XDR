@@ -206,9 +206,20 @@ def configure_fail2ban():
     exec_command("systemctl", ["restart", "fail2ban"], status_gui)
     exec_command("systemctl", ["enable", "--now", "fail2ban"], status_gui)
     
-def run_lynis_audit():
+def run_lynis_audit(status_gui):
     status_gui.update_status("Running Lynis security audit...")
-    exec_command("lynis", ["audit", "system"], status_gui)    
+    result = subprocess.run(["lynis", "audit", "system", "--profile", "/etc/lynis/custom.prf"], capture_output=True, text=True)
+    with open("/var/log/lynis.log", "w") as log_file:
+        log_file.write(result.stdout)
+    lynis_score = None
+    for line in result.stdout.split("\n"):
+        if "Hardening index" in line:
+            lynis_score = line.split(":")[1].strip()
+            break
+    if lynis_score:
+        status_gui.update_status(f"Lynis score: {lynis_score}")
+        print(f"Lynis score: {lynis_score}")
+    return lynis_score
 
 import shutil
 import subprocess
@@ -319,32 +330,93 @@ def add_legal_banners(status_gui):
         f.write("Authorized uses only. All activity may be monitored and reported.\n")
     with open("/etc/issue.net", "w") as f:
         f.write("Authorized uses only. All activity may be monitored and reported.\n")
-
+# LYNIS LOGIC
 def parse_lynis_output():
     fixes = []
-    with open("/var/log/lynis_audit.log", "r") as log_file:
+    with open("/var/log/lynis.log", "r") as log_file:
         for line in log_file:
             if "Suggestion" in line or "Warning" in line:
                 fixes.append(line.strip())
     return fixes
+                
+def filter_and_sort_lynis_output():
+    warnings = []
+    suggestions = []
+    with open("/var/log/lynis.log", "r") as log_file:
+        for line in log_file:
+            if "Warning" in line:
+                warnings.append(line.strip())
+            elif "Suggestion" in line:
+                suggestions.append(line.strip())
+    # WARN
+    warnings.sort()
+    suggestions.sort()
+    return warnings + suggestions
 
+# LOGIC -fixes
 def apply_fixes(fixes):
     for fix in fixes:
         if "Suggestion" in fix:
-            if "Install a firewall" in fix:
-                exec_command("apt", ["install", "-y", "ufw"], status_gui)
-                exec_command("ufw", ["--force", "enable"], status_gui)
-            elif "Enable AppArmor" in fix:
-                exec_command("apt", ["install", "-y", "apparmor", "apparmor-profiles", "apparmor-utils"], status_gui)
-                exec_command("systemctl", ["enable", "--now", "apparmor"], status_gui)
-            # Add more logic for other suggestions
+            handle_suggestion(fix)
         elif "Warning" in fix:
-            if "Disable root login" in fix:
-                exec_command("sed", ["-i", "s/^PermitRootLogin.*/PermitRootLogin no/", "/etc/ssh/sshd_config"], status_gui)
-                exec_command("systemctl", ["restart", "ssh"], status_gui)
-            elif "Set a password for GRUB" in fix:
-                status_gui.get_grub_password()
-            # Add more logic for other warnings
+            handle_warning(fix)
+
+def handle_suggestion(fix):
+    if "Install a firewall" in fix:
+        exec_command("apt", ["install", "-y", "ufw"], status_gui)
+        exec_command("ufw", ["--force", "enable"], status_gui)
+    elif "Enable AppArmor" in fix:
+        exec_command("apt", ["install", "-y", "apparmor", "apparmor-profiles", "apparmor-utils"], status_gui)
+        exec_command("systemctl", ["enable", "--now", "apparmor"], status_gui)
+    elif "Install and configure AIDE" in fix:
+        enable_aide(status_gui)
+    elif "Configure password hashing rounds" in fix:
+        configure_password_hashing_rounds(status_gui)
+    elif "Add legal banners" in fix:
+        add_legal_banners(status_gui)
+    elif "Configure Postfix to hide mail_name" in fix:
+        configure_postfix(status_gui)
+    elif "Configure TCP Wrappers" in fix:
+        configure_tcp_wrappers()
+    elif "Configure Fail2Ban" in fix:
+        configure_fail2ban()
+    elif "Configure GRUB Security Settings" in fix:
+        configure_grub()
+    elif "Configure Firewall" in fix:
+        configure_firewall(status_gui)
+    elif "Configure AppArmor" in fix:
+        configure_apparmor()
+    elif "Configure Firejail" in fix:
+        configure_firejail()
+    elif "Enforce password policies" in fix:
+        enforce_password_policies()
+    elif "Remove ClamAV" in fix:
+        remove_clamav()
+    elif "Install Rootkit Hunter" in fix:
+        install_rkhunter()
+    elif "Install Linux Malware Detect" in fix:
+        install_maldetect()
+    elif "Setup Auto-Updates" in fix:
+        setup_auto_updates()
+    elif "Harden sysctl settings" in fix:
+        harden_sysctl(status_gui)
+    elif "Disable USB devices" in fix:
+        disable_usb(status_gui)
+    elif "Software Integrity Check" in fix:
+        software_integrity_check(status_gui)
+    elif "Run Security Audits" in fix:
+        run_audits(status_gui)
+    elif "Scan with ESET" in fix:
+        scan_with_eset(status_gui)
+    elif "Purge old packages" in fix:
+        purge_old_packages(status_gui)
+
+def handle_warning(fix):
+    if "Disable root login" in fix:
+        exec_command("sed", ["-i", "s/^PermitRootLogin.*/PermitRootLogin no/", "/etc/ssh/sshd_config"], status_gui)
+        exec_command("systemctl", ["restart", "ssh"], status_gui)
+    elif "Set a password for GRUB" in fix:
+        status_gui.get_grub_password()
 
 def prompt_user_for_fixes(fixes):
     if not fixes:
@@ -372,21 +444,6 @@ def prompt_user_for_fixes(fixes):
 
     no_button = ttk.Button(prompt_window, text="No", command=on_no)
     no_button.pack(side="right", padx=20, pady=20)
-
-def run_lynis_audit(status_gui):
-    status_gui.update_status("Running Lynis security audit...")
-    result = subprocess.run(["lynis", "audit", "system", "--quick"], capture_output=True, text=True)
-    with open("/var/log/lynis_audit.log", "w") as log_file:
-        log_file.write(result.stdout)
-    lynis_score = None
-    for line in result.stdout.split("\n"):
-        if "Hardening index" in line:
-            lynis_score = line.split(":")[1].strip()
-            break
-    if lynis_score:
-        status_gui.update_status(f"Lynis score: {lynis_score}")
-        print(f"Lynis score: {lynis_score}")
-    return lynis_score
 
 # CHECK ALL -  we needed this in the parent file
 def check_and_install_dependencies():
@@ -426,7 +483,6 @@ def start_hardening():
         enable_aide(status_gui)
         harden_sysctl(status_gui)
         disable_usb(status_gui)
-        status_gui.get_grub_password()
         exec_command("apt", ["install", "-y", "apparmor", "apparmor-profiles", "apparmor-utils"], status_gui)
         exec_command("systemctl", ["enable", "--now", "apparmor"], status_gui)
         configure_postfix(status_gui)
