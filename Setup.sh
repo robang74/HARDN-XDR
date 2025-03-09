@@ -7,34 +7,38 @@
 #       Author: Tim "TANK" Burns       #
 ########################################
 
-# Function to display scrolling text
+# Function to display scrolling text with color
 scroll_text() {
     local text="$1"
     local delay="${2:-0.1}"
+    local color="${3:-\e[0m}"  # Default to no color
+    echo -ne "${color}"  # Set the color
     for ((i=0; i<${#text}; i++)); do
-        echo -n "${text:$i:1}"
+        echo -ne "${text:$i:1}"
         sleep "$delay"
     done
-    echo
+    echo -e "\e[0m"  # Reset the color
 }
 
-# Display the banner with scrolling text
+# BANNER - scrolling text
 clear
-scroll_text "=======================================================" 0.02
-scroll_text "=======================================================" 0.02
-scroll_text "          HARDN - Security Setup for Debian            " 0.02
-scroll_text "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" 0.02
-scroll_text "    WARNING: This script will make changes to your     " 0.02
-scroll_text "    system. Please ensure you have a backup before     " 0.02
-scroll_text "              running this script.                     " 0.02
-scroll_text "=======================================================" 0.02
-scroll_text "=======================================================" 0.02
-scroll_text "                 HARDN - STARTING                      " 0.02
-scroll_text "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" 0.02
-scroll_text "  This script will install all required system packs   " 0.02
-scroll_text "  and security tools for a hardened Debian system.     " 0.02
-scroll_text "  Please ensure you have cloned the repo before hand.  " 0.02
-scroll_text "=======================================================" 0.02
+scroll_text "=======================================================" 0.02 $'\e[33m'
+scroll_text "=======================================================" 0.02 $'\e[33m'
+scroll_text "          HARDN - Security Setup for Debian            " 0.02 $'\e[92m'
+scroll_text "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" 0.02 $'\e[33m'
+scroll_text "    WARNING: This script will make changes to your     " 0.02 $'\e[92m'
+scroll_text "    system. Please ensure you have a backup before     " 0.02 $'\e[92m'
+scroll_text "              running this script.                     " 0.02 $'\e[92m'
+scroll_text "=======================================================" 0.02 $'\e[33m'
+scroll_text "=======================================================" 0.02 $'\e[33m'
+scroll_text "                 HARDN - STARTING                      " 0.02 $'\e[92m'
+scroll_text "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" 0.02 $'\e[33m'
+scroll_text "  This script will install all required system packs   " 0.02 $'\e[92m'
+scroll_text "  and security tools for a hardened Debian system.     " 0.02 $'\e[92m'
+scroll_text "  Please ensure you have cloned the repo before hand.  " 0.02 $'\e[92m'
+scroll_text "=======================================================" 0.02 $'\e[33m'
+
+
 # ENSURE - the script is run as root
 if [[ $EUID -ne 0 ]]; then
    echo "This script must be run as root. Use: sudo ./Setup.sh"
@@ -114,7 +118,13 @@ scroll_text "               [+] Installing LMD...                   " 0.02
 scroll_text "                                                       " 0.02
 scroll_text "=======================================================" 0.02
 # ADD lmd
-sudo apt-get install -y linuxmalwaredetect
+wget http://www.rfxn.com/downloads/maldetect-current.tar.gz
+tar -xzf maldetect-current.tar.gz
+cd maldetect-*
+sudo ./install.sh
+cd ..
+rm -rf maldetect-*
+rm maldetect-current.tar.gz
 
 
 scroll_text "=======================================================" 0.02
