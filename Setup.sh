@@ -179,7 +179,7 @@ scroll_text "=======================================================" 0.02
 apt update && apt upgrade -y || { echo "[-] System update failed."; exit 1; }
 
 # Install grs (commented out because the package is not available)
-# echo "[+] Installing grs..."
+# Cannot get it with an updated kernal package and pay for it
 # apt install -y grs
 
 scroll_text "=======================================================" 0.02
