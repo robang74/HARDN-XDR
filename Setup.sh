@@ -81,39 +81,89 @@ ufw allow out 67,68/udp
 # UFW - reload 
 ufw reload || { echo "[-] UFW failed to reload."; exit 1; }
 
-echo "[+] Setting up Fail2Ban..."
+scroll_text "=======================================================" 0.02
+scroll_text "                                                       " 0.02
+scroll_text "               [+] Setting up Fail2Ban...              " 0.02
+scroll_text "                                                       " 0.02
+scroll_text "=======================================================" 0.02
 systemctl enable --now fail2ban
 
-echo "[+] Setting up AppArmor..."
+scroll_text "=======================================================" 0.02
+scroll_text "                                                       " 0.02
+scroll_text "               [+] Setting up AppArmor...              " 0.02
+scroll_text "                                                       " 0.02
+scroll_text "=======================================================" 0.02
 systemctl enable --now apparmor
 
-# Installing ESET NOD32 Antivirus
-add-apt-repository -y ppa:ubuntu-eset/ppa
-apt update
-apt install -y eset-nod32
+# remove eset32
+# eset32 didnt work
+sudo rm /etc/apt/sources.list.d/ubuntu-eset-ppa.list
+sudo apt-get update
 
+scroll_text "=======================================================" 0.02
+scroll_text "                                                       " 0.02
+scroll_text "               [+] Installing chkrootkit...            " 0.02
+scroll_text "                                                       " 0.02
+scroll_text "=======================================================" 0.02
+# ADD CHROOTKIT
+sudo apt-get install -y chkrootkit
+
+scroll_text "=======================================================" 0.02
+scroll_text "                                                       " 0.02
+scroll_text "               [+] Installing LMD...                   " 0.02
+scroll_text "                                                       " 0.02
+scroll_text "=======================================================" 0.02
+# ADD lmd
+sudo apt-get install -y linuxmalwaredetect
+
+
+scroll_text "=======================================================" 0.02
+scroll_text "                                                       " 0.02
+scroll_text "               [+] Installing rkhunter...              " 0.02
+scroll_text "                                                       " 0.02
+scroll_text "=======================================================" 0.02
 # Installing rkhunter
 apt install -y rkhunter
 rkhunter --update
-rkhunter --propupd      
+rkhunter --propupd
 
-# Reloading AppArmor profiles
+scroll_text "=======================================================" 0.02
+scroll_text "                                                       " 0.02
+scroll_text "               [+] Reloading AppArmor...               " 0.02
+scroll_text "                                                       " 0.02
+scroll_text "=======================================================" 0.02
+# Reloading AppArmor 
 apparmor_parser -r /etc/apparmor.d/*
 
-# Configuring cron jobs
+scroll_text "=======================================================" 0.02
+scroll_text "                                                       " 0.02
+scroll_text "               [+] Configuring cron...                 " 0.02
+scroll_text "                                                       " 0.02
+scroll_text "=======================================================" 0.02
+
+# Configuring cron 
 touch /var/log/lynis_cron.log
 chmod 600 /var/log/lynis_cron.log
-crontab -l 2>/dev/null | grep -v "lynis audit system --cronjob" | grep -v "apt update && apt upgrade -y" | grep -v "/opt/eset/esets/sbin/esets_update" | crontab -
+crontab -l 2>/dev/null | grep -v "lynis audit system --cronjob" | grep -v "apt update && apt upgrade -y" | grep -v "/opt/eset/esets/sbin/esets_update" | grep -v "chkrootkit" | grep -v "maldet --update" | grep -v "maldet --scan-all" | crontab -
 crontab -l 2>/dev/null > mycron
 cat <<EOF >> mycron
 0 1 * * * lynis audit system --cronjob >> /var/log/lynis_cron.log 2>&1
 0 2 * * * apt update && apt upgrade -y
 0 3 * * * /opt/eset/esets/sbin/esets_update
+0 4 * * * chkrootkit
+0 5 * * * maldet --update
+0 6 * * * maldet --scan-all / >> /var/log/maldet_scan.log 2>&1
 EOF
 crontab mycron
 rm mycron
 
-# Disabling USB storage
+scroll_text "=======================================================" 0.02
+scroll_text "                                                       " 0.02
+scroll_text "               [+] Disabling USB...                    " 0.02
+scroll_text "                                                       " 0.02
+scroll_text "=======================================================" 0.02
+
+# Disabling USB 
 lsmod | grep usb_storage && echo "[-] Warning: USB storage is still active!" || echo "[+] USB storage successfully disabled."
 echo 'blacklist usb-storage' >> /etc/modprobe.d/usb-storage.conf
 modprobe -r usb-storage || echo "USB storage module in use, cannot unload."
