@@ -75,22 +75,20 @@ cd hardn
 apt update && apt install -y python3 python3-pip
 pip install -r requirements.txt
 ```
-### Install hardn system wide
-```bash
-pip install -e .
-```
-### HARDN
-```bash
-hardn
-```
-## To update system
-rerun
+### Install setup file
 ```bash
 sudo ./setup.sh
 ```
+### Run HARDN
+```bash
+sudo ./hardn.py
+```
+## Check lynis output
+The GUI Will show you the current system Lynis score
+
 ---
 ## Goals
-- Replacing ESET with `Legion` – A dedicated malware scanner optimized for Linux.
+- Replacing LMD with `Legion` – A dedicated malware scanner optimized for Linux.
 > [LEGION](https://github.com/opensource-for-freedom/LEGION.git)
 - Integrating Wazuh SIEM – Expanding system-wide monitoring for better incident response.
 - Test and implement GRS, to help fully secure the Kernal. 
