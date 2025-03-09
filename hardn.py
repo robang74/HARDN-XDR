@@ -24,10 +24,12 @@ def exec_command(command, args, status_gui=None):
         if status_gui:
             status_gui.update_status(f"Executing: {command} {' '.join(args)}")
         print(f"Executing: {command} {' '.join(args)}")
-        process = subprocess.run(
-            [command] + args, check=True, text=True,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=300  # Increased timeout to 300 seconds
-        )
+        if command == "apt" and "update" in args:
+            process = subprocess.run([command, "update"], check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=300)
+        elif command == "apt" and "upgrade" in args:
+            process = subprocess.run([command, "upgrade", "-y"], check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=300)
+        else:
+            process = subprocess.run([command] + args, check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=300)
         if status_gui:
             status_gui.update_status(f"Completed: {command} {' '.join(args)}")
         print(process.stdout)
@@ -122,6 +124,10 @@ class StatusGUI:
             self.status_text.set("Hardening complete!")
         self.log_text.insert(tk.END, f"Lynis score: {lynis_score}\n")
         self.log_text.see(tk.END)
+        
+        # Parse and prompt user for fixes from Lynis logs
+        fixes = parse_lynis_output()
+        prompt_user_for_fixes(fixes)
 
     def run(self):
         self.root.mainloop()
@@ -174,12 +180,11 @@ def install_rkhunter():
     exec_command("rkhunter", ["--update"], status_gui)
     exec_command("rkhunter", ["--propupd"], status_gui)
     
-def install_eset_nod32():
-    status_gui.update_status("Installing ESET NOD32 (ES32) Antivirus...")
-    exec_command("wget", ["-q", "https://download.eset.com/com/eset/apps/home/av/linux/latest/eset_nod32av_64bit.deb", "-O", "/tmp/eset.deb"], status_gui)
-    exec_command("dpkg", ["-i", "/tmp/eset.deb"], status_gui)
-    exec_command("apt", ["--fix-broken", "install", "-y"], status_gui)
-    exec_command("rm", ["-f", "/tmp/eset.deb"], status_gui)
+def install_maldetect():
+    status_gui.update_status("Installing Linux Malware Detect (Maldetect)...")
+    exec_command("apt", ["install", "-y", "maldetect"], status_gui)
+    exec_command("maldet", ["-u"], status_gui)
+    
 
 def setup_auto_updates():
     status_gui.update_status("Configuring Auto-Update for Security Packages...")
@@ -189,7 +194,7 @@ def setup_auto_updates():
         "0 1 * * * lynis audit system --cronjob >> /var/log/lynis_cron.log 2>&1"
     ]
     for job in cron_jobs:
-        exec_command("sh", ["-c", f"(crontab -l 2>/dev/null; echo '{job}') | crontab -"], status_gui)
+        exec_command("sh", ["-c", f"(crontab -l 2>/null; echo '{job}') | crontab -"], status_gui)
 
 def configure_tcp_wrappers(): # thank you Kiukcat :)
     status_gui.update_status("Configuring TCP Wrappers...")
@@ -326,22 +331,62 @@ def parse_lynis_output():
 def apply_fixes(fixes):
     for fix in fixes:
         if "Suggestion" in fix:
-            # LOGIC
-            pass
+            if "Install a firewall" in fix:
+                exec_command("apt", ["install", "-y", "ufw"], status_gui)
+                exec_command("ufw", ["--force", "enable"], status_gui)
+            elif "Enable AppArmor" in fix:
+                exec_command("apt", ["install", "-y", "apparmor", "apparmor-profiles", "apparmor-utils"], status_gui)
+                exec_command("systemctl", ["enable", "--now", "apparmor"], status_gui)
+            # Add more logic for other suggestions
         elif "Warning" in fix:
-            # LOGIC - for warnings
-            pass
+            if "Disable root login" in fix:
+                exec_command("sed", ["-i", "s/^PermitRootLogin.*/PermitRootLogin no/", "/etc/ssh/sshd_config"], status_gui)
+                exec_command("systemctl", ["restart", "ssh"], status_gui)
+            elif "Set a password for GRUB" in fix:
+                status_gui.get_grub_password()
+            # Add more logic for other warnings
+
+def prompt_user_for_fixes(fixes):
+    if not fixes:
+        return
+
+    def on_yes():
+        apply_fixes(fixes)
+        messagebox.showinfo("HARDN", "System secured based on Lynis audit recommendations.")
+        prompt_window.destroy()
+
+    def on_no():
+        messagebox.showinfo("HARDN", "No changes were made.")
+        prompt_window.destroy()
+
+    prompt_window = tk.Toplevel(status_gui.root)
+    prompt_window.title("Secure System")
+    prompt_window.geometry("400x200")
+    prompt_window.configure(bg='#333333')
+
+    prompt_label = ttk.Label(prompt_window, text="Do you want to secure your system based on Lynis audit recommendations?", background='#333333', foreground='white', wraplength=350)
+    prompt_label.pack(pady=20)
+
+    yes_button = ttk.Button(prompt_window, text="Yes", command=on_yes)
+    yes_button.pack(side="left", padx=20, pady=20)
+
+    no_button = ttk.Button(prompt_window, text="No", command=on_no)
+    no_button.pack(side="right", padx=20, pady=20)
 
 def run_lynis_audit(status_gui):
     status_gui.update_status("Running Lynis security audit...")
     result = subprocess.run(["lynis", "audit", "system", "--quick"], capture_output=True, text=True)
     with open("/var/log/lynis_audit.log", "w") as log_file:
         log_file.write(result.stdout)
+    lynis_score = None
     for line in result.stdout.split("\n"):
         if "Hardening index" in line:
             lynis_score = line.split(":")[1].strip()
-            return lynis_score
-    return None
+            break
+    if lynis_score:
+        status_gui.update_status(f"Lynis score: {lynis_score}")
+        print(f"Lynis score: {lynis_score}")
+    return lynis_score
 
 # CHECK ALL -  we needed this in the parent file
 def check_and_install_dependencies():
@@ -367,13 +412,17 @@ def check_and_install_dependencies():
 def start_hardening():
     def run_tasks():
         check_and_install_dependencies()
-        exec_command("apt", ["update", "&&", "apt", "upgrade", "-y"], status_gui)
+        exec_command("apt", ["update"], status_gui)
+        exec_command("apt", ["upgrade", "-y"], status_gui)
         enforce_password_policies()
         exec_command("apt", ["install", "-y", "fail2ban"], status_gui)
         exec_command("systemctl", ["enable", "--now", "fail2ban"], status_gui)
         configure_firewall(status_gui)
         exec_command("apt", ["install", "-y", "rkhunter"], status_gui)
-        exec_command("rkhunter", ["--update", "&&", "rkhunter", "--propupd"], status_gui)
+        exec_command("rkhunter", ["--update"], status_gui)
+        exec_command("rkhunter", ["--propupd"], status_gui)
+        install_maldetect()
+        exec_command("apt", ["install", "-y", "libpam-pwquality"], status_gui)
         enable_aide(status_gui)
         harden_sysctl(status_gui)
         disable_usb(status_gui)
@@ -381,12 +430,12 @@ def start_hardening():
         exec_command("apt", ["install", "-y", "apparmor", "apparmor-profiles", "apparmor-utils"], status_gui)
         exec_command("systemctl", ["enable", "--now", "apparmor"], status_gui)
         configure_postfix(status_gui)
-        purge_old_packages(status_gui)
+        exec_command("apt", ["autoremove", "-y"], status_gui)  # Use apt autoremove instead of aptitude
         configure_password_hashing_rounds(status_gui)
         add_legal_banners(status_gui)
         lynis_score = run_lynis_audit(status_gui)
         fixes = parse_lynis_output()
-        apply_fixes(fixes)
+        prompt_user_for_fixes(fixes)
         status_gui.complete(lynis_score)
     
     threading.Thread(target=run_tasks, daemon=True).start()
