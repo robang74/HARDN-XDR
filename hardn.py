@@ -8,6 +8,11 @@ from tkinter import ttk, messagebox
 from datetime import datetime
 import pexpect
 
+# Add the current directory to the Python path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from hardn_utils import parse_lynis_output, prompt_user_for_fixes
+
 def ensure_root():
     if os.geteuid() != 0:
         print("Restarting as root...")
@@ -59,14 +64,13 @@ def print_ascii_art():
              ░  ░  ░      ░  ░   ░        ░             ░ 
                                 ░                 
                 "HARDN" - The Linux Security Project
-                ----------------------------------------
-                "A single Debian tool to fully secure an 
-               OS using automation, monitoring, heuristics 
-                           and availability.
-                           
-                         DEV: Tim "Tank" Burns
-                             License: MIT
-                ----------------------------------------
+              ----------------------------------------
+              "A single Debian tool to fully secure an 
+             OS using automation, monitoring, heuristics 
+                        and availability.
+                      DEV: Tim "Tank" Burns
+                          License: MIT
+              ----------------------------------------
     """
     return art
 
@@ -161,8 +165,15 @@ def configure_apparmor():
 def configure_firejail():
     status_gui.update_status("Configuring Firejail for Application Sandboxing...")
     exec_command("apt", ["install", "-y", "firejail"], status_gui)
-    exec_command("firejail", ["--list"], status_gui)
     
+    browsers = ["firefox", "chromium-browser", "google-chrome", "brave-browser"]
+    for browser in browsers:
+        browser_path = shutil.which(browser)
+        if browser_path:
+            status_gui.update_status(f"Configuring Firejail for {browser}...")
+            exec_command("firejail", ["--private", browser], status_gui)
+            exec_command("firejail", ["--list"], status_gui)
+ # PASSWORDS           
 def enforce_password_policies():
     exec_command("apt", ["install", "-y", "libpam-pwquality"], status_gui)
     exec_command("sh", ["-c", "echo 'password requisite pam_pwquality.so retry=3 minlen=12 difok=3' >> /etc/pam.d/common-password"], status_gui)
@@ -182,23 +193,48 @@ def install_rkhunter():
     
 def install_maldetect():
     status_gui.update_status("Installing Linux Malware Detect (Maldetect)...")
-    exec_command("apt", ["install", "-y", "maldetect"], status_gui)
-    exec_command("maldet", ["-u"], status_gui)
-    
+    try:
+        exec_command("apt", ["install", "-y", "maldetect"], status_gui)
+        exec_command("maldet", ["-u"], status_gui)
+        status_gui.update_status("Maldetect installation and update completed successfully.")
+    except subprocess.CalledProcessError as e:
+        status_gui.update_status(f"Error installing Maldetect: {e.stderr}")
+        print(f"Error installing Maldetect: {e.stderr}")
+    except subprocess.TimeoutExpired:
+        status_gui.update_status("Command timed out: apt install maldetect or maldet -u")
+        print("Command timed out: apt install maldetect or maldet -u")
+    except Exception as e:
+        status_gui.update_status(f"Unexpected error: {str(e)}")
+        print(f"Unexpected error: {str(e)}")
 
 def setup_auto_updates():
     status_gui.update_status("Configuring Auto-Update for Security Packages...")
     cron_jobs = [
         "0 3 * * * /opt/eset/esets/sbin/esets_update",
         "0 2 * * * apt update && apt upgrade -y",
-        "0 1 * * * lynis audit system --cronjob >> /var/log/lynis_cron.log 2>&1"
+        "0 1 * * * lynis audit system --cronjob >> /var/log/lynis_cron.log 2>&1",
+        "0 4 * * * rkhunter --update && rkhunter --checkall --cronjob",
+        "0 5 * * * maldet -u && maldet -a /",
+        "0 6 * * * aide --check"
     ]
     for job in cron_jobs:
         exec_command("sh", ["-c", f"(crontab -l 2>/null; echo '{job}') | crontab -"], status_gui)
 
-def configure_tcp_wrappers(): # thank you Kiukcat :)
+def configure_tcp_wrappers():
     status_gui.update_status("Configuring TCP Wrappers...")
-    exec_command("apt", ["install", "-y", "tcpd"], status_gui)
+    try:
+        exec_command("apt", ["install", "-y", "tcpd"], status_gui)
+        with open("/etc/hosts.allow", "w") as f:
+            f.write("ALL: 127.0.0.1\n")
+        with open("/etc/hosts.deny", "w") as f:
+            f.write("ALL: ALL\n")
+        status_gui.update_status("TCP Wrappers configured successfully.")
+    except subprocess.CalledProcessError as e:
+        status_gui.update_status(f"Error configuring TCP Wrappers: {e.stderr}")
+        print(f"Error configuring TCP Wrappers: {e.stderr}")
+    except Exception as e:
+        status_gui.update_status(f"Unexpected error: {str(e)}")
+        print(f"Unexpected error: {str(e)}")
 
 def configure_fail2ban():
     status_gui.update_status("Setting up Fail2Ban...")
@@ -208,7 +244,7 @@ def configure_fail2ban():
     
 def run_lynis_audit(status_gui):
     status_gui.update_status("Running Lynis security audit...")
-    result = subprocess.run(["lynis", "audit", "system", "--profile", "/etc/lynis/custom.prf"], capture_output=True, text=True)
+    result = subprocess.run(["lynis", "audit", "system", "--profile", "/etc/lynis/custom.prf"], check=True, capture_output=True, text=True)
     with open("/var/log/lynis.log", "w") as log_file:
         log_file.write(result.stdout)
     lynis_score = None
@@ -296,6 +332,7 @@ def disable_usb(status_gui): # We can set this to just put in monitor mode*
     status_gui.update_status("Locking down USB devices...")
     exec_command("sh", ["-c", "echo 'blacklist usb-storage' >> /etc/modprobe.d/usb-storage.conf"], status_gui)
     exec_command("modprobe", ["-r", "usb-storage"], status_gui)
+    
 # if usb is in use it won't allow any changes 
 def software_integrity_check(status_gui):
     status_gui.update_status("Software Integrity Check...")
