@@ -3,15 +3,38 @@
 #            HARDN - Setup             #
 #  Please have repo cloned before hand #
 #       Installs + Pre-config          #
-#    Must have python loaded already   #
+#    Must have python-3 loaded already #
 #       Author: Tim "TANK" Burns       #
 ########################################
 
-set -e  
+# Function to display scrolling text
+scroll_text() {
+    local text="$1"
+    local delay="${2:-0.1}"
+    for ((i=0; i<${#text}; i++)); do
+        echo -n "${text:$i:1}"
+        sleep "$delay"
+    done
+    echo
+}
 
-echo "-------------------------------------------------------"
-echo "  HARDN - Security Setup for Debian, and for us all.   "
-echo "-------------------------------------------------------"
+# Display the banner with scrolling text
+clear
+scroll_text "=======================================================" 0.02
+scroll_text "=======================================================" 0.02
+scroll_text "          HARDN - Security Setup for Debian            " 0.02
+scroll_text "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" 0.02
+scroll_text "    WARNING: This script will make changes to your     " 0.02
+scroll_text "    system. Please ensure you have a backup before     " 0.02
+scroll_text "              running this script.                     " 0.02
+scroll_text "=======================================================" 0.02
+scroll_text "=======================================================" 0.02
+scroll_text "                 HARDN - STARTING                      " 0.02
+scroll_text "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" 0.02
+scroll_text "  This script will install all required system packs   " 0.02
+scroll_text "  and security tools for a hardened Debian system.     " 0.02
+scroll_text "  Please ensure you have cloned the repo before hand.  " 0.02
+scroll_text "=======================================================" 0.02
 # ENSURE - the script is run as root
 if [[ $EUID -ne 0 ]]; then
    echo "This script must be run as root. Use: sudo ./Setup.sh"
@@ -31,6 +54,12 @@ apt install -y ufw fail2ban apparmor apparmor-profiles apparmor-utils firejail t
 echo "[+] Installing pexpect using apt"
 apt install -y python3-pexpect
 
+scroll_text "=======================================================" 0.02
+scroll_text "                                                       " 0.02
+scroll_text "  HARDN - Installing System Packs and Security Tools   " 0.02
+scroll_text "                                                       " 0.02
+scroll_text "=======================================================" 0.02
+
 # SYSTEM PACKS
 echo "[+] Installing all needed system dependencies..."
 apt install -y \
@@ -46,8 +75,9 @@ apt install -y \
 ufw allow out 53,80,443/tcp
 ufw allow out 53,123/udp
 ufw allow out 67,68/udp  # because static Ip's are 1993
-ufw allow out 67,68/udp  
-ufw allow out icmp       
+ufw allow out 67,68/udp       
+
+
 # UFW - reload 
 ufw reload || { echo "[-] UFW failed to reload."; exit 1; }
 
@@ -58,11 +88,14 @@ echo "[+] Setting up AppArmor..."
 systemctl enable --now apparmor
 
 # Installing ESET NOD32 Antivirus
-eset_deb="/tmp/eset.deb"
-eset_url="https://download.eset.com/com/eset/apps/home/av/linux/latest/eset_nod32av_64bit.deb"
-wget -q "$eset_url" -O "$eset_deb" || { echo "[-] Failed to download ESET. Check URL."; exit 1; }
-dpkg -i "$eset_deb" || apt --fix-broken install -y
-rm -f "$eset_deb"
+add-apt-repository -y ppa:ubuntu-eset/ppa
+apt update
+apt install -y eset-nod32
+
+# Installing rkhunter
+apt install -y rkhunter
+rkhunter --update
+rkhunter --propupd      
 
 # Reloading AppArmor profiles
 apparmor_parser -r /etc/apparmor.d/*
@@ -85,15 +118,24 @@ lsmod | grep usb_storage && echo "[-] Warning: USB storage is still active!" || 
 echo 'blacklist usb-storage' >> /etc/modprobe.d/usb-storage.conf
 modprobe -r usb-storage || echo "USB storage module in use, cannot unload."
 
+
+scroll_text "=======================================================" 0.02
+scroll_text "                                                       " 0.02
+scroll_text "  HARDN - UPDATING SYSTEM PACKS and ADDING GRS         " 0.02
+scroll_text "                                                       " 0.02
+scroll_text "=======================================================" 0.02
+
 # Update system
 apt update && apt upgrade -y || { echo "[-] System update failed."; exit 1; }
 
-# Install grs
-echo "[+] Installing grs..."
-apt install -y grs
+# Install grs (commented out because the package is not available)
+# echo "[+] Installing grs..."
+# apt install -y grs
 
-echo "-------------------------------------"
-echo "[+] Setup complete!"
-echo "    Start HARDN using:"
-echo "    hardn"
-echo "-------------------------------------"
+scroll_text "=======================================================" 0.02
+scroll_text "             [+] HARDN - Setup Complete                " 0.02
+scroll_text "  Please ensure to configure UFW, Fail2Ban, AppArmor   " 0.02
+scroll_text "        and other security tools as needed.            " 0.02
+scroll_text "-------------------------------------------------------" 0.02
+scroll_text "  [+] Please reboot your system to apply changes       " 0.02
+scroll_text "=======================================================" 0.02
