@@ -25,7 +25,7 @@ echo "[+] Updating system packages..."
 apt update && apt install -y python3 python3-tk
 
 echo "[+] Installing required system dependencies..."
-apt install -y ufw fail2ban apparmor apparmor-profiles apparmor-utils firejail tcpd lynis debsums rkhunter libpam-pwquality libvirt-daemon-system libvirt-clients qemu-kvm docker.io docker-compose openssh-server
+apt install -y ufw fail2ban apparmor apparmor-profiles apparmor-utils firejail tcpd lynis debsums rkhunter libpam-pwquality libvirt-daemon-system libvirt-clients qemu-kvm docker.io docker-compose
 
 # Install pexpect using apt
 echo "[+] Installing pexpect using apt"
@@ -87,6 +87,10 @@ modprobe -r usb-storage || echo "USB storage module in use, cannot unload."
 
 # Update system
 apt update && apt upgrade -y || { echo "[-] System update failed."; exit 1; }
+
+# Install grs
+echo "[+] Installing grs..."
+apt install -y grs
 
 echo "-------------------------------------"
 echo "[+] Setup complete!"
