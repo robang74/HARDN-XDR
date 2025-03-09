@@ -171,7 +171,7 @@ modprobe -r usb-storage || echo "USB storage module in use, cannot unload."
 
 scroll_text "=======================================================" 0.02
 scroll_text "                                                       " 0.02
-scroll_text "  HARDN - UPDATING SYSTEM PACKS and ADDING GRS         " 0.02
+scroll_text "             HARDN - UPDATING SYSTEM PACKS             " 0.02
 scroll_text "                                                       " 0.02
 scroll_text "=======================================================" 0.02
 
