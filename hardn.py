@@ -8,10 +8,8 @@ from tkinter import ttk, messagebox
 from datetime import datetime
 import pexpect
 
-# Add the current directory to the Python path
+# PATh - python 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-from hardn_utils import parse_lynis_output, prompt_user_for_fixes
 
 def ensure_root():
     if os.geteuid() != 0:
@@ -368,7 +366,13 @@ def add_legal_banners(status_gui):
     with open("/etc/issue.net", "w") as f:
         f.write("Authorized uses only. All activity may be monitored and reported.\n")
 
+def parse_lynis_output():
+    # Dummy implementation
+    return []
 
+def prompt_user_for_fixes(fixes):
+    # Dummy implementation
+    print("Prompting user for fixes:", fixes)
 
 # CHECK ALL -  we needed this in the parent file
 def check_and_install_dependencies():
