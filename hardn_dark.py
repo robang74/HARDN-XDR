@@ -34,7 +34,7 @@ def run_command(command, description="", test_mode=False):
         log(f"[+] {description} executed successfully.")
     except subprocess.CalledProcessError as e:
         log(f"[-] ERROR: {description} failed: {e}")
-        exit(1)
+
 # BACKUP
 def backup_file(file_path, test_mode=False):
     """Backup a file before modification"""
@@ -47,6 +47,24 @@ def backup_file(file_path, test_mode=False):
             log(f"[+] Backup created: {backup_path}")
     else:
         log(f"[-] {file_path} does not exist. Skipping backup.")
+
+def restore_backup(file_path, test_mode=False):
+    """Restore a backup file"""
+    backup_path = f"{file_path}.bak"
+    if os.path.isfile(backup_path):
+        if test_mode:
+            log(f"[TEST MODE] Would restore backup for {file_path} from {backup_path}")
+        else:
+            shutil.copy(backup_path, file_path)
+            log(f"[+] Restored backup: {file_path}")
+    else:
+        log(f"[-] No backup found for {file_path}.")
+
+def check_root():
+    """Check if the script is run as root"""
+    if os.geteuid() != 0:
+        log("[-] This script must be run as root.")
+        exit(1)
 
 def check_compatibility():
     """Check if the system is Debian-based"""
@@ -108,7 +126,7 @@ def enable_selinux(test_mode=False):
         log("[+] SELinux is enforcing.")
     except subprocess.CalledProcessError:
         log("[-] SELinux is not installed.")
-# GRS CONF
+
 def enable_grsecurity(test_mode=False):
     """Enable grsecurity (if installed)"""
     log("[+] Enabling grsecurity...")
@@ -123,12 +141,17 @@ def enable_grsecurity(test_mode=False):
         run_command(f"echo '{setting}' | sudo tee -a /etc/sysctl.d/99-grsecurity.conf", f"Applied: {setting}", test_mode)
     run_command("sudo sysctl -p", "Loaded grsecurity settings", test_mode)
     
-    
 # MAC 
+def get_network_interfaces():
+    """Get network interfaces excluding loopback"""
+    result = subprocess.run(["ip", "-o", "link", "show"], capture_output=True, text=True)
+    interfaces = [line.split()[1].strip(':') for line in result.stdout.splitlines()]
+    return [iface for iface in interfaces if iface not in ["lo"]]
+
 def randomize_mac(test_mode=False):
     """Randomize MAC address for anonymity"""
     log("[+] Randomizing MAC addresses...")
-    interfaces = ["eth0", "wlan0"]
+    interfaces = get_network_interfaces()
     for interface in interfaces:
         run_command(f"sudo ip link set {interface} down", f"Disabling {interface}", test_mode)
         run_command(f"sudo macchanger -r {interface}", f"Randomizing MAC for {interface}", test_mode)
@@ -159,6 +182,7 @@ def setup_cron_job():
 
 # MAIN
 def main():
+    check_root()
     log("[+] Starting HARDN DARK - System Lockdown Initiated...")
     check_compatibility()
     disable_core_dumps()
