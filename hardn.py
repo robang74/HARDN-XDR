@@ -4,11 +4,10 @@ import sys
 import threading
 import shutil
 import tkinter as tk
-from tkinter import ttk, messagebox
-from datetime import datetime
+from tkinter import ttk
 import pexpect
 
-# Add the current directory to the Python path
+# Add 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 def ensure_root():
@@ -121,10 +120,6 @@ class StatusGUI:
             self.status_text.set("Hardening complete!")
         self.log_text.insert(tk.END, f"Lynis score: {lynis_score}\n")
         self.log_text.see(tk.END)
-        
-        # Parse and prompt user for fixes from Lynis logs
-        fixes = parse_lynis_output()
-        prompt_user_for_fixes(fixes)
 
     def run(self):
         self.root.mainloop()
@@ -147,96 +142,58 @@ class StatusGUI:
     def submit_password(self):
         self.grub_password = self.password_entry.get()
         self.password_window.destroy()
-        secure_grub(self)
+        self.root.quit()  # Exit the main loop to continue the script
 
 # SECURITY HARDENING FUNCTIONS
-
-def configure_apparmor():
+def configure_apparmor(status_gui):
     status_gui.update_status("Configuring AppArmor for Mandatory Access Control...")
     exec_command("apt", ["install", "-y", "apparmor", "apparmor-profiles", "apparmor-utils"], status_gui)
     exec_command("systemctl", ["enable", "--now", "apparmor"], status_gui)
-    
-    # Enforce 
-    profiles = [
-        "/etc/apparmor.d/usr.bin.firefox",
-        "/etc/apparmor.d/usr.sbin.mysqld",
-        "/etc/apparmor.d/usr.sbin.ntpd",
-        "/etc/apparmor.d/usr.sbin.tcpdump"
-    ]
-    
-    for profile in profiles:
-        exec_command("apparmor_parser", ["-r", profile], status_gui)
-    
-    # Restrict 
-    sensitive_dirs = ["/etc", "/var", "/usr", "/bin", "/sbin", "/lib", "/lib64", "/opt"]
-    for directory in sensitive_dirs:
-        with open(f"/etc/apparmor.d/local/{os.path.basename(directory)}", "w") as f:
-            f.write(f"{directory}/* r,\n")
-            f.write(f"{directory}/** rw,\n")
-        exec_command("apparmor_parser", ["-r", f"/etc/apparmor.d/local/{os.path.basename(directory)}"], status_gui)
-    
-    status_gui.update_status("AppArmor configuration completed successfully.")
 
-def configure_firejail():
+def configure_firejail(status_gui):
     status_gui.update_status("Configuring Firejail for Application Sandboxing...")
     exec_command("apt", ["install", "-y", "firejail"], status_gui)
     
-    # Create sandboxed and password protected folder
-    sandbox_folder = os.path.expanduser("~/HARDN_WEB_FILES")
-    if not os.path.exists(sandbox_folder):
-        os.makedirs(sandbox_folder)
-        exec_command("chmod", ["700", sandbox_folder], status_gui)
-        exec_command("chown", [f"{os.getlogin()}:{os.getlogin()}", sandbox_folder], status_gui)
-    
-    browsers = ["firefox", "chromium-browser", "google-chrome", "brave-browser", "TOR"]
+    browsers = ["firefox", "chromium-browser", "google-chrome", "brave-browser"]
     for browser in browsers:
         browser_path = shutil.which(browser)
         if browser_path:
             status_gui.update_status(f"Configuring Firejail for {browser}...")
-            # sandbox and push all downloads to local folder
-            exec_command("firejail", ["--private", "--whitelist=" + sandbox_folder, browser], status_gui)
-            exec_command("firejail", ["--list"], status_gui)
-            
-    # Scan system for all
-    additional_browsers = subprocess.run("ls /usr/bin | grep -E 'firefox|chrome|chromium|brave'", shell=True, capture_output=True, text=True).stdout.split()
-    for browser in additional_browsers:
-        if browser not in browsers:
-            status_gui.update_status(f"Configuring Firejail for {browser}...")
-            exec_command("firejail", ["--private", "--whitelist=" + sandbox_folder, browser], status_gui)
+            exec_command("firejail", ["--private", browser], status_gui)
             exec_command("firejail", ["--list"], status_gui)
 
-def enforce_password_policies():
+def enforce_password_policies(status_gui):
     exec_command("apt", ["install", "-y", "libpam-pwquality"], status_gui)
     exec_command("sh", ["-c", "echo 'password requisite pam_pwquality.so retry=3 minlen=12 difok=3' >> /etc/pam.d/common-password"], status_gui)
 
-def remove_clamav():
+def remove_clamav(status_gui):
     status_gui.update_status("Removing ClamAV...")
     exec_command("apt", ["remove", "--purge", "-y", "clamav", "clamav-daemon"], status_gui)
     exec_command("rm", ["-rf", "/var/lib/clamav"], status_gui)
 
-def install_rkhunter():
+def install_rkhunter(status_gui):
     status_gui.update_status("Installing Rootkit Hunter (rkhunter)...")
     exec_command("apt", ["install", "-y", "rkhunter"], status_gui)
     exec_command("rkhunter", ["--update"], status_gui)
     exec_command("rkhunter", ["--propupd"], status_gui)
 
-def install_maldetect():
+def install_maldetect(status_gui):
     status_gui.update_status("Installing Linux Malware Detect (Maldetect)...")
     try:
-        exec_command("apt", ["install", "-y", "maldet"], status_gui)
+        exec_command("apt", ["install", "-y", "maldetect"], status_gui)
         exec_command("maldet", ["-u"], status_gui)
         status_gui.update_status("Maldetect installation and update completed successfully.")
     except subprocess.CalledProcessError as e:
         status_gui.update_status(f"Error installing Maldetect: {e.stderr}")
         print(f"Error installing Maldetect: {e.stderr}")
     except subprocess.TimeoutExpired:
-        status_gui.update_status("Command timed out: apt install maldet or maldet -u")
-        print("Command timed out: apt install maldet or maldet -u")
+        status_gui.update_status("Command timed out: apt install maldetect or maldet -u")
+        print("Command timed out: apt install maldetect or maldet -u")
     except Exception as e:
         status_gui.update_status(f"Unexpected error: {str(e)}")
         print(f"Unexpected error: {str(e)}")
 
-def setup_auto_updates():
+def setup_auto_updates(status_gui):
     status_gui.update_status("Configuring Auto-Update for Security Packages...")
     cron_jobs = [
         "0 3 * * * /opt/eset/esets/sbin/esets_update",
@@ -248,8 +205,8 @@ def setup_auto_updates():
     ]
     for job in cron_jobs:
         exec_command("sh", ["-c", f"(crontab -l 2>/null; echo '{job}') | crontab -"], status_gui)
-        
-def configure_tcp_wrappers():
+
+def configure_tcp_wrappers(status_gui):
     status_gui.update_status("Configuring TCP Wrappers...")
     try:
         exec_command("apt", ["install", "-y", "tcpd"], status_gui)
@@ -264,91 +221,66 @@ def configure_tcp_wrappers():
     except Exception as e:
         status_gui.update_status(f"Unexpected error: {str(e)}")
         print(f"Unexpected error: {str(e)}")
-        
-   # F2B - strict 
-def configure_fail2ban():
+
+def configure_fail2ban(status_gui):
     status_gui.update_status("Setting up Fail2Ban...")
     exec_command("apt", ["install", "-y", "fail2ban"], status_gui)
     exec_command("systemctl", ["restart", "fail2ban"], status_gui)
     exec_command("systemctl", ["enable", "--now", "fail2ban"], status_gui)
-    
- 
-    fail2ban_config = """
-    [DEFAULT]
-    bantime = 1h
-    findtime = 10m
-    maxretry = 3
 
-    [sshd]
-    enabled = true
-    port = ssh
-    logpath = %(sshd_log)s
-    backend = %(sshd_backend)s
-    """
-    with open("/etc/fail2ban/jail.local", "w") as f:
-        f.write(fail2ban_config)
-    exec_command("systemctl", ["restart", "fail2ban"], status_gui)
-    
-# LYNIS
 def run_lynis_audit(status_gui):
     status_gui.update_status("Running Lynis security audit...")
-    result = subprocess.run(["lynis", "audit", "system", "--profile", "/etc/lynis/custom.prf"], check=True, capture_output=True, text=True)
-    with open("/var/log/lynis.log", "w") as log_file:
-        log_file.write(result.stdout)
-    lynis_score = None
-    for line in result.stdout.split("\n"):
-        if "Hardening index" in line:
-            lynis_score = line.split(":")[1].strip()
-            break
-    if lynis_score:
-        status_gui.update_status(f"Lynis score: {lynis_score}")
-        print(f"Lynis score: {lynis_score}")
-    return lynis_score
+    try:
+        process = subprocess.Popen(["sudo", "lynis", "audit", "system", "--profile", "/etc/lynis/custom.prf"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        for line in iter(process.stdout.readline, ''):
+            status_gui.update_status(line.strip())
+            print(line.strip())
+        process.stdout.close()
+        process.wait()
+        if process.returncode != 0:
+            raise subprocess.CalledProcessError(process.returncode, process.args)
+        with open("/var/log/lynis.log", "w") as log_file:
+            log_file.write(process.stdout.read())
+        lynis_score = None
+        for line in process.stdout.split("\n"):
+            if "Hardening index" in line:
+                lynis_score = line.split(":")[1].strip()
+                break
+        if lynis_score:
+            status_gui.update_status(f"Lynis score: {lynis_score}")
+            print(f"Lynis score: {lynis_score}")
+        return lynis_score
+    except subprocess.CalledProcessError as e:
+        status_gui.update_status(f"Error running Lynis audit: {e.stderr}")
+        print(f"Error running Lynis audit: {e.stderr}")
+    except Exception as e:
+        status_gui.update_status(f"Unexpected error: {str(e)}")
+        print(f"Unexpected error: {str(e)}")
 
-# GRUB
-def configure_grub():
+def configure_grub(status_gui):
     status_gui.update_status("Configuring GRUB Security Settings...")
-    
-    # Check if running inside a VM with UEFI
-    if os.path.exists("/sys/firmware/efi"):
-        status_gui.update_status("System is using UEFI. Proceeding with GRUB configuration...")
-        
-        grub_cmd = shutil.which("update-grub") or shutil.which("grub-mkconfig")
-        if grub_cmd:
-            try:
-                subprocess.run([grub_cmd, "-o", "/boot/grub/grub.cfg"], check=True, timeout=120)
-            except subprocess.TimeoutExpired:
-                status_gui.update_status("Command timed out: update-grub")
-        else:
-            print("Warning: GRUB update command not found. Skipping GRUB update.")
-            print("If running inside a VM, this may not be necessary.")
+    grub_cmd = shutil.which("update-grub") or shutil.which("grub-mkconfig")
+    if grub_cmd:
+        try:
+            subprocess.run([grub_cmd, "-o", "/boot/grub/grub.cfg"], check=True, timeout=120)
+        except subprocess.TimeoutExpired:
+            status_gui.update_status("Command timed out: update-grub")
     else:
-        status_gui.update_status("System is not using UEFI. Skipping GRUB configuration.")
-        
-# FIREWALL
+        print("Warning: GRUB update command not found. Skipping GRUB update.")
+        print("If running inside a VM, this may not be necessary.")
+
 def configure_firewall(status_gui):
     status_gui.update_status("Configuring Firewall...")
     exec_command("ufw", ["default", "deny", "incoming"], status_gui)
-    exec_command("ufw", ["default", "deny", "incoming"], status_gui)
-    exec_command("ufw", ["default", "deny", "outgoing"], status_gui)
-    
-    # Allow outgoing
-    exec_command("ufw", ["allow", "out", "80,443/tcp"], status_gui)  
-    exec_command("ufw", ["allow", "out", "53/udp"], status_gui)      
-    exec_command("ufw", ["allow", "out", "123/udp"], status_gui)     
-    
-    # Allow incoming + SSH (commented out for now)
-    # exec_command("ufw", ["allow", "in", "proto", "tcp", "from", "any", "to", "any", "port", "22", "comment", "SSH access"], status_gui)
-    exec_command("ufw", ["limit", "22/tcp"], status_gui)  
-    exec_command("ufw", ["allow", "in", "80,443/tcp"], status_gui)   
-    exec_command("ufw", ["allow", "out", "80,443/tcp"], status_gui)  
-    exec_command("ufw", ["allow", "out", "53/udp"], status_gui)      
-    # Enable 
+    exec_command("ufw", ["default", "allow", "outgoing"], status_gui)
+    exec_command("ufw", ["allow", "out", "80,443/tcp"], status_gui)
     exec_command("ufw", ["--force", "enable"], status_gui)
     exec_command("ufw", ["reload"], status_gui)
 
 def secure_grub(status_gui):
     status_gui.update_status("Configuring GRUB Secure Boot Password...")
+    status_gui.get_grub_password()
+    status_gui.root.mainloop()  # Wait for the user to enter the password
     grub_password = status_gui.grub_password
     child = pexpect.spawn("grub-mkpasswd-pbkdf2")
     child.expect("Enter password: ")
@@ -408,13 +340,10 @@ def configure_postfix(status_gui):
     status_gui.update_status("Configuring Postfix to hide mail_name...")
     exec_command("postconf", ["-e", "smtpd_banner=$myhostname ESMTP $mail_name"], status_gui)
     exec_command("systemctl", ["restart", "postfix"], status_gui)
-    
-# PURGE- packages and old kernal files
+
 def purge_old_packages(status_gui):
-    status_gui.update_status("Purging old/removed packages and kernel files...")
+    status_gui.update_status("Purging old/removed packages...")
     exec_command("apt", ["autoremove", "-y"], status_gui)
-    exec_command("apt", ["autoclean"], status_gui)
-    exec_command("apt", ["purge", "-y", "$(dpkg -l | grep '^rc' | awk '{print $2}')"], status_gui)
 
 def configure_password_hashing_rounds(status_gui):
     status_gui.update_status("Configuring password hashing rounds...")
@@ -428,8 +357,9 @@ def add_legal_banners(status_gui):
         f.write("Authorized uses only. All activity may be monitored and reported.\n")
     with open("/etc/issue.net", "w") as f:
         f.write("Authorized uses only. All activity may be monitored and reported.\n")
-    with open("/etc/motd", "w") as f:
-        f.write("Authorized uses only. All activity may be monitored and reported.\n")  
+    with open("/etc/motd", "w") as f:                                                       
+        f.write("Authorized uses only. All activity may be monitored and reported.\n")
+        
 
 # CHECK ALL -  we needed this in the parent file
 def check_and_install_dependencies():
@@ -457,14 +387,14 @@ def start_hardening():
         check_and_install_dependencies()
         exec_command("apt", ["update"], status_gui)
         exec_command("apt", ["upgrade", "-y"], status_gui)
-        enforce_password_policies()
+        enforce_password_policies(status_gui)
         exec_command("apt", ["install", "-y", "fail2ban"], status_gui)
         exec_command("systemctl", ["enable", "--now", "fail2ban"], status_gui)
         configure_firewall(status_gui)
         exec_command("apt", ["install", "-y", "rkhunter"], status_gui)
         exec_command("rkhunter", ["--update"], status_gui)
         exec_command("rkhunter", ["--propupd"], status_gui)
-        install_maldetect()
+        install_maldetect(status_gui)
         exec_command("apt", ["install", "-y", "libpam-pwquality"], status_gui)
         enable_aide(status_gui)
         harden_sysctl(status_gui)
@@ -472,12 +402,20 @@ def start_hardening():
         exec_command("apt", ["install", "-y", "apparmor", "apparmor-profiles", "apparmor-utils"], status_gui)
         exec_command("systemctl", ["enable", "--now", "apparmor"], status_gui)
         configure_postfix(status_gui)
-        exec_command("apt", ["autoremove", "-y"], status_gui)  # Use apt autoremove instead of aptitude
+        exec_command("apt", ["autoremove", "-y"], status_gui)  
         configure_password_hashing_rounds(status_gui)
         add_legal_banners(status_gui)
         lynis_score = run_lynis_audit(status_gui)
-        fixes = parse_lynis_output()
+        fixes = parse_lynis_output(status_gui)
         prompt_user_for_fixes(fixes)
+        
+        def parse_lynis_output():
+            # Placeholder
+            return []
+        
+        def prompt_user_for_fixes(fixes):
+            # Placeholder
+            pass
         status_gui.complete(lynis_score)
     
     threading.Thread(target=run_tasks, daemon=True).start()
