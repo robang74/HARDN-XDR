@@ -111,15 +111,16 @@ class StatusGUI:
         self.log_text.insert(tk.END, message + "\n")
         self.log_text.see(tk.END)
         self.root.update_idletasks()
-
+        
+# LYNIS - def, currently having gui output issue for scoring 
     def complete(self, lynis_score=None):
         self.progress["value"] = 100
-        if lynis_score:
-            self.status_text.set(f"Hardening complete! Lynis score: {lynis_score}")
-        else:
-            self.status_text.set("Hardening complete!")
+     if lynis_score is not None:
+        self.status_text.set(f"Hardening complete! Lynis score: {lynis_score}")
         self.log_text.insert(tk.END, f"Lynis score: {lynis_score}\n")
-        self.log_text.see(tk.END)
+    else:
+        self.status_text.set("Hardening complete! Lynis score unavailable")
+        self.log_text.insert(tk.END, "Lynis score unavailable\n")
 
     def run(self):
         self.root.mainloop()
