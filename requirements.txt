@@ -1,8 +1,10 @@
 # Now using apt to minimalize roadblocks 
 
 # GUI 
-tkinter  
+tkinter
 
 # Libraries for Net and pkg managing 
 requests
 setuptools
+pexpect
+python3-tk
