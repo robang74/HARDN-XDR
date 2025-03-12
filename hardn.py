@@ -7,7 +7,7 @@ import tkinter as tk
 from tkinter import ttk
 import pexpect
 
-# Add 
+# Add the current directory to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 def ensure_root():
@@ -231,18 +231,24 @@ def configure_fail2ban(status_gui):
 def run_lynis_audit(status_gui):
     status_gui.update_status("Running Lynis security audit...")
     try:
-        process = subprocess.Popen(["sudo", "lynis", "audit", "system", "--profile", "/etc/lynis/custom.prf"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        profile_path = "/etc/lynis/custom.prf"
+        command = ["sudo", "lynis", "audit", "system"]
+        if os.path.exists(profile_path):
+            command.extend(["--profile", profile_path])
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        output = []
         for line in iter(process.stdout.readline, ''):
             status_gui.update_status(line.strip())
             print(line.strip())
+            output.append(line.strip())
         process.stdout.close()
         process.wait()
         if process.returncode != 0:
             raise subprocess.CalledProcessError(process.returncode, process.args)
         with open("/var/log/lynis.log", "w") as log_file:
-            log_file.write(process.stdout.read())
+            log_file.write("\n".join(output))
         lynis_score = None
-        for line in process.stdout.split("\n"):
+        for line in output:
             if "Hardening index" in line:
                 lynis_score = line.split(":")[1].strip()
                 break
@@ -256,6 +262,7 @@ def run_lynis_audit(status_gui):
     except Exception as e:
         status_gui.update_status(f"Unexpected error: {str(e)}")
         print(f"Unexpected error: {str(e)}")
+
 
 def configure_grub(status_gui):
     status_gui.update_status("Configuring GRUB Security Settings...")
@@ -330,7 +337,16 @@ def software_integrity_check(status_gui):
 
 def run_audits(status_gui):
     status_gui.update_status("Running Security Audits...")
-    exec_command("lynis", ["audit", "system", "--quick"], status_gui)
+    lynis_cmd = shutil.which("lynis")
+    if not lynis_cmd:
+        status_gui.update_status("Lynis not found. Please ensure Lynis is installed.")
+        return
+    
+    profile_path = "/etc/lynis/custom.prf"
+    if not os.path.exists(profile_path):
+        profile_path = "default"
+    
+    exec_command(lynis_cmd, ["audit", "system", "--profile", profile_path], status_gui)
 
 def scan_with_eset(status_gui):
     status_gui.update_status("Scanning system with ESET NOD32 (ES32) Antivirus...")
@@ -406,16 +422,6 @@ def start_hardening():
         configure_password_hashing_rounds(status_gui)
         add_legal_banners(status_gui)
         lynis_score = run_lynis_audit(status_gui)
-        fixes = parse_lynis_output(status_gui)
-        prompt_user_for_fixes(fixes)
-        
-        def parse_lynis_output():
-            # Placeholder
-            return []
-        
-        def prompt_user_for_fixes(fixes):
-            # Placeholder
-            pass
         status_gui.complete(lynis_score)
     
     threading.Thread(target=run_tasks, daemon=True).start()
