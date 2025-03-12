@@ -84,7 +84,7 @@ sudo ./setup.sh
 sudo ./hardn.py
 ```
 ## Check lynis output
-The GUI Will show you the current system Lynis score
+The GUI Will show you the current system Lynis score (under development)
 
 ---
 ## Goals
