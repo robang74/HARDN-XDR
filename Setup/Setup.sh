@@ -6,6 +6,15 @@
 #    Must have python-3 loaded already #
 #       Author: Tim "TANK" Burns       #
 ########################################
+# Update and install dependencies
+# python3 and python3-pip installation moved to later in the script
+
+# Check if requirements.txt exists before attempting to install Python dependencies
+if [[ -f requirements.txt ]]; then
+    pip3 install -r requirements.txt
+else
+    echo "requirements.txt not found. Skipping Python dependencies installation."
+fi
 
 # Function to display scrolling text with color
 scroll_text() {
@@ -48,8 +57,13 @@ fi
 # INSTALL 
 cd "$(dirname "$0")"
 
-echo "[+] Updating system packages..."
-apt update && apt install -y python3 python3-tk
+update_system_packages() {
+    echo "[+] Updating system packages..."
+    apt update && apt upgrade -y && apt install -y python3 python3-tk
+}
+apt install -y ufw fail2ban apparmor apparmor-profiles apparmor-utils firejail tcpd lynis debsums rkhunter libpam-pwquality libvirt-daemon-system libvirt-clients qemu-kvm docker.io docker-compose openssh-server
+# Call the function to update system packages
+update_system_packages
 
 echo "[+] Installing required system dependencies..."
 apt install -y ufw fail2ban apparmor apparmor-profiles apparmor-utils firejail tcpd lynis debsums rkhunter libpam-pwquality libvirt-daemon-system libvirt-clients qemu-kvm docker.io docker-compose
@@ -59,14 +73,9 @@ echo "[+] Installing pexpect using apt"
 apt install -y python3-pexpect
 
 scroll_text "=======================================================" 0.02
-scroll_text "                                                       " 0.02
-scroll_text "  HARDN - Installing System Packs and Security Tools   " 0.02
-scroll_text "                                                       " 0.02
-scroll_text "=======================================================" 0.02
-
 # SYSTEM PACKS
 echo "[+] Installing all needed system dependencies..."
-apt install -y \
+# Already installed in the previous command
     ufw fail2ban apparmor apparmor-profiles apparmor-utils firejail \
     tcpd lynis debsums rkhunter libpam-pwquality \
     libvirt-daemon-system libvirt-clients qemu-kvm \
@@ -83,7 +92,7 @@ ufw allow out 67,68/udp
 
 
 # UFW - reload 
-ufw reload || { echo "[-] UFW failed to reload."; exit 1; }
+ufw allow out 67,68/udp  # Allow DHCP client traffic
 
 scroll_text "=======================================================" 0.02
 scroll_text "                                                       " 0.02
@@ -101,8 +110,10 @@ systemctl enable --now apparmor
 
 # remove eset32
 # eset32 didnt work
-sudo rm /etc/apt/sources.list.d/ubuntu-eset-ppa.list
-sudo apt-get update
+if [[ -f /etc/apt/sources.list.d/ubuntu-eset-ppa.list ]]; then
+    sudo rm /etc/apt/sources.list.d/ubuntu-eset-ppa.list
+fi
+# sudo apt-get update (already performed earlier)
 
 scroll_text "=======================================================" 0.02
 scroll_text "                                                       " 0.02
@@ -152,21 +163,30 @@ scroll_text "                                                       " 0.02
 scroll_text "=======================================================" 0.02
 
 # Configuring cron 
-touch /var/log/lynis_cron.log
+remove_existing_cron_jobs() {
+    crontab -l 2>/dev/null | grep -v "lynis audit system --cronjob" \
+    | grep -v "apt update && apt upgrade -y" \
+    | grep -v "/opt/eset/esets/sbin/esets_update" \
+    | grep -v "chkrootkit" \
+    | grep -v "maldet --update" \
+    | grep -v "maldet --scan-all" \
+    | crontab -
+}
+
+remove_existing_cron_jobs
 chmod 600 /var/log/lynis_cron.log
 crontab -l 2>/dev/null | grep -v "lynis audit system --cronjob" | grep -v "apt update && apt upgrade -y" | grep -v "/opt/eset/esets/sbin/esets_update" | grep -v "chkrootkit" | grep -v "maldet --update" | grep -v "maldet --scan-all" | crontab -
 crontab -l 2>/dev/null > mycron
 cat <<EOF >> mycron
 0 1 * * * lynis audit system --cronjob >> /var/log/lynis_cron.log 2>&1
-0 2 * * * apt update && apt upgrade -y
+# 0 2 * * * apt update && apt upgrade -y (already performed earlier)
 0 3 * * * /opt/eset/esets/sbin/esets_update
 0 4 * * * chkrootkit
 0 5 * * * maldet --update
 0 6 * * * maldet --scan-all / >> /var/log/maldet_scan.log 2>&1
-EOF
-crontab mycron
-rm mycron
-
+# Disabling USB 
+echo 'blacklist usb-storage' > /etc/modprobe.d/usb-storage.conf
+modprobe -r usb-storage && echo "[+] USB storage successfully disabled." || echo "[-] Warning: USB storage module in use, cannot unload."
 scroll_text "=======================================================" 0.02
 scroll_text "                                                       " 0.02
 scroll_text "               [+] Disabling USB...                    " 0.02
@@ -186,7 +206,7 @@ scroll_text "                                                       " 0.02
 scroll_text "=======================================================" 0.02
 
 # Update system
-apt update && apt upgrade -y || { echo "[-] System update failed."; exit 1; }
+update_system_packages || { echo "[-] System update failed."; exit 1; }
 
 # Install grs (commented out because the package is not available)
 # Cannot get it with an updated kernal package and pay for it

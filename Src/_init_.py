@@ -9,7 +9,7 @@ from .module2 import Class2, function2
 # Example import statements
 
 # Package-level variables
-__version__ = '1.5.6'
+__version__ = '1.0.0'
 __author__ = 'Tim Burns'
 
 # Init

@@ -115,12 +115,12 @@ class StatusGUI:
 # LYNIS - def, currently having gui output issue for scoring 
     def complete(self, lynis_score=None):
         self.progress["value"] = 100
-     if lynis_score is not None:
-        self.status_text.set(f"Hardening complete! Lynis score: {lynis_score}")
-        self.log_text.insert(tk.END, f"Lynis score: {lynis_score}\n")
-    else:
-        self.status_text.set("Hardening complete! Lynis score unavailable")
-        self.log_text.insert(tk.END, "Lynis score unavailable\n")
+        if lynis_score is not None:
+            self.status_text.set(f"Hardening complete! Lynis score: {lynis_score}")
+            self.log_text.insert(tk.END, f"Lynis score: {lynis_score}\n")
+        else:
+            self.status_text.set("Hardening complete! Lynis score unavailable")
+            self.log_text.insert(tk.END, "Lynis score unavailable\n")
 
     def run(self):
         self.root.mainloop()
@@ -256,6 +256,9 @@ def run_lynis_audit(status_gui):
         if lynis_score:
             status_gui.update_status(f"Lynis score: {lynis_score}")
             print(f"Lynis score: {lynis_score}")
+        else:
+            status_gui.update_status("Lynis score unavailable")
+            print("Lynis score unavailable")
         return lynis_score
     except subprocess.CalledProcessError as e:
         status_gui.update_status(f"Error running Lynis audit: {e.stderr}")
@@ -263,7 +266,6 @@ def run_lynis_audit(status_gui):
     except Exception as e:
         status_gui.update_status(f"Unexpected error: {str(e)}")
         print(f"Unexpected error: {str(e)}")
-
 
 def configure_grub(status_gui):
     status_gui.update_status("Configuring GRUB Security Settings...")
