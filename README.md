@@ -45,9 +45,9 @@ A single **Debian** tool to fully secure an OS using  automation, monitoring, he
 - SELinux, a security feature in Linux that enforces strict access controls to protect the system from unauthorized actions, even by compromised or malicious processes.
 - UFW,Easy-to-configure firewall utility.
 - TCP wrappers, to bundle outbound/ inbound and predefined rules monitoring tool, host based. 
-- Lynis Audit- to keep the base secure posture validated
+- Lynis Audit- to keep the base secure posture validated, and priovide a systems score.
 - AppArmor,Mandatory Access Control (MAC) for enforcing policies.
-- ESET_Nod32,(Soon to be replaced by Legion) Open-source antivirus software.
+- LMD (MALDETECT),(Soon to be replaced by Legion) Open-source antivirus software.
 - Firejail,Sandboxing tool for application isolation.
 - Cron, to keep it all omaintenance**
 - Pex*, used for GRUB password hash automation 
@@ -91,9 +91,9 @@ The GUI Will show you the current system Lynis score (under development)
 - Replacing LMD with `Legion` – A dedicated malware scanner optimized for Linux.
 > [LEGION](https://github.com/opensource-for-freedom/LEGION.git)
 - Integrating Wazuh SIEM – Expanding system-wide monitoring for better incident response.
-- Test and implement GRS, to help fully secure the Kernal. 
-- Expanding container security – Locking down VMs and containers without affecting performance.
-- Making it easier to use – Simplifying configurations for both end-users and professionals.
+- Test and implement GRS, to help fully secure the Kernal. ( Cost associated )
+- Expanding container security – Locking down VMs and containers without affecting performance and allow ssh referal. 
+- Making it easier to use – Simplifying configurations for both end-users and professionals through smooth UX engagement. 
 ---
 ## Contributing
 - Contact directly for access 
