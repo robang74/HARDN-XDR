@@ -13,6 +13,8 @@
 ===================== TESTING AND DEVELOPING ====================
 
 # HARDN
+
+## NEW UPDATE: pip install has been implimented to replace APT package install. 
 ---
 
 A single UX based **Debian** tool to fully secure an OS using  automation, monitoring, heuristics and availability.
