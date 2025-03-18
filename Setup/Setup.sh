@@ -6,7 +6,7 @@
 #    Must have python-3 loaded already #
 #       Author: Tim "TANK" Burns       #
 ########################################
-# ADDED PYTHON ENVIRONMENT - for Pip
+# ADDED PYTHON EVE FOR PIP INSTALL 
 # Ensure the script is run as root
 if [[ $EUID -ne 0 ]]; then
    echo "This script must be run as root. Use: sudo ./Setup.sh"
@@ -51,8 +51,8 @@ cd "$(dirname "$0")"
 update_system_packages() {
     echo "[+] Updating system packages..."
     apt update && apt upgrade -y
-    echo "[+] Installing Python 3 and pip..."
-    apt install -y python3 python3-pip python3-venv
+    echo "[+] Installing Python 3, pip, and python3-tk..."
+    apt install -y python3 python3-pip python3-tk
 }
 update_system_packages
 
