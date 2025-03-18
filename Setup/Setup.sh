@@ -6,14 +6,11 @@
 #    Must have python-3 loaded already #
 #       Author: Tim "TANK" Burns       #
 ########################################
-# Update and install dependencies
-# python3 and python3-pip installation moved to later in the script
-
-# Check if requirements.txt exists before attempting to install Python dependencies
-if [[ -f requirements.txt ]]; then
-    pip3 install -r requirements.txt
-else
-    echo "requirements.txt not found. Skipping Python dependencies installation."
+# ADDED PYTHON ENVIRONMENT - for Pip
+# Ensure the script is run as root
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root. Use: sudo ./Setup.sh"
+   exit 1
 fi
 
 # Function to display scrolling text with color
@@ -47,170 +44,116 @@ scroll_text "  and security tools for a hardened Debian system.     " 0.02 $'\e[
 scroll_text "  Please ensure you have cloned the repo before hand.  " 0.02 $'\e[92m'
 scroll_text "=======================================================" 0.02 $'\e[33m'
 
-
-# ENSURE - the script is run as root
-if [[ $EUID -ne 0 ]]; then
-   echo "This script must be run as root. Use: sudo ./Setup.sh"
-   exit 1
-fi
-
-# INSTALL 
+# Change to the script's directory
 cd "$(dirname "$0")"
 
+# Update system packages and install Python 3 and pip
 update_system_packages() {
     echo "[+] Updating system packages..."
-    apt update && apt upgrade -y && apt install -y python3 python3-tk
+    apt update && apt upgrade -y
+    echo "[+] Installing Python 3 and pip..."
+    apt install -y python3 python3-pip python3-venv
 }
-apt install -y ufw fail2ban apparmor apparmor-profiles apparmor-utils firejail tcpd lynis debsums rkhunter libpam-pwquality libvirt-daemon-system libvirt-clients qemu-kvm docker.io docker-compose openssh-server
-# Call the function to update system packages
 update_system_packages
 
-echo "[+] Installing required system dependencies..."
-apt install -y ufw fail2ban apparmor apparmor-profiles apparmor-utils firejail tcpd lynis debsums rkhunter libpam-pwquality libvirt-daemon-system libvirt-clients qemu-kvm docker.io docker-compose
-
-# Install pexpect using apt
-echo "[+] Installing pexpect using apt"
-apt install -y python3-pexpect
-
-scroll_text "=======================================================" 0.02
-# SYSTEM PACKS
-echo "[+] Installing all needed system dependencies..."
-# Already installed in the previous command
-    ufw fail2ban apparmor apparmor-profiles apparmor-utils firejail \
-    tcpd lynis debsums rkhunter libpam-pwquality \
-    libvirt-daemon-system libvirt-clients qemu-kvm \
-    docker.io docker-compose \
-    openssh-server
-
-# SECURITY 
-
-# UFW (update) 
-ufw allow out 53,80,443/tcp
-ufw allow out 53,123/udp
-ufw allow out 67,68/udp  # because static Ip's are 1993
-ufw allow out 67,68/udp       
-
-
-# UFW - reload 
-ufw allow out 67,68/udp  # Allow DHCP client traffic
-
-scroll_text "=======================================================" 0.02
-scroll_text "                                                       " 0.02
-scroll_text "               [+] Setting up Fail2Ban...              " 0.02
-scroll_text "                                                       " 0.02
-scroll_text "=======================================================" 0.02
-systemctl enable --now fail2ban
-
-scroll_text "=======================================================" 0.02
-scroll_text "                                                       " 0.02
-scroll_text "               [+] Setting up AppArmor...              " 0.02
-scroll_text "                                                       " 0.02
-scroll_text "=======================================================" 0.02
-systemctl enable --now apparmor
-
-# remove eset32
-# eset32 didnt work
-if [[ -f /etc/apt/sources.list.d/ubuntu-eset-ppa.list ]]; then
-    sudo rm /etc/apt/sources.list.d/ubuntu-eset-ppa.list
-fi
-# sudo apt-get update (already performed earlier)
-
-scroll_text "=======================================================" 0.02
-scroll_text "                                                       " 0.02
-scroll_text "               [+] Installing chkrootkit...            " 0.02
-scroll_text "                                                       " 0.02
-scroll_text "=======================================================" 0.02
-# ADD CHROOTKIT
-sudo apt-get install -y chkrootkit
-
-scroll_text "=======================================================" 0.02
-scroll_text "                                                       " 0.02
-scroll_text "               [+] Installing LMD...                   " 0.02
-scroll_text "                                                       " 0.02
-scroll_text "=======================================================" 0.02
-# ADD lmd
-wget http://www.rfxn.com/downloads/maldetect-current.tar.gz
-tar -xzf maldetect-current.tar.gz
-cd maldetect-*
-sudo ./install.sh
-cd ..
-rm -rf maldetect-*
-rm maldetect-current.tar.gz
-
-
-scroll_text "=======================================================" 0.02
-scroll_text "                                                       " 0.02
-scroll_text "               [+] Installing rkhunter...              " 0.02
-scroll_text "                                                       " 0.02
-scroll_text "=======================================================" 0.02
-# Installing rkhunter
-apt install -y rkhunter
-rkhunter --update
-rkhunter --propupd
-
-scroll_text "=======================================================" 0.02
-scroll_text "                                                       " 0.02
-scroll_text "               [+] Reloading AppArmor...               " 0.02
-scroll_text "                                                       " 0.02
-scroll_text "=======================================================" 0.02
-# Reloading AppArmor 
-apparmor_parser -r /etc/apparmor.d/*
-
-scroll_text "=======================================================" 0.02
-scroll_text "                                                       " 0.02
-scroll_text "               [+] Configuring cron...                 " 0.02
-scroll_text "                                                       " 0.02
-scroll_text "=======================================================" 0.02
-
-# Configuring cron 
-remove_existing_cron_jobs() {
-    crontab -l 2>/dev/null | grep -v "lynis audit system --cronjob" \
-    | grep -v "apt update && apt upgrade -y" \
-    | grep -v "/opt/eset/esets/sbin/esets_update" \
-    | grep -v "chkrootkit" \
-    | grep -v "maldet --update" \
-    | grep -v "maldet --scan-all" \
-    | crontab -
+# Create Python virtual environment and install dependencies
+setup_python_env() {
+    echo "[+] Setting up Python virtual environment..."
+    python3 -m venv venv
+    source venv/bin/activate
+    if [[ -f requirements.txt ]]; then
+        pip install -r requirements.txt
+    else
+        echo "requirements.txt not found. Skipping Python dependencies installation."
+    fi
 }
+setup_python_env
 
-remove_existing_cron_jobs
-chmod 600 /var/log/lynis_cron.log
-crontab -l 2>/dev/null | grep -v "lynis audit system --cronjob" | grep -v "apt update && apt upgrade -y" | grep -v "/opt/eset/esets/sbin/esets_update" | grep -v "chkrootkit" | grep -v "maldet --update" | grep -v "maldet --scan-all" | crontab -
-crontab -l 2>/dev/null > mycron
-cat <<EOF >> mycron
+# Install system security tools
+install_security_tools() {
+    echo "[+] Installing required system security tools..."
+    apt install -y ufw fail2ban apparmor apparmor-profiles apparmor-utils firejail tcpd lynis debsums rkhunter libpam-pwquality libvirt-daemon-system libvirt-clients qemu-kvm docker.io docker-compose openssh-server
+}
+install_security_tools
+
+# UFW configuration
+configure_ufw() {
+    echo "[+] Configuring UFW..."
+    ufw allow out 53,80,443/tcp
+    ufw allow out 53,123/udp
+    ufw allow out 67,68/udp
+    ufw reload
+}
+configure_ufw
+
+# Enable and start Fail2Ban and AppArmor services
+enable_services() {
+    echo "[+] Enabling and starting Fail2Ban and AppArmor services..."
+    systemctl enable --now fail2ban
+    systemctl enable --now apparmor
+}
+enable_services
+
+# Install chkrootkit, LMD, and rkhunter
+install_additional_tools() {
+    echo "[+] Installing chkrootkit, LMD, and rkhunter..."
+    apt install -y chkrootkit
+    wget http://www.rfxn.com/downloads/maldetect-current.tar.gz
+    tar -xzf maldetect-current.tar.gz
+    cd maldetect-*
+    sudo ./install.sh
+    cd ..
+    rm -rf maldetect-*
+    rm maldetect-current.tar.gz
+    apt install -y rkhunter
+    rkhunter --update
+    rkhunter --propupd
+}
+install_additional_tools
+
+# Reload AppArmor profiles
+reload_apparmor() {
+    echo "[+] Reloading AppArmor profiles..."
+    apparmor_parser -r /etc/apparmor.d/*
+}
+reload_apparmor
+
+# Configure cron jobs
+configure_cron() {
+    echo "[+] Configuring cron jobs..."
+    remove_existing_cron_jobs() {
+        crontab -l 2>/dev/null | grep -v "lynis audit system --cronjob" \
+        | grep -v "apt update && apt upgrade -y" \
+        | grep -v "/opt/eset/esets/sbin/esets_update" \
+        | grep -v "chkrootkit" \
+        | grep -v "maldet --update" \
+        | grep -v "maldet --scan-all" \
+        | crontab -
+    }
+    remove_existing_cron_jobs
+    crontab -l 2>/dev/null > mycron
+    cat <<EOF >> mycron
 0 1 * * * lynis audit system --cronjob >> /var/log/lynis_cron.log 2>&1
-# 0 2 * * * apt update && apt upgrade -y (already performed earlier)
 0 3 * * * /opt/eset/esets/sbin/esets_update
 0 4 * * * chkrootkit
 0 5 * * * maldet --update
 0 6 * * * maldet --scan-all / >> /var/log/maldet_scan.log 2>&1
-# Disabling USB 
-echo 'blacklist usb-storage' > /etc/modprobe.d/usb-storage.conf
-modprobe -r usb-storage && echo "[+] USB storage successfully disabled." || echo "[-] Warning: USB storage module in use, cannot unload."
-scroll_text "=======================================================" 0.02
-scroll_text "                                                       " 0.02
-scroll_text "               [+] Disabling USB...                    " 0.02
-scroll_text "                                                       " 0.02
-scroll_text "=======================================================" 0.02
+EOF
+    crontab mycron
+    rm mycron
+}
+configure_cron
 
-# Disabling USB 
-lsmod | grep usb_storage && echo "[-] Warning: USB storage is still active!" || echo "[+] USB storage successfully disabled."
-echo 'blacklist usb-storage' >> /etc/modprobe.d/usb-storage.conf
-modprobe -r usb-storage || echo "USB storage module in use, cannot unload."
+# Disable USB storage
+disable_usb_storage() {
+    echo "[+] Disabling USB storage..."
+    echo 'blacklist usb-storage' > /etc/modprobe.d/usb-storage.conf
+    modprobe -r usb-storage && echo "[+] USB storage successfully disabled." || echo "[-] Warning: USB storage module in use, cannot unload."
+}
+disable_usb_storage
 
-
-scroll_text "=======================================================" 0.02
-scroll_text "                                                       " 0.02
-scroll_text "             HARDN - UPDATING SYSTEM PACKS             " 0.02
-scroll_text "                                                       " 0.02
-scroll_text "=======================================================" 0.02
-
-# Update system
+# Update system packages again
 update_system_packages || { echo "[-] System update failed."; exit 1; }
-
-# Install grs (commented out because the package is not available)
-# Cannot get it with an updated kernal package and pay for it
-# apt install -y grs
 
 scroll_text "=======================================================" 0.02
 scroll_text "             [+] HARDN - Setup Complete                " 0.02
