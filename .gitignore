@@ -10,8 +10,10 @@ The following packages have unmet dependencies:
  libmariadb3 : Depends:
 
 
+I've made several changes to the unmet dependency hell, and nada
+add the gawk package to the script
+gawk mariadb-common mysql-common policycoreutils python-matplotlib-data unixodbc-common and gawk-doc
 
-add gawk to the pkgs to install.
 
 
 
