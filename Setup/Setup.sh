@@ -52,8 +52,8 @@ cd "$(dirname "$0")"
 # Update system packages and install Python 3 and pip
 update_system_packages() {
     printf "\e[1;31m[+] Updating system packages...\e[0m\n"
-    apt update && apt upgrade -y;
-    apt install -y gawk mariadb-common mysql-common policycoreutils python-matplotlib-data unixodbc-common gawk-doc
+   sudo apt update && apt upgrade -y;
+   sudo apt install -y gawk mariadb-common mysql-common policycoreutils python-matplotlib-data unixodbc-common gawk-doc
 
 }
 update_system_packages
@@ -65,36 +65,37 @@ checking_broken_packages() {
     # Check for broken dependencies
     if dpkg -l | grep -q "^..r"; then
         printf "\e[1;31m[+] Found broken packages, attempting to fix...\e[0m\n"
-        dpkg --configure -a
-        apt --fix-broken install -y
+       sudo  dpkg --configure -a
+       sudo apt --fix-broken install -y
     fi
 
     # Check for and handle unmet dependencies
     if apt-get check 2>&1 | grep -q "unmet dependencies"; then
         printf "\e[1;31m[+] Resolving unmet dependencies...\e[0m\n"
-        apt-get install -f -y
+       sudo apt-get install -f -y
     fi
 
     # Clean up package cache
-    apt autoclean -y
-    apt autoremove -y
+    sudo apt autoclean -y
+    sudo apt autoremove -y
 }
 checking_broken_packages
 
 
 install_essential_packages() {
     printf "\e[1;31m[+] Installing essential packages...\e[0m\n"
-    apt install -y python3-venv python3-pip
+    sudo apt install -y python3-venv python3-pip
 }
 install_essential_packages
+
 
 # Install and configure SELinux
 install_selinux() {
     printf "\e[1;31m[+] Installing and configuring SELinux...\e[0m\n"
 
     # Install SELinux packages
-    apt update
-    apt install -y selinux-utils selinux-basics policycoreutils policycoreutils-python-utils selinux-policy-default
+    sudo apt update
+    sudo apt install -y selinux-utils selinux-basics policycoreutils policycoreutils-python-utils selinux-policy-default
 
     # Check if installation was successful
     if ! command -v getenforce &> /dev/null; then
@@ -118,6 +119,7 @@ install_selinux() {
 }
 install_selinux
 
+
 # Create Python virtual environment and install dependencies
 setup_python_env() {
     printf "\e[1;31m[+] Setting up Python virtual environment...\e[0m\n"
@@ -131,19 +133,13 @@ setup_python_env() {
 }
 setup_python_env
 
-# Installing all the python dependencies and packages after successful virtual evn setup
-install_python_packages() {
-      pip install --upgrade pip
-      printf "\e[1;31m[+] Installing Python 3, pip, and python3-tk...\e[0m\n"
-      apt install -y python3 python3-pip python3-tk
-}
-install_python_packages
+
 
 
 # Install system security tools
 install_security_tools() {
     printf "\e[1;31m[+] Installing required system security tools...\e[0m\n"
-    apt install -y ufw fail2ban apparmor apparmor-profiles apparmor-utils firejail tcpd lynis debsums rkhunter libpam-pwquality libvirt-daemon-system libvirt-clients qemu-kvm docker.io docker-compose openssh-server
+    sudo apt install -y ufw fail2ban apparmor apparmor-profiles apparmor-utils firejail tcpd lynis debsums rkhunter libpam-pwquality libvirt-daemon-system libvirt-clients qemu-kvm docker.io docker-compose openssh-server
 }
 install_security_tools
 
@@ -160,8 +156,8 @@ configure_ufw
 # Enable and start Fail2Ban and AppArmor services
 enable_services() {
     printf "\e[1;31m[+] Enabling and starting Fail2Ban and AppArmor services...\e[0m\n"
-    systemctl enable --now fail2ban
-    systemctl enable --now apparmor
+    sudo systemctl enable --now fail2ban
+    sudo systemctl enable --now apparmor
 }
 enable_services
 
