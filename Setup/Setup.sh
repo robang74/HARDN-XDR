@@ -87,6 +87,35 @@ install_essential_packages() {
 }
 install_essential_packages
 
+# Install and configure SELinux
+install_selinux() {
+    echo "[+] Installing and configuring SELinux..."
+
+    # Install SELinux packages
+    apt update
+    apt install -y selinux-utils selinux-basics policycoreutils policycoreutils-python-utils selinux-policy-default
+
+    # Check if installation was successful
+    if ! command -v getenforce &> /dev/null; then
+        echo "[-] SELinux installation failed. Please check system logs."
+        return 1
+    fi
+
+    # Configure SELinux to enforcing mode
+    setenforce 1 2>/dev/null || echo "[-] Could not set SELinux to enforcing mode immediately"
+
+    # Configure SELinux to be enforcing at boot
+    if [ -f /etc/selinux/config ]; then
+        sed -i 's/SELINUX=disabled/SELINUX=enforcing/' /etc/selinux/config
+        sed -i 's/SELINUX=permissive/SELINUX=enforcing/' /etc/selinux/config
+        echo "[+] SELinux configured to enforcing mode at boot"
+    else
+        echo "[-] SELinux config file not found"
+    fi
+
+    echo "[+] SELinux installation and configuration completed"
+}
+install_selinux
 
 # Create Python virtual environment and install dependencies
 setup_python_env() {
@@ -99,7 +128,6 @@ setup_python_env() {
         echo "requirements.txt not found. Skipping Python dependencies installation."
     fi
 }
-setup_python_env
 
 
 # Installing all the python dependencies and packages after successful virtual evn setup
