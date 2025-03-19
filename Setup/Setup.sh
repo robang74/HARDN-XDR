@@ -58,7 +58,7 @@ update_system_packages() {
 }
 update_system_packages
 
-
+# check for and fix any broken packages
 checking_broken_packages() {
     printf "\e[1;31m[+] Checking and fixing any broken packages...\e[0m\n"
 
@@ -81,13 +81,11 @@ checking_broken_packages() {
 }
 checking_broken_packages
 
-
 install_essential_packages() {
     printf "\e[1;31m[+] Installing essential packages...\e[0m\n"
     sudo apt install -y python3-venv python3-pip
 }
 install_essential_packages
-
 
 # Install and configure SELinux
 install_selinux() {
@@ -119,7 +117,6 @@ install_selinux() {
 }
 install_selinux
 
-
 # Create Python virtual environment and install dependencies
 setup_python_env() {
     printf "\e[1;31m[+] Setting up Python virtual environment...\e[0m\n"
@@ -132,9 +129,6 @@ setup_python_env() {
     fi
 }
 setup_python_env
-
-
-
 
 # Install system security tools
 install_security_tools() {
