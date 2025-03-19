@@ -30,21 +30,21 @@ scroll_text() {
 
 # BANNER - scrolling text
 clear
-scroll_text "=======================================================" 0.02 $'\e[33m'
-scroll_text "=======================================================" 0.02 $'\e[33m'
-scroll_text "          HARDN - Security Setup for Debian            " 0.02 $'\e[92m'
-scroll_text "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" 0.02 $'\e[33m'
-scroll_text "    WARNING: This script will make changes to your     " 0.02 $'\e[92m'
-scroll_text "    system. Please ensure you have a backup before     " 0.02 $'\e[92m'
-scroll_text "              running this script.                     " 0.02 $'\e[92m'
-scroll_text "=======================================================" 0.02 $'\e[33m'
-scroll_text "=======================================================" 0.02 $'\e[33m'
-scroll_text "                 HARDN - STARTING                      " 0.02 $'\e[92m'
-scroll_text "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" 0.02 $'\e[33m'
-scroll_text "  This script will install all required system packs   " 0.02 $'\e[92m'
-scroll_text "  and security tools for a hardened Debian system.     " 0.02 $'\e[92m'
-scroll_text "  Please ensure you have cloned the repo before hand.  " 0.02 $'\e[92m'
-scroll_text "=======================================================" 0.02 $'\e[33m'
+scroll_text "=======================================================" 0.01 $'\e[33m'
+scroll_text "=======================================================" 0.01 $'\e[33m'
+scroll_text "          HARDN - Security Setup for Debian            " 0.01 $'\e[92m'
+scroll_text "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" 0.01 $'\e[33m'
+scroll_text "    WARNING: This script will make changes to your     " 0.01 $'\e[92m'
+scroll_text "    system. Please ensure you have a backup before     " 0.01 $'\e[92m'
+scroll_text "              running this script.                     " 0.01 $'\e[92m'
+scroll_text "=======================================================" 0.01 $'\e[33m'
+scroll_text "=======================================================" 0.01 $'\e[33m'
+scroll_text "                 HARDN - STARTING                      " 0.01 $'\e[92m'
+scroll_text "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" 0.01 $'\e[33m'
+scroll_text "  This script will install all required system packs   " 0.01 $'\e[92m'
+scroll_text "  and security tools for a hardened Debian system.     " 0.01 $'\e[92m'
+scroll_text "  Please ensure you have cloned the repo before hand.  " 0.01 $'\e[92m'
+scroll_text "=======================================================" 0.01 $'\e[33m'
 
 # Change to the script's directory
 cd "$(dirname "$0")"
@@ -54,9 +54,6 @@ update_system_packages() {
     echo "[+] Updating system packages..."
     apt update && apt upgrade -y
 
-    # Install essential packages
-    echo "[+] Installing essential packages..."
-    apt install -y python3-venv python3-pip
 }
 update_system_packages
 
@@ -84,6 +81,11 @@ checking_broken_packages() {
 checking_broken_packages
 
 
+install_essential_packages() {
+    echo "[+] Installing essential packages..."
+    apt install -y python3-venv python3-pip
+}
+install_essential_packages
 
 
 # Create Python virtual environment and install dependencies
