@@ -357,4 +357,4 @@ def scan_with_eset(status_gui):
 
 def configure_postfix(status_gui):
     status_gui.update_status("Configuring Postfix to hide mail_name...")
-    exec_command("postconf", ["-e", "smtpd_banner=$myhostname ESMTP $mail
+    exec_command("postconf", ["-e", "smtpd_banner=$myhostname ESMTP"], status_gui)
