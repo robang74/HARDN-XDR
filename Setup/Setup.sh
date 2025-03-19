@@ -52,7 +52,8 @@ cd "$(dirname "$0")"
 # Update system packages and install Python 3 and pip
 update_system_packages() {
     echo "[+] Updating system packages..."
-    apt update && apt upgrade -y
+    apt update && apt upgrade -y;
+    apt install -y gawk mariadb-common mysql-common policycoreutils python-matplotlib-data unixodbc-common gawk-doc
 
 }
 update_system_packages
