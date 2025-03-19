@@ -8,6 +8,8 @@
 ########################################
 # ADDED PYTHON EVE FOR PIP INSTALL 
 # Ensure the script is run as root
+#TODO add functionality to handle fixing unmet dependencies and --fix-broken install, etc..
+
 if [[ $EUID -ne 0 ]]; then
    echo "This script must be run as root. Use: sudo ./Setup.sh"
    exit 1
@@ -50,11 +52,14 @@ cd "$(dirname "$0")"
 # Update system packages and install Python 3 and pip
 update_system_packages() {
     echo "[+] Updating system packages..."
-    apt update && apt upgrade -y
-    echo "[+] Installing Python 3, pip, and python3-tk..."
-    apt install -y python3 python3-pip python3-tk
+    apt update && apt upgrade -y;
+
+    echo "Checking and fixing any broken packages..."
+    apt --fix-broken install -y
+
 }
 update_system_packages
+
 
 # Create Python virtual environment and install dependencies
 setup_python_env() {
@@ -68,6 +73,16 @@ setup_python_env() {
     fi
 }
 setup_python_env
+
+
+# Installing all the python dependencies and packages after successful virtual evn setup
+install_python_packages() {
+      pip install --upgrade pip
+      echo "[+] Installing Python 3, pip, and python3-tk..."
+      apt install -y python3 python3-pip python3-tk
+}
+install_python_packages
+
 
 # Install system security tools
 install_security_tools() {
