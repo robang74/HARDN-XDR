@@ -51,7 +51,7 @@ cd "$(dirname "$0")"
 
 # Update system packages and install Python 3 and pip
 update_system_packages() {
-    echo "[+] Updating system packages..."
+    printf "\e[1;31m[+] Updating system packages...\e[0m\n"
     apt update && apt upgrade -y;
     apt install -y gawk mariadb-common mysql-common policycoreutils python-matplotlib-data unixodbc-common gawk-doc
 
@@ -60,18 +60,18 @@ update_system_packages
 
 
 checking_broken_packages() {
-    echo "[+] Checking and fixing any broken packages..."
+    printf "\e[1;31m[+] Checking and fixing any broken packages...\e[0m\n"
 
     # Check for broken dependencies
     if dpkg -l | grep -q "^..r"; then
-        echo "[+] Found broken packages, attempting to fix..."
+        printf "\e[1;31m[+] Found broken packages, attempting to fix...\e[0m\n"
         dpkg --configure -a
         apt --fix-broken install -y
     fi
 
     # Check for and handle unmet dependencies
     if apt-get check 2>&1 | grep -q "unmet dependencies"; then
-        echo "[+] Resolving unmet dependencies..."
+        printf "\e[1;31m[+] Resolving unmet dependencies...\e[0m\n"
         apt-get install -f -y
     fi
 
@@ -83,14 +83,14 @@ checking_broken_packages
 
 
 install_essential_packages() {
-    echo "[+] Installing essential packages..."
+    printf "\e[1;31m[+] Installing essential packages...\e[0m\n"
     apt install -y python3-venv python3-pip
 }
 install_essential_packages
 
 # Install and configure SELinux
 install_selinux() {
-    echo "[+] Installing and configuring SELinux..."
+    printf "\e[1;31m[+] Installing and configuring SELinux...\e[0m\n"
 
     # Install SELinux packages
     apt update
@@ -98,43 +98,43 @@ install_selinux() {
 
     # Check if installation was successful
     if ! command -v getenforce &> /dev/null; then
-        echo "[-] SELinux installation failed. Please check system logs."
+        printf "\e[1;31m[-] SELinux installation failed. Please check system logs.\e[0m\n"
         return 1
     fi
 
     # Configure SELinux to enforcing mode
-    setenforce 1 2>/dev/null || echo "[-] Could not set SELinux to enforcing mode immediately"
+    setenforce 1 2>/dev/null || printf "\e[1;31m[-] Could not set SELinux to enforcing mode immediately\e[0m\n"
 
     # Configure SELinux to be enforcing at boot
     if [ -f /etc/selinux/config ]; then
         sed -i 's/SELINUX=disabled/SELINUX=enforcing/' /etc/selinux/config
         sed -i 's/SELINUX=permissive/SELINUX=enforcing/' /etc/selinux/config
-        echo "[+] SELinux configured to enforcing mode at boot"
+        printf "\e[1;31m[+] SELinux configured to enforcing mode at boot\e[0m\n"
     else
-        echo "[-] SELinux config file not found"
+        printf "\e[1;31m[-] SELinux config file not found\e[0m\n"
     fi
 
-    echo "[+] SELinux installation and configuration completed"
+    printf "\e[1;31m[+] SELinux installation and configuration completed\e[0m\n"
 }
 install_selinux
 
 # Create Python virtual environment and install dependencies
 setup_python_env() {
-    echo "[+] Setting up Python virtual environment..."
+    printf "\e[1;31m[+] Setting up Python virtual environment...\e[0m\n"
     python3 -m venv venv
     source venv/bin/activate
     if [[ -f requirements.txt ]]; then
         pip install -r requirements.txt
     else
-        echo "requirements.txt not found. Skipping Python dependencies installation."
+        printf "\e[1;31mRequirements.txt not found. Skipping Python dependencies installation.\e[0m\n"
     fi
 }
-
+setup_python_env
 
 # Installing all the python dependencies and packages after successful virtual evn setup
 install_python_packages() {
       pip install --upgrade pip
-      echo "[+] Installing Python 3, pip, and python3-tk..."
+      printf "\e[1;31m[+] Installing Python 3, pip, and python3-tk...\e[0m\n"
       apt install -y python3 python3-pip python3-tk
 }
 install_python_packages
@@ -142,14 +142,14 @@ install_python_packages
 
 # Install system security tools
 install_security_tools() {
-    echo "[+] Installing required system security tools..."
+    printf "\e[1;31m[+] Installing required system security tools...\e[0m\n"
     apt install -y ufw fail2ban apparmor apparmor-profiles apparmor-utils firejail tcpd lynis debsums rkhunter libpam-pwquality libvirt-daemon-system libvirt-clients qemu-kvm docker.io docker-compose openssh-server
 }
 install_security_tools
 
 # UFW configuration
 configure_ufw() {
-    echo "[+] Configuring UFW..."
+    printf "\e[1;31m[+] Configuring UFW...\e[0m\n"
     ufw allow out 53,80,443/tcp
     ufw allow out 53,123/udp
     ufw allow out 67,68/udp
@@ -159,7 +159,7 @@ configure_ufw
 
 # Enable and start Fail2Ban and AppArmor services
 enable_services() {
-    echo "[+] Enabling and starting Fail2Ban and AppArmor services..."
+    printf "\e[1;31m[+] Enabling and starting Fail2Ban and AppArmor services...\e[0m\n"
     systemctl enable --now fail2ban
     systemctl enable --now apparmor
 }
@@ -167,7 +167,7 @@ enable_services
 
 # Install chkrootkit, LMD, and rkhunter
 install_additional_tools() {
-    echo "[+] Installing chkrootkit, LMD, and rkhunter..."
+    printf "\e[1;31m[+] Installing chkrootkit, LMD, and rkhunter...\e[0m\n"
     apt install -y chkrootkit
     wget http://www.rfxn.com/downloads/maldetect-current.tar.gz
     tar -xzf maldetect-current.tar.gz
@@ -184,14 +184,14 @@ install_additional_tools
 
 # Reload AppArmor profiles
 reload_apparmor() {
-    echo "[+] Reloading AppArmor profiles..."
+    printf "\e[1;31m[+] Reloading AppArmor profiles...\e[0m\n"
     apparmor_parser -r /etc/apparmor.d/*
 }
 reload_apparmor
 
 # Configure cron jobs
 configure_cron() {
-    echo "[+] Configuring cron jobs..."
+    printf "\e[1;31m[+] Configuring cron jobs...\e[0m\n"
     remove_existing_cron_jobs() {
         crontab -l 2>/dev/null | grep -v "lynis audit system --cronjob" \
         | grep -v "apt update && apt upgrade -y" \
@@ -217,14 +217,14 @@ configure_cron
 
 # Disable USB storage
 disable_usb_storage() {
-    echo "[+] Disabling USB storage..."
+    printf "\e[1;31m[+] Disabling USB storage...\e[0m\n"
     echo 'blacklist usb-storage' > /etc/modprobe.d/usb-storage.conf
-    modprobe -r usb-storage && echo "[+] USB storage successfully disabled." || echo "[-] Warning: USB storage module in use, cannot unload."
+    modprobe -r usb-storage && printf "\e[1;31m[+] USB storage successfully disabled.\e[0m\n" || printf "\e[1;31m[-] Warning: USB storage module in use, cannot unload.\e[0m\n"
 }
 disable_usb_storage
 
 # Update system packages again
-update_system_packages || { echo "[-] System update failed."; exit 1; }
+update_system_packages || { printf "\e[1;31m[-] System update failed.\e[0m\n"; exit 1; }
 
 scroll_text "=======================================================" 0.02
 scroll_text "             [+] HARDN - Setup Complete                " 0.02
