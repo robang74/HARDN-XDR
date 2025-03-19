@@ -18,7 +18,7 @@ fi
 # Function to display scrolling text with color
 scroll_text() {
     local text="$1"
-    local delay="${2:-0.05}"
+    local delay="${2:-0.01}"
     local color="${3:-\e[0m}"  # Default to no color
     echo -ne "${color}"  # Set the color
     for ((i=0; i<${#text}; i++)); do
@@ -54,21 +54,35 @@ update_system_packages() {
     echo "[+] Updating system packages..."
     apt update && apt upgrade -y
 
-
+    # Install essential packages
+    echo "[+] Installing essential packages..."
+    apt install -y python3-venv python3-pip
 }
 update_system_packages
 
 
 checking_broken_packages() {
-    echo "Checking and fixing any broken packages..."
-    apt --fix-broken install -y
+    echo "[+] Checking and fixing any broken packages..."
+
+    # Check for broken dependencies
+    if dpkg -l | grep -q "^..r"; then
+        echo "[+] Found broken packages, attempting to fix..."
+        dpkg --configure -a
+        apt --fix-broken install -y
+    fi
+
+    # Check for and handle unmet dependencies
+    if apt-get check 2>&1 | grep -q "unmet dependencies"; then
+        echo "[+] Resolving unmet dependencies..."
+        apt-get install -f -y
+    fi
+
+    # Clean up package cache
     apt autoclean -y
+    apt autoremove -y
 }
 checking_broken_packages
 
-# Update system packages and install Python 3 and pip
-echo "Attempting full system update again..due to broken pkgs..""
-update_system_packages
 
 
 
