@@ -18,7 +18,7 @@ fi
 # Function to display scrolling text with color
 scroll_text() {
     local text="$1"
-    local delay="${2:-0.1}"
+    local delay="${2:-0.05}"
     local color="${3:-\e[0m}"  # Default to no color
     echo -ne "${color}"  # Set the color
     for ((i=0; i<${#text}; i++)); do
@@ -52,13 +52,24 @@ cd "$(dirname "$0")"
 # Update system packages and install Python 3 and pip
 update_system_packages() {
     echo "[+] Updating system packages..."
-    apt update && apt upgrade -y;
+    apt update && apt upgrade -y
 
-    echo "Checking and fixing any broken packages..."
-    apt --fix-broken install -y
 
 }
 update_system_packages
+
+
+checking_broken_packages() {
+    echo "Checking and fixing any broken packages..."
+    apt --fix-broken install -y
+    apt autoclean -y
+}
+checking_broken_packages
+
+# Update system packages and install Python 3 and pip
+echo "Attempting full system update again..due to broken pkgs..""
+update_system_packages
+
 
 
 # Create Python virtual environment and install dependencies
