@@ -38,10 +38,10 @@ check_pkgdeps
 
 
 # Function to trim brackets and whitespace
-trim_bracks() {
-    sed 's/\s//g;s/<[^>]*>//g'
-}
-trim_bracks
+#trim_bracks() {
+#    sed 's/\s//g;s/<[^>]*>//g'
+#}
+#trim_bracks
 
 
 # Function to offer resolving issues
@@ -52,8 +52,10 @@ offer_to_resolve_issues() {
     echo
     read -p "Do you want to resolve these dependencies? (y/n): " answer
     if [[ $answer =~ ^[Yy]$ ]]; then
-        echo "$deps_to_resolve" | trim_bracks > dependencies_to_resolve.txt
+        echo "$deps_to_resolve" | sed 's/\s//g;s/<[^>]*>//g' >  dependencies_to_resolve.txt
         echo "List of dependencies to resolve saved in dependencies_to_resolve.txt"
+        #echo "$deps_to_resolve" | trim_bracks > dependencies_to_resolve.txt
+        #echo "List of dependencies to resolve saved in dependencies_to_resolve.txt"
     else
         echo "No action taken."
     fi
@@ -118,6 +120,8 @@ install_selinux
 # Create Python virtual environment and install dependencies
 setup_python_env() {
     printf "\e[1;31m[+] Setting up Python virtual environment...\e[0m\n"
+    python3 --version
+    sudo apt install python3.11-venv
     python3 -m venv venv
     # wait 5 seconds before: source venv/bin/activate
     sleep 5
