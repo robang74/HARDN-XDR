@@ -1,91 +1,88 @@
-#!/bin/bash
-########################################
-#            HARDN - Setup             #
-#  Please have repo cloned before hand #
-#       Installs + Pre-config          #
-#    Must have python-3 loaded already #
-#       Author: Tim "TANK" Burns       #
-########################################
-# ADDED PYTHON EVE FOR PIP INSTALL 
-# Ensure the script is run as root
-#TODO add functionality to handle fixing unmet dependencies and --fix-broken install, etc..
+#!/usr/bin/env bash
 
+# ADDED PYTHON EVE FOR PIP INSTALL
+# Ensure the script is run as root
+# TODO add functionality to handle fixing unmet dependencies and --fix-broken install, and add the requirements.txt to this dir
 if [[ $EUID -ne 0 ]]; then
    echo "This script must be run as root. Use: sudo ./Setup.sh"
    exit 1
 fi
 
-# Function to display scrolling text with color
-scroll_text() {
-    local text="$1"
-    local delay="${2:-0.01}"
-    local color="${3:-\e[0m}"  # Default to no color
-    echo -ne "${color}"  # Set the color
-    for ((i=0; i<${#text}; i++)); do
-        echo -ne "${text:$i:1}"
-        sleep "$delay"
-    done
-    echo -e "\e[0m"  # Reset the color
-}
-
-# BANNER - scrolling text
-clear
-scroll_text "=======================================================" 0.01 $'\e[33m'
-scroll_text "=======================================================" 0.01 $'\e[33m'
-scroll_text "          HARDN - Security Setup for Debian            " 0.01 $'\e[92m'
-scroll_text "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" 0.01 $'\e[33m'
-scroll_text "    WARNING: This script will make changes to your     " 0.01 $'\e[92m'
-scroll_text "    system. Please ensure you have a backup before     " 0.01 $'\e[92m'
-scroll_text "              running this script.                     " 0.01 $'\e[92m'
-scroll_text "=======================================================" 0.01 $'\e[33m'
-scroll_text "=======================================================" 0.01 $'\e[33m'
-scroll_text "                 HARDN - STARTING                      " 0.01 $'\e[92m'
-scroll_text "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" 0.01 $'\e[33m'
-scroll_text "  This script will install all required system packs   " 0.01 $'\e[92m'
-scroll_text "  and security tools for a hardened Debian system.     " 0.01 $'\e[92m'
-scroll_text "  Please ensure you have cloned the repo before hand.  " 0.01 $'\e[92m'
-scroll_text "=======================================================" 0.01 $'\e[33m'
-
-# Change to the script's directory
-cd "$(dirname "$0")"
-
-# Update system packages and install Python 3 and pip
 update_system_packages() {
     printf "\e[1;31m[+] Updating system packages...\e[0m\n"
-   sudo apt update && apt upgrade -y;
-   sudo apt install -y gawk mariadb-common mysql-common policycoreutils python-matplotlib-data unixodbc-common gawk-doc
-
+    sudo apt update && apt upgrade -y;
 }
 update_system_packages
 
-# check for and fix any broken packages
-checking_broken_packages() {
-    printf "\e[1;31m[+] Checking and fixing any broken packages...\e[0m\n"
 
-    # Check for broken dependencies
-    if dpkg -l | grep -q "^..r"; then
-        printf "\e[1;31m[+] Found broken packages, attempting to fix...\e[0m\n"
-       sudo  dpkg --configure -a
-       sudo apt --fix-broken install -y
-    fi
+# Check for package dependencies
+pkgdeps=(
+    gawk
+    mariadb-common
+    mysql-common
+    policycoreutils
+    python-matplotlib-data
+    unixodbc-common
+    gawk-doc
+)
 
-    # Check for and handle unmet dependencies
-    if apt-get check 2>&1 | grep -q "unmet dependencies"; then
-        printf "\e[1;31m[+] Resolving unmet dependencies...\e[0m\n"
-       sudo apt-get install -f -y
-    fi
-
-    # Clean up package cache
-    sudo apt autoclean -y
-    sudo apt autoremove -y
+# Function to check package dependencies
+check_pkgdeps() {
+    for pkg in "${pkgdeps[@]}"; do
+        echo "Package: $pkg"
+        apt-cache depends "$pkg" | grep -E '^\s*(PreDepends|Depends|Conflicts):'
+        echo  # Add a blank line between packages
+    done
 }
-checking_broken_packages
+check_pkgdeps
 
-install_essential_packages() {
-    printf "\e[1;31m[+] Installing essential packages...\e[0m\n"
-    sudo apt install -y python3-venv python3-pip
+
+# Function to trim brackets and whitespace
+trim_bracks() {
+    sed 's/\s//g;s/<[^>]*>//g'
 }
-install_essential_packages
+trim_bracks
+
+
+# Function to offer resolving issues
+offer_to_resolve_issues() {
+    local deps_to_resolve="$1"
+    echo "Dependencies to resolve:"
+    echo "$deps_to_resolve"
+    echo
+    read -p "Do you want to resolve these dependencies? (y/n): " answer
+    if [[ $answer =~ ^[Yy]$ ]]; then
+        echo "$deps_to_resolve" | trim_bracks > dependencies_to_resolve.txt
+        echo "List of dependencies to resolve saved in dependencies_to_resolve.txt"
+    else
+        echo "No action taken."
+    fi
+}
+offer_to_resolve_issues
+
+
+# Main execution
+deps_and_conflicts=$(check_pkgdeps)
+echo "All dependencies and conflicts:"
+echo "$deps_and_conflicts"
+echo
+
+# Extract only the lines prefixed with "Depends"
+depends_only=$(echo "$deps_and_conflicts" | grep -E '^\s*Depends:')
+
+if [ -n "$depends_only" ]; then
+    echo "Found dependencies:"
+    echo "$depends_only"
+    echo
+    read -p "Do you want to offer resolving these dependencies? (y/n): " offer_answer
+    if [[ $offer_answer =~ ^[Yy]$ ]]; then
+        offer_to_resolve_issues "$depends_only"
+        sudo apt install $depends_only -y
+    else
+        echo "Skipping dependency resolution."
+    fi
+fi
+
 
 # Install and configure SELinux
 install_selinux() {
@@ -117,10 +114,13 @@ install_selinux() {
 }
 install_selinux
 
+
 # Create Python virtual environment and install dependencies
 setup_python_env() {
     printf "\e[1;31m[+] Setting up Python virtual environment...\e[0m\n"
     python3 -m venv venv
+    # wait 5 seconds before: source venv/bin/activate
+    sleep 5
     source venv/bin/activate
     if [[ -f requirements.txt ]]; then
         pip install -r requirements.txt
@@ -130,12 +130,14 @@ setup_python_env() {
 }
 setup_python_env
 
+
 # Install system security tools
 install_security_tools() {
     printf "\e[1;31m[+] Installing required system security tools...\e[0m\n"
     sudo apt install -y ufw fail2ban apparmor apparmor-profiles apparmor-utils firejail tcpd lynis debsums rkhunter libpam-pwquality libvirt-daemon-system libvirt-clients qemu-kvm docker.io docker-compose openssh-server
 }
 install_security_tools
+
 
 # UFW configuration
 configure_ufw() {
@@ -147,6 +149,7 @@ configure_ufw() {
 }
 configure_ufw
 
+
 # Enable and start Fail2Ban and AppArmor services
 enable_services() {
     printf "\e[1;31m[+] Enabling and starting Fail2Ban and AppArmor services...\e[0m\n"
@@ -155,15 +158,16 @@ enable_services() {
 }
 enable_services
 
+
 # Install chkrootkit, LMD, and rkhunter
 install_additional_tools() {
     printf "\e[1;31m[+] Installing chkrootkit, LMD, and rkhunter...\e[0m\n"
     apt install -y chkrootkit
     wget http://www.rfxn.com/downloads/maldetect-current.tar.gz
     tar -xzf maldetect-current.tar.gz
-    cd maldetect-*
+    cd maldetect-* || return
     sudo ./install.sh
-    cd ..
+    cd .. || return
     rm -rf maldetect-*
     rm maldetect-current.tar.gz
     apt install -y rkhunter
@@ -172,12 +176,14 @@ install_additional_tools() {
 }
 install_additional_tools
 
+
 # Reload AppArmor profiles
 reload_apparmor() {
     printf "\e[1;31m[+] Reloading AppArmor profiles...\e[0m\n"
     apparmor_parser -r /etc/apparmor.d/*
 }
 reload_apparmor
+
 
 # Configure cron jobs
 configure_cron() {
@@ -205,6 +211,7 @@ EOF
 }
 configure_cron
 
+
 # Disable USB storage
 disable_usb_storage() {
     printf "\e[1;31m[+] Disabling USB storage...\e[0m\n"
@@ -216,10 +223,9 @@ disable_usb_storage
 # Update system packages again
 update_system_packages || { printf "\e[1;31m[-] System update failed.\e[0m\n"; exit 1; }
 
-scroll_text "=======================================================" 0.02
-scroll_text "             [+] HARDN - Setup Complete                " 0.02
-scroll_text "  Please ensure to configure UFW, Fail2Ban, AppArmor   " 0.02
-scroll_text "        and other security tools as needed.            " 0.02
-scroll_text "-------------------------------------------------------" 0.02
-scroll_text "  [+] Please reboot your system to apply changes       " 0.02
-scroll_text "=======================================================" 0.02
+echo " "
+echo "=======================================================" 0.02
+echo "             [+] HARDN - Setup Complete                " 0.02
+echo "  [+] Please reboot your system to apply changes       " 0.02
+echo "=======================================================" 0.02
+echo " "
