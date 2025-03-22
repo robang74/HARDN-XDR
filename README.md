@@ -75,7 +75,7 @@ cd hardn
 ### Youll need Python 3 
 
 ```bash
-apt update && apt install -y python3 python3-pip
+sudo apt update && sudo apt install -y python3 python3-pip
 pip install -r requirements.txt
 ```
 ### Install setup file
@@ -84,7 +84,13 @@ sudo ./setup.sh
 ```
 ### Run HARDN
 ```bash
+chmod +x ./hardn.py
 sudo ./hardn.py
+
+#but if that doesn't run, then do the other one
+
+chmod +x ./hardn_dark.py
+sudo ./hardn_dark.py
 ```
 ## Check lynis output
 The GUI Will show you the current system Lynis score (under development)
@@ -105,5 +111,7 @@ The GUI Will show you the current system Lynis score (under development)
 ## License
 
 - MIT License
+
+
 
 
