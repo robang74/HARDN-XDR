@@ -110,7 +110,7 @@ The GUI Will show you the current system Lynis score (under development)
 
 ## License
 
-- MIT License
+- GPL License
 
 
 
