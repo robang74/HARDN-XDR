@@ -1,4 +1,7 @@
-         ██░ ██  ▄▄▄       ██▀███  ▓█████▄  ███▄    █ 
+<div align="center">
+
+```
+        ██░ ██  ▄▄▄       ██▀███  ▓█████▄  ███▄    █ 
         ▓██░ ██▒▒████▄    ▓██ ▒ ██▒▒██▀ ██▌ ██ ▀█   █ 
         ▒██▀▀██░▒██  ▀█▄  ▓██ ░▄█ ▒░██   █▌▓██  ▀█ ██▒
         ░▓█ ░██ ░██▄▄▄▄██ ▒██▀▀█▄  ░▓█▄   ▌▓██▒  ▐▌██▒
@@ -9,15 +12,13 @@
          ░  ░  ░      ░  ░   ░        ░             ░ 
                             ░                 
                     The Linux Security Project
-   
+
 ===================== TESTING AND DEVELOPING ====================
 
-# HARDN
+```
+</div>
 
-## NEW UPDATE: pip install has been implimented to replace APT package install. 
----
-
-A single UX based **Debian** tool to fully secure an OS using  automation, monitoring, heuristics and availability.
+***A single UX based **Debian** tool to fully secure an OS using  automation, monitoring, heuristics and availability***
 ---
 # Table of Contents
 ## Table of Contents
