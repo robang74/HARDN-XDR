@@ -1,22 +1,8 @@
-<div align="center">
+<p align="center">
+        <img src="https://github.com/OpenSource-For-Freedom/HARDN/blob/Primary/Docs/HARDN.png" alt="HARDN Logo" />
+</p>
+ The Linux Security Project        ===================== TESTING AND DEVELOPING ====================
 
-```
-        ██░ ██  ▄▄▄       ██▀███  ▓█████▄  ███▄    █ 
-        ▓██░ ██▒▒████▄    ▓██ ▒ ██▒▒██▀ ██▌ ██ ▀█   █ 
-        ▒██▀▀██░▒██  ▀█▄  ▓██ ░▄█ ▒░██   █▌▓██  ▀█ ██▒
-        ░▓█ ░██ ░██▄▄▄▄██ ▒██▀▀█▄  ░▓█▄   ▌▓██▒  ▐▌██▒
-        ░▓█▒░██▓ ▓█   ▓██▒░██▓ ▒██▒░▒████▓ ▒██░   ▓██░
-         ▒ ░░▒░▒ ▒▒   ▓▒█░░ ▒▓ ░▒▓░ ▒▒▓  ▒ ░ ▒░   ▒ ▒ 
-         ▒ ░▒░ ░  ▒   ▒▒ ░  ░▒ ░ ▒░ ░ ▒  ▒ ░ ░░   ░ ▒░
-         ░  ░░ ░  ░   ▒     ░░   ░  ░ ░  ░    ░   ░ ░ 
-         ░  ░  ░      ░  ░   ░        ░             ░ 
-                            ░                 
-                    The Linux Security Project
-
-===================== TESTING AND DEVELOPING ====================
-
-```
-</div>
 
 ***A single UX based **Debian** tool to fully secure an OS using  automation, monitoring, heuristics and availability***
 ---
