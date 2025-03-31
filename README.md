@@ -39,7 +39,7 @@
 - AppArmor,Mandatory Access Control (MAC) for enforcing policies.
 - LMD (MALDETECT),(Soon to be replaced by Legion) Open-source antivirus software.
 - Firejail,Sandboxing tool for application isolation.
-- Cron, to keep it all omaintenance**
+- Cron, to keep it all updates maintenanced**
 - Pex*, used for GRUB password hash automation 
 
 1. **Secure the System** – Applies firewall rules, intrusion detection, malware protection, and access control automatically.  
@@ -85,7 +85,10 @@ The GUI Will show you the current system Lynis score (under development)
 - Integrating Wazuh SIEM – Expanding system-wide monitoring for better incident response.
 - Test and implement GRS, to help fully secure the Kernal. ( Cost associated )
 - Expanding container security – Locking down VMs and containers without affecting performance and allow ssh referal. 
-- Making it easier to use – Simplifying configurations for both end-users and professionals through smooth UX engagement. 
+- Making it easier to use – Simplifying configurations for both end-users and professionals through smooth UX engagement.
+- Headless option for Debian Enterprise needs
+- HARDN - Endpoint: For user based deployments
+- HARDN - Host: For headless, server, Virtualized deploymnets. 
 ---
 ## Contributing
 - Contact directly for access 
