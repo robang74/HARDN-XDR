@@ -1,3 +1,5 @@
+#!/user/bin/env python3
+
 import os
 import subprocess
 import sys
@@ -7,7 +9,7 @@ import tkinter as tk
 from tkinter import ttk
 import pexpect
 
-# Add the current directory to the Python path
+# Add current to Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 def ensure_root():
@@ -177,7 +179,7 @@ def install_rkhunter(status_gui):
     exec_command("apt", ["install", "-y", "rkhunter"], status_gui)
     exec_command("rkhunter", ["--update"], status_gui)
     exec_command("rkhunter", ["--propupd"], status_gui)
-
+# LMD 
 def install_maldetect(status_gui):
     status_gui.update_status("Installing Linux Malware Detect (Maldetect)...")
     try:
@@ -193,7 +195,7 @@ def install_maldetect(status_gui):
     except Exception as e:
         status_gui.update_status(f"Unexpected error: {str(e)}")
         print(f"Unexpected error: {str(e)}")
-
+# UPDATE 
 def setup_auto_updates(status_gui):
     status_gui.update_status("Configuring Auto-Update for Security Packages...")
     cron_jobs = [
@@ -206,7 +208,7 @@ def setup_auto_updates(status_gui):
     ]
     for job in cron_jobs:
         exec_command("sh", ["-c", f"(crontab -l 2>/null; echo '{job}') | crontab -"], status_gui)
-
+# TCP WRAP
 def configure_tcp_wrappers(status_gui):
     status_gui.update_status("Configuring TCP Wrappers...")
     try:
@@ -222,13 +224,13 @@ def configure_tcp_wrappers(status_gui):
     except Exception as e:
         status_gui.update_status(f"Unexpected error: {str(e)}")
         print(f"Unexpected error: {str(e)}")
-
+# F2B
 def configure_fail2ban(status_gui):
     status_gui.update_status("Setting up Fail2Ban...")
     exec_command("apt", ["install", "-y", "fail2ban"], status_gui)
     exec_command("systemctl", ["restart", "fail2ban"], status_gui)
     exec_command("systemctl", ["enable", "--now", "fail2ban"], status_gui)
-
+# LYNIS START
 def run_lynis_audit(status_gui):
     status_gui.update_status("Running Lynis security audit...")
     try:
@@ -266,7 +268,7 @@ def run_lynis_audit(status_gui):
     except Exception as e:
         status_gui.update_status(f"Unexpected error: {str(e)}")
         print(f"Unexpected error: {str(e)}")
-
+# GRIB
 def configure_grub(status_gui):
     status_gui.update_status("Configuring GRUB Security Settings...")
     grub_cmd = shutil.which("update-grub") or shutil.which("grub-mkconfig")
@@ -278,7 +280,7 @@ def configure_grub(status_gui):
     else:
         print("Warning: GRUB update command not found. Skipping GRUB update.")
         print("If running inside a VM, this may not be necessary.")
-
+# UFW
 def configure_firewall(status_gui):
     status_gui.update_status("Configuring Firewall...")
     exec_command("ufw", ["default", "deny", "incoming"], status_gui)
@@ -286,7 +288,7 @@ def configure_firewall(status_gui):
     exec_command("ufw", ["allow", "out", "80,443/tcp"], status_gui)
     exec_command("ufw", ["--force", "enable"], status_gui)
     exec_command("ufw", ["reload"], status_gui)
-
+# GRUB SEC
 def secure_grub(status_gui):
     status_gui.update_status("Configuring GRUB Secure Boot Password...")
     status_gui.get_grub_password()
@@ -357,84 +359,4 @@ def scan_with_eset(status_gui):
 
 def configure_postfix(status_gui):
     status_gui.update_status("Configuring Postfix to hide mail_name...")
-    exec_command("postconf", ["-e", "smtpd_banner=$myhostname ESMTP $mail_name"], status_gui)
-    exec_command("systemctl", ["restart", "postfix"], status_gui)
-
-def purge_old_packages(status_gui):
-    status_gui.update_status("Purging old/removed packages...")
-    exec_command("apt", ["autoremove", "-y"], status_gui)
-
-def configure_password_hashing_rounds(status_gui):
-    status_gui.update_status("Configuring password hashing rounds...")
-    exec_command("sed", ["-i", "s/^ENCRYPT_METHOD.*/ENCRYPT_METHOD SHA512/", "/etc/login.defs"], status_gui)
-    exec_command("sed", ["-i", "s/^SHA_CRYPT_MIN_ROUNDS.*/SHA_CRYPT_MIN_ROUNDS 5000/", "/etc/login.defs"], status_gui)
-    exec_command("sed", ["-i", "s/^SHA_CRYPT_MAX_ROUNDS.*/SHA_CRYPT_MAX_ROUNDS 5000/", "/etc/login.defs"], status_gui)
-
-def add_legal_banners(status_gui):
-    status_gui.update_status("Adding legal banners...")
-    with open("/etc/issue", "w") as f:
-        f.write("Authorized uses only. All activity may be monitored and reported.\n")
-    with open("/etc/issue.net", "w") as f:
-        f.write("Authorized uses only. All activity may be monitored and reported.\n")
-    with open("/etc/motd", "w") as f:                                                       
-        f.write("Authorized uses only. All activity may be monitored and reported.\n")
-        
-
-# CHECK ALL -  we needed this in the parent file
-def check_and_install_dependencies():
-    dependencies = [
-        "apparmor", "apparmor-profiles", "apparmor-utils", "firejail", "libpam-pwquality",
-        "tcpd", "fail2ban", "rkhunter", "aide", "aide-common", "ufw", "postfix", "debsums", "python3-pexpect", "python3-tk"
-    ]
-    
-    for package in dependencies:
-        try:
-            status_gui.update_status(f"Checking for {package}...")
-            result = subprocess.run(f"dpkg -s {package}", shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            if "install ok installed" not in result.stdout.decode():
-                status_gui.update_status(f"{package} not found. Installing...")
-                exec_command("apt", ["install", "-y", package], status_gui)
-            else:
-                status_gui.update_status(f"{package} is already installed.")
-        except subprocess.CalledProcessError:
-            status_gui.update_status(f"{package} not found. Installing...")
-            exec_command("apt", ["install", "-y", package], status_gui)
-
-# START HARDENING PROCESS
-def start_hardening():
-    def run_tasks():
-        check_and_install_dependencies()
-        exec_command("apt", ["update"], status_gui)
-        exec_command("apt", ["upgrade", "-y"], status_gui)
-        enforce_password_policies(status_gui)
-        exec_command("apt", ["install", "-y", "fail2ban"], status_gui)
-        exec_command("systemctl", ["enable", "--now", "fail2ban"], status_gui)
-        configure_firewall(status_gui)
-        exec_command("apt", ["install", "-y", "rkhunter"], status_gui)
-        exec_command("rkhunter", ["--update"], status_gui)
-        exec_command("rkhunter", ["--propupd"], status_gui)
-        install_maldetect(status_gui)
-        exec_command("apt", ["install", "-y", "libpam-pwquality"], status_gui)
-        enable_aide(status_gui)
-        harden_sysctl(status_gui)
-        disable_usb(status_gui)
-        exec_command("apt", ["install", "-y", "apparmor", "apparmor-profiles", "apparmor-utils"], status_gui)
-        exec_command("systemctl", ["enable", "--now", "apparmor"], status_gui)
-        configure_postfix(status_gui)
-        exec_command("apt", ["autoremove", "-y"], status_gui)  
-        configure_password_hashing_rounds(status_gui)
-        add_legal_banners(status_gui)
-        lynis_score = run_lynis_audit(status_gui)
-        status_gui.complete(lynis_score)
-    
-    threading.Thread(target=run_tasks, daemon=True).start()
-
-# MAIN
-def main():
-    global status_gui  # global
-    status_gui = StatusGUI()  
-    status_gui.root.after(100, start_hardening)
-    status_gui.run()
-
-if __name__ == "__main__":
-    main()
+    exec_command("postconf", ["-e", "smtpd_banner=$myhostname ESMTP"], status_gui)
