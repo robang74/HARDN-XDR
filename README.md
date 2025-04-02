@@ -1,23 +1,10 @@
-         ██░ ██  ▄▄▄       ██▀███  ▓█████▄  ███▄    █ 
-        ▓██░ ██▒▒████▄    ▓██ ▒ ██▒▒██▀ ██▌ ██ ▀█   █ 
-        ▒██▀▀██░▒██  ▀█▄  ▓██ ░▄█ ▒░██   █▌▓██  ▀█ ██▒
-        ░▓█ ░██ ░██▄▄▄▄██ ▒██▀▀█▄  ░▓█▄   ▌▓██▒  ▐▌██▒
-        ░▓█▒░██▓ ▓█   ▓██▒░██▓ ▒██▒░▒████▓ ▒██░   ▓██░
-         ▒ ░░▒░▒ ▒▒   ▓▒█░░ ▒▓ ░▒▓░ ▒▒▓  ▒ ░ ▒░   ▒ ▒ 
-         ▒ ░▒░ ░  ▒   ▒▒ ░  ░▒ ░ ▒░ ░ ▒  ▒ ░ ░░   ░ ▒░
-         ░  ░░ ░  ░   ▒     ░░   ░  ░ ░  ░    ░   ░ ░ 
-         ░  ░  ░      ░  ░   ░        ░             ░ 
-                            ░                 
-                    The Linux Security Project
-   
-===================== TESTING AND DEVELOPING ====================
+<p align="center">
+        <img src="https://github.com/OpenSource-For-Freedom/HARDN/blob/Primary/Docs/HARDN.png" alt="HARDN Logo" />
+</p>
+ The Linux Security Project        ===================== TESTING AND DEVELOPING ====================
 
-# HARDN
 
-## NEW UPDATE: pip install has been implimented to replace APT package install. 
----
-
-A single UX based **Debian** tool to fully secure an OS using  automation, monitoring, heuristics and availability.
+***A single UX based **Debian** tool to fully secure an OS using  automation, monitoring, heuristics and availability***
 ---
 # Table of Contents
 ## Table of Contents
@@ -52,7 +39,7 @@ A single UX based **Debian** tool to fully secure an OS using  automation, monit
 - AppArmor,Mandatory Access Control (MAC) for enforcing policies.
 - LMD (MALDETECT),(Soon to be replaced by Legion) Open-source antivirus software.
 - Firejail,Sandboxing tool for application isolation.
-- Cron, to keep it all omaintenance**
+- Cron, to keep it all updates maintenanced**
 - Pex*, used for GRUB password hash automation 
 
 1. **Secure the System** – Applies firewall rules, intrusion detection, malware protection, and access control automatically.  
@@ -87,10 +74,6 @@ sudo ./setup.sh
 chmod +x ./hardn.py
 sudo ./hardn.py
 
-#but if that doesn't run, then do the other one
-
-chmod +x ./hardn_dark.py
-sudo ./hardn_dark.py
 ```
 ## Check lynis output
 The GUI Will show you the current system Lynis score (under development)
@@ -102,10 +85,14 @@ The GUI Will show you the current system Lynis score (under development)
 - Integrating Wazuh SIEM – Expanding system-wide monitoring for better incident response.
 - Test and implement GRS, to help fully secure the Kernal. ( Cost associated )
 - Expanding container security – Locking down VMs and containers without affecting performance and allow ssh referal. 
-- Making it easier to use – Simplifying configurations for both end-users and professionals through smooth UX engagement. 
+- Making it easier to use – Simplifying configurations for both end-users and professionals through smooth UX engagement.
+- Headless option for Debian Enterprise needs
+- HARDN - Endpoint: For user based deployments
+- HARDN - Host: For headless, server, Virtualized deploymnets. 
 ---
 ## Contributing
-- Contact directly for access 
+- Project Partner: 
+  ![Cyber Synapse](https://github.com/OpenSource-For-Freedom/HARDN/blob/Primary/Docs/cybersynapse.png)
 ---
 
 ## License
