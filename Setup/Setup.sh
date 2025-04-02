@@ -5,13 +5,27 @@
 #       Installs + Pre-config          #
 #    Must have python-3 loaded already #
 #       Author: Tim "TANK" Burns       #
+#           Date: 3/2/2022             #
 ########################################
-# Update and install dependencies
-# python3 and python3-pip installation moved to later in the script
+
 
 # Check if requirements.txt exists before attempting to install Python dependencies
 if [[ -f requirements.txt ]]; then
-    pip3 install -r requirements.txt
+    echo "[+] Setting up a Python virtual environment..."
+    # Ensure python3-venv is installed
+    apt install -y python3-venv || { echo "[-] Failed to install python3-venv."; exit 1; }
+    
+    # Create and activate the virtual environment
+    python3 -m venv venv || { echo "[-] Failed to create a virtual environment."; exit 1; }
+    source venv/bin/activate || { echo "[-] Failed to activate the virtual environment."; exit 1; }
+    
+    # Upgrade pip and install dependencies
+    pip install --upgrade pip || { echo "[-] Failed to upgrade pip."; deactivate; exit 1; }
+    pip install -r requirements.txt || { echo "[-] Failed to install Python dependencies."; deactivate; exit 1; }
+    
+    # Deactivate the virtual environment
+    deactivate
+    echo "[+] Python dependencies installed successfully in the virtual environment."
 else
     echo "requirements.txt not found. Skipping Python dependencies installation."
 fi
@@ -59,18 +73,19 @@ cd "$(dirname "$0")"
 
 update_system_packages() {
     echo "[+] Updating system packages..."
-    apt update && apt upgrade -y && apt install -y python3 python3-tk
+    apt update && apt upgrade -y || { echo "[-] System update failed."; exit 1; }
+    apt install -y python3 python3-tk python3-venv || { echo "[-] Failed to install required Python packages."; exit 1; }
 }
 apt install -y ufw fail2ban apparmor apparmor-profiles apparmor-utils firejail tcpd lynis debsums rkhunter libpam-pwquality libvirt-daemon-system libvirt-clients qemu-kvm docker.io docker-compose openssh-server
 # Call the function to update system packages
 update_system_packages
 
 echo "[+] Installing required system dependencies..."
-apt install -y ufw fail2ban apparmor apparmor-profiles apparmor-utils firejail tcpd lynis debsums rkhunter libpam-pwquality libvirt-daemon-system libvirt-clients qemu-kvm docker.io docker-compose
+apt install -y ufw fail2ban apparmor apparmor-profiles apparmor-utils firejail tcpd lynis debsums rkhunter libpam-pwquality libvirt-daemon-system libvirt-clients qemu-kvm docker.io docker-compose || { echo "[-] Failed to install dependencies."; exit 1; }
 
 # Install pexpect using apt
 echo "[+] Installing pexpect using apt"
-apt install -y python3-pexpect
+apt install -y python3-pexpect || { echo "[-] Failed to install python3-pexpect."; exit 1; }
 
 scroll_text "=======================================================" 0.02
 # SYSTEM PACKS
@@ -99,14 +114,14 @@ scroll_text "                                                       " 0.02
 scroll_text "               [+] Setting up Fail2Ban...              " 0.02
 scroll_text "                                                       " 0.02
 scroll_text "=======================================================" 0.02
-systemctl enable --now fail2ban
+systemctl enable --now fail2ban || { echo "[-] Failed to enable Fail2Ban."; exit 1; }
 
 scroll_text "=======================================================" 0.02
 scroll_text "                                                       " 0.02
 scroll_text "               [+] Setting up AppArmor...              " 0.02
 scroll_text "                                                       " 0.02
 scroll_text "=======================================================" 0.02
-systemctl enable --now apparmor
+systemctl enable --now apparmor || { echo "[-] Failed to enable AppArmor."; exit 1; }
 
 # remove eset32
 # eset32 didnt work
@@ -121,7 +136,7 @@ scroll_text "               [+] Installing chkrootkit...            " 0.02
 scroll_text "                                                       " 0.02
 scroll_text "=======================================================" 0.02
 # ADD CHROOTKIT
-sudo apt-get install -y chkrootkit
+sudo apt-get install -y chkrootkit || { echo "[-] Failed to install chkrootkit."; exit 1; }
 
 scroll_text "=======================================================" 0.02
 scroll_text "                                                       " 0.02
@@ -129,14 +144,13 @@ scroll_text "               [+] Installing LMD...                   " 0.02
 scroll_text "                                                       " 0.02
 scroll_text "=======================================================" 0.02
 # ADD lmd
-wget http://www.rfxn.com/downloads/maldetect-current.tar.gz
+wget http://www.rfxn.com/downloads/maldetect-current.tar.gz || { echo "[-] Failed to download LMD."; exit 1; }
 tar -xzf maldetect-current.tar.gz
-cd maldetect-*
-sudo ./install.sh
+cd maldetect-* || exit 1
+sudo ./install.sh || { echo "[-] Failed to install LMD."; exit 1; }
 cd ..
 rm -rf maldetect-*
 rm maldetect-current.tar.gz
-
 
 scroll_text "=======================================================" 0.02
 scroll_text "                                                       " 0.02
@@ -144,7 +158,7 @@ scroll_text "               [+] Installing rkhunter...              " 0.02
 scroll_text "                                                       " 0.02
 scroll_text "=======================================================" 0.02
 # Installing rkhunter
-apt install -y rkhunter
+apt install -y rkhunter || { echo "[-] Failed to install rkhunter."; exit 1; }
 rkhunter --update
 rkhunter --propupd
 
@@ -154,7 +168,7 @@ scroll_text "               [+] Reloading AppArmor...               " 0.02
 scroll_text "                                                       " 0.02
 scroll_text "=======================================================" 0.02
 # Reloading AppArmor 
-apparmor_parser -r /etc/apparmor.d/*
+apparmor_parser -r /etc/apparmor.d/* || { echo "[-] Failed to reload AppArmor."; exit 1; }
 
 scroll_text "=======================================================" 0.02
 scroll_text "                                                       " 0.02
@@ -184,33 +198,9 @@ cat <<EOF >> mycron
 0 4 * * * chkrootkit
 0 5 * * * maldet --update
 0 6 * * * maldet --scan-all / >> /var/log/maldet_scan.log 2>&1
-# Disabling USB 
-echo 'blacklist usb-storage' > /etc/modprobe.d/usb-storage.conf
-modprobe -r usb-storage && echo "[+] USB storage successfully disabled." || echo "[-] Warning: USB storage module in use, cannot unload."
-scroll_text "=======================================================" 0.02
-scroll_text "                                                       " 0.02
-scroll_text "               [+] Disabling USB...                    " 0.02
-scroll_text "                                                       " 0.02
-scroll_text "=======================================================" 0.02
-
-# Disabling USB 
-lsmod | grep usb_storage && echo "[-] Warning: USB storage is still active!" || echo "[+] USB storage successfully disabled."
-echo 'blacklist usb-storage' >> /etc/modprobe.d/usb-storage.conf
-modprobe -r usb-storage || echo "USB storage module in use, cannot unload."
-
-
-scroll_text "=======================================================" 0.02
-scroll_text "                                                       " 0.02
-scroll_text "             HARDN - UPDATING SYSTEM PACKS             " 0.02
-scroll_text "                                                       " 0.02
-scroll_text "=======================================================" 0.02
-
-# Update system
-update_system_packages || { echo "[-] System update failed."; exit 1; }
-
-# Install grs (commented out because the package is not available)
-# Cannot get it with an updated kernal package and pay for it
-# apt install -y grs
+EOF
+crontab mycron
+rm mycron
 
 scroll_text "=======================================================" 0.02
 scroll_text "             [+] HARDN - Setup Complete                " 0.02
