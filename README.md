@@ -6,7 +6,7 @@
   <img src="Docs/assets/HARDN.png" alt="HARDN Logo" width="300px" /><br><br>
   <img src="https://img.shields.io/badge/The_Linux_Security_Project-red?style=for-the-badge&labelColor=black" alt="The Linux Security Project"><br><br>
   <code>HARDN-XDR</code>
-        <img src="https://github.com/OpenSource-For-Freedom/HARDN/blob/Primary/Docs/HARDN.png" alt="HARDN Logo" />
+        <img src="https://github.com/OpenSource-For-Freedom/HARDN/blob/Primary/Docs/assets/HARDN.png" alt="HARDN Logo" />
 </p>
  The Linux Security Project        ===================== TESTING AND DEVELOPING ====================
 
