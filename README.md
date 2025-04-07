@@ -30,11 +30,11 @@ The purpose of HARDN Endpoint is to empower IT administrators with the tools the
 4. Follow the setup instructions in the docs directory. 
 
 ## Contributing
-We welcome contributions! Please see our [Contributing Guidelines](./CONTRIBUTING.md) for more details.
+We welcome contributions! 
 
 ## Project Partner
 <p align="center">
-        <img src="https://github.com/OpenSource-For-Freedom/HARDN/blob/HARDN/tree/Dev-t/docs/assets/cybersynapse.png"/>
+        <img src="https://github.com/opensource-For-freedom/HARDN/Dev-t/docs/assets/cybersynapse.png"/>
 </p>
 
 ## License
