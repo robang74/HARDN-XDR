@@ -22,6 +22,7 @@ The purpose of HARDN Endpoint is to empower IT administrators with the tools the
 2. Install the package using the following command:
     ```bash
     sudo dpkg -i hardn.deb
+    sudo chmod +x hardn.deb
     ```
 3. Resolve any missing dependencies:
     ```bash
