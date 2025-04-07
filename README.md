@@ -1,6 +1,6 @@
 
 <p align="center">
-        <img src="https://github.com/OpenSource-For-Freedom/HARDN/blob/Dev-T/docs/assets/HARDN.png" alt="HARDN Logo" />
+        <img src="https://github.com/OpenSource-For-Freedom/HARDN/docs/assets/HARDN(1).png" alt="HARDN Logo" />
 </p>
 
 # HARDN-Endpoint
