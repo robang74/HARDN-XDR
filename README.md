@@ -1,6 +1,4 @@
-<p align="center">
-        <img src="https://github.com/OpenSource-For-Freedom/HARDN/blob/Dev-T/docs/assets/HARDN.png" alt="HARDN Logo" />
-</p>
+
 
 
 # HARDN-Endpoint
@@ -33,11 +31,6 @@ The purpose of HARDN Endpoint is to empower IT administrators with the tools the
 
 ## Contributing
 We welcome contributions! 
-
-## Project Partner
-<p align="center">
-        <img src="https://github.com/opensource-For-freedom/HARDN/Dev-t/docs/assets/cybersynapse.png"/>
-</p>
 
 ## License
 This project is licensed under the [GPLLicense](./LICENSE).
