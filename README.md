@@ -1,6 +1,6 @@
 
 <p align="center">
-  <img src="docs/assets/HARDN-1.png" alt="HARDN Logo" />
+  <img src="docs/assets/HARDN(1).png" alt="HARDN Logo" />
 </p>
 
 
