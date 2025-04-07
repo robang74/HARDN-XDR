@@ -27,9 +27,11 @@ The purpose of HARDN Endpoint is to empower IT administrators with the tools the
     ```bash
     sudo apt-get install -f
     ```
-    then run `sudo hardn`
-
-4. Follow the setup instructions in the docs directory. 
+4. Then run
+    ```bash
+    sudo hardn
+    ```
+5. Follow the setup instructions in the docs directory. 
 
 ## Contributing
 We welcome contributions! 
