@@ -16,7 +16,7 @@ HARDN Endpoint is a robust and secure endpoint management solution designed to s
 - **User-Friendly Interface**: Intuitive design for seamless navigation and management.
 
 ## Purpose
-The purpose of HARDN Endpoint is to empower IT administrators with the tools they need to ensure endpoint security, optimize performance, and maintain compliance across their organization.
+The purpose of HARDN Endpoint is to empower IT administrators and users with the tools they need to ensure endpoint security, optimize performance, and maintain compliance across their organization.
 
 ## Installation
 1. Download the `.deb` package from the [Releases](https://github.com/opensource-for-freedom/HARDN/releases) page.
