@@ -38,6 +38,11 @@ The purpose of HARDN Endpoint is to empower IT administrators and users with the
 ## Contributing
 We welcome contributions! 
 
+## Project Partners
+
+
+
+
 ## License
 This project is licensed under the [GPLLicense](./LICENSE).
 
