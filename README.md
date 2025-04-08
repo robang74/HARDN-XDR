@@ -41,6 +41,10 @@ We welcome contributions!
 ## Project Partners
 
 
+<p align="center">
+  <img src="docs/assets/cybersynapse.png" alt="cybersynapse Logo" />
+</p>
+
 
 
 ## License
