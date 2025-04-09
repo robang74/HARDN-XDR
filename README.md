@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/HARDN.png" alt="HARDN Logo" width="300px" /><br><br>
+  <img src="Docs/assets/HARDN.png" alt="HARDN Logo" width="300px" /><br><br>
   <img src="https://img.shields.io/badge/The_Linux_Security_Project-red?style=for-the-badge&labelColor=black" alt="The Linux Security Project"><br><br>
   <code>HARDN-Endpoint</code>
 </p>
