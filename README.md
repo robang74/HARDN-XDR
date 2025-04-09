@@ -1,7 +1,7 @@
 <p align="center">
-        <img src="https://github.com/OpenSource-For-Freedom/HARDN/blob/Primary/Docs/assets/HARDN.png" alt="HARDN Logo" />
-        𝕋𝕙𝕖 𝕃𝕚𝕟𝕦𝕩 𝕊𝕖𝕔𝕦𝕣𝕚𝕥𝕪 ℙ𝕣𝕠𝕛𝕖𝕔𝕥
-       
+  <img src="docs/assets/HARDN(1).png" alt="HARDN Logo" width="300px" /><br><br>
+  <img src="https://img.shields.io/badge/The_Linux_Security_Project-red?style=for-the-badge&labelColor=black" alt="The Linux Security Project"><br><br>
+  <code>HARDN-Endpoint</code>
 </p>
          
  ***A single UX based **Debian** tool to fully secure an OS using  automation, 
