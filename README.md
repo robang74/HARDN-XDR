@@ -7,7 +7,7 @@
  ***A single UX based **Debian** tool to fully secure an OS using  automation, 
              monitoring, heuristics and availability***
 
-***A single UX based **Debian** tool to fully secure an OS using  automation, monitoring, heuristics and availability***
+
 ---
 # Table of Contents
 ## Table of Contents
