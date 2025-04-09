@@ -1,4 +1,4 @@
-![GitHub release v1.0](https://img.shields.io/github/v/release/OpenSource-For-Freedom/HARDN)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/OpenSource-For-Freedom/HARDN?include_prereleases)
 
 
 <p align="center">
