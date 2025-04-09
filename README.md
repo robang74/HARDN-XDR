@@ -1,10 +1,10 @@
 
 
 <p align="center">
-  <img src="docs/assets/HARDN(1).png" alt="HARDN Logo" /><br><br>
-  <strong>𝕋𝕙𝕖 𝕃𝕚𝕟𝕦𝕩 𝕊𝕖𝕔𝕦𝕣𝕚𝕥𝕪 ℙ𝕣𝕠𝕛𝕖𝕔𝕥</strong><br><br>
+  <img src="docs/assets/HARDN(1).png" alt="HARDN Logo" width="300px" /><br><br>
+  <img src="https://img.shields.io/badge/The_Linux_Security_Project-red?style=for-the-badge&labelColor=black" alt="The Linux Security Project"><br><br>
   <code>HARDN-Endpoint</code>
-</p
+</p>
 
 
 ## Overview
@@ -55,9 +55,5 @@ This project is licensed under the [GPLicense](./LICENSE).
 To come!
 
 
-<p align="center">
-  <img src="docs/assets/HARDN(1).png" alt="HARDN Logo" width="120px" /><br><br>
-  <img src="https://img.shields.io/badge/The_Linux_Security_Project-red?style=for-the-badge&labelColor=black" alt="The Linux Security Project"><br><br>
-  <code>HARDN-Endpoint</code>
-</p>
+
 
