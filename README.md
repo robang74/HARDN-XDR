@@ -7,7 +7,8 @@
 </p>
 
 
-## Overview
+ <img src="https://img.shields.io/badge/OVERVIEW-white?style=for-the-badge&labelColor=black" alt="OVERVIEW"><br><br>
+ 
 HARDN Endpoint is a robust and secure endpoint management solution designed to simplify and enhance the management of devices in your network. It provides advanced features for monitoring, securing, and maintaining endpoints efficiently.
 
 ## Features
