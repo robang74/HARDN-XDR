@@ -50,7 +50,7 @@ We welcome contributions!
 
 
 ## License
-This project is licensed under the [GPLLicense](./LICENSE).
+This project is licensed under the [GNU License](./LICENSE).
 
 ## Contact
 To come!
