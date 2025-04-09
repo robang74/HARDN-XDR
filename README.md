@@ -1,4 +1,7 @@
 
+![GitHub release v1.0](https://img.shields.io/github/v/release/OpenSource-For-Freedom/HARDN)
+
+
 
 <p align="center">
   <img src="docs/assets/HARDN(1).png" alt="HARDN Logo" width="300px" /><br><br>
