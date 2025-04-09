@@ -13,13 +13,15 @@ HARDN Endpoint is a robust and secure endpoint management solution designed to s
 
 <p align="center">
  <img src="https://img.shields.io/badge/FEATURES-white?style=for-the-badge&labelColor=black" alt="FEATURES"><br><br>
- </p>
+</p>
 - **Comprehensive Monitoring**: Real-time insights into endpoint performance and activity.
 - **Enhanced Security**: Protect endpoints with advanced security protocols.
 - **Scalability**: Manage endpoints across small to large-scale networks.
 - **User-Friendly Interface**: Intuitive design for seamless navigation and management.
 
-## Purpose
+<p align="center">
+ <img src="https://img.shields.io/badge/PURPOSE-white?style=for-the-badge&labelColor=black" alt="PURPOSE"><br><br>
+</p>
 The purpose of HARDN Endpoint is to empower IT administrators and users with the tools they need to ensure endpoint security, optimize performance, and maintain compliance across their organization.
 
 ## Installation
