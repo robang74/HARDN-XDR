@@ -47,8 +47,9 @@ The purpose of HARDN Endpoint is to empower IT administrators and users with the
 
 <p align="center">
   <img src="https://img.shields.io/badge/CONTRIBUTION-white?style=for-the-badge&labelColor=black" alt="CONTRIBUTION"><br><br>
+    We welcome contributions! 
+
 </p>
-We welcome contributions! 
 
 <p align="center">
   <img src="https://img.shields.io/badge/PROJECT PARTNERS-white?style=for-the-badge&labelColor=black" alt="PROJECT PARTNERS"><br><br>
