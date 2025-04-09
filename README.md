@@ -1,12 +1,12 @@
 
+
 <p align="center">
-  <img src="docs/assets/HARDN(1).png" alt="HARDN Logo" />
-  𝕋𝕙𝕖 𝕃𝕚𝕟𝕦𝕩 𝕊𝕖𝕔𝕦𝕣𝕚𝕥𝕪 ℙ𝕣𝕠𝕛𝕖𝕔𝕥
- 
+  <img src="docs/assets/HARDN(1).png" alt="HARDN Logo" /><br><br>
+  <strong>𝕋𝕙𝕖 𝕃𝕚𝕟𝕦𝕩 𝕊𝕖𝕔𝕦𝕣𝕚𝕥𝕪 ℙ𝕣𝕠𝕛𝕖𝕔𝕥</strong><br><br>
+  <code>HARDN-Endpoint</code>
 </p>
 
 
-# HARDN-Endpoint
 
 ## Overview
 HARDN Endpoint is a robust and secure endpoint management solution designed to simplify and enhance the management of devices in your network. It provides advanced features for monitoring, securing, and maintaining endpoints efficiently.
