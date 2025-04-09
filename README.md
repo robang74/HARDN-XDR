@@ -1,6 +1,7 @@
 
 <p align="center">
   <img src="docs/assets/HARDN(1).png" alt="HARDN Logo" />
+  𝕋𝕙𝕖 𝕃𝕚𝕟𝕦𝕩 𝕊𝕖𝕔𝕦𝕣𝕚𝕥𝕪 ℙ𝕣𝕠𝕛𝕖𝕔𝕥
 </p>
 
 
