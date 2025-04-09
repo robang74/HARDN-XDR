@@ -9,7 +9,7 @@
         <img src="https://github.com/OpenSource-For-Freedom/HARDN/blob/Primary/Docs/assets/HARDN.png" alt="HARDN Logo" />
         The Linux Security Project
 </p>
- The Linux Security Project        
+         
 
 
 ***A single UX based **Debian** tool to fully secure an OS using  automation, monitoring, heuristics and availability***
