@@ -7,8 +7,9 @@
   <img src="https://img.shields.io/badge/The_Linux_Security_Project-red?style=for-the-badge&labelColor=black" alt="The Linux Security Project"><br><br>
   <code>HARDN-XDR</code>
         <img src="https://github.com/OpenSource-For-Freedom/HARDN/blob/Primary/Docs/assets/HARDN.png" alt="HARDN Logo" />
+        The Linux Security Project
 </p>
- The Linux Security Project        ===================== TESTING AND DEVELOPING ====================
+ The Linux Security Project        
 
 
 ***A single UX based **Debian** tool to fully secure an OS using  automation, monitoring, heuristics and availability***
