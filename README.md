@@ -46,12 +46,12 @@ The purpose of HARDN Endpoint is to empower IT administrators and users with the
 5. Follow the setup instructions in the docs directory. 
 
 <p align="center">
-  <img src="https://img.shields.io/badge/CONTRIBUTION-green?style=for-the-badge&labelColor=black" alt="CONTRIBUTION"><br><br>
+  <img src="https://img.shields.io/badge/CONTRIBUTION-white?style=for-the-badge&labelColor=black" alt="CONTRIBUTION"><br><br>
 </p>
 We welcome contributions! 
 
 <p align="center">
-  <img src="https://img.shields.io/badge/PROJECT-PARTNERS-green?style=for-the-badge&labelColor=black" alt="PROJECT-PARTNERS"><br><br>
+  <img src="https://img.shields.io/badge/PROJECT PARTNERS-white?style=for-the-badge&labelColor=black" alt="PROJECT PARTNERS"><br><br>
 </p>
 
 
