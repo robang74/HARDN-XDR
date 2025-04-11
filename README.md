@@ -69,7 +69,7 @@ We welcome contributions!
 
 <p align="center">
   <img src="https://img.shields.io/badge/LICENSE-white?style=for-the-badge&labelColor=black" alt="LICENSE"><br><br>
-This project is licensed under the [GPLicense](./LICENSE).
+This project is licensed under the GPLicense
   
 </p>
 
