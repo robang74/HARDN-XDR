@@ -5,6 +5,12 @@ on:
     branches:
       - main
   pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+  schedule:
+   
+    - cron: '0 0 * * 1' # Every day at midnight UTC
 
 jobs:
   test:
