@@ -3,14 +3,14 @@ name: Test HARDN with Conda
 on:
   push:
     branches:
-      - main
+      - Dev-Testing
   pull_request:
     branches:
-      - main
-  workflow_dispatch:
-  schedule:
+      - Dev-Testing
+  # workflow_dispatch:
+  # schedule:
    
-    - cron: '0 0 * * 1' # Every day at midnight UTC
+    # - cron: '0 0 * * 1' # Every day at midnight UTC
 
 jobs:
   test:
