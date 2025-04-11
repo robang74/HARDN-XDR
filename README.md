@@ -1,3 +1,4 @@
+
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/OpenSource-For-Freedom/HARDN?include_prereleases)
 
 
@@ -30,6 +31,8 @@ The purpose of HARDN Endpoint is to empower IT administrators and users with the
 <p align="center">
   <img src="https://img.shields.io/badge/INSTALLATION-white?style=for-the-badge&labelColor=black" alt="INSTALLATION"><br><br>
 </p>
+
+
 1. Download the `.deb` package from the [Releases](https://github.com/opensource-for-freedom/HARDN/releases) page.
 2. Install the package using the following command:
     ```bash
@@ -46,9 +49,10 @@ The purpose of HARDN Endpoint is to empower IT administrators and users with the
     ```
 5. Follow the setup instructions in the docs directory. 
 
+
 <p align="center">
   <img src="https://img.shields.io/badge/CONTRIBUTION-white?style=for-the-badge&labelColor=black" alt="CONTRIBUTION"><br><br>
-    We welcome contributions! 
+We welcome contributions! 
 
 </p>
 
@@ -65,13 +69,16 @@ The purpose of HARDN Endpoint is to empower IT administrators and users with the
 
 <p align="center">
   <img src="https://img.shields.io/badge/LICENSE-white?style=for-the-badge&labelColor=black" alt="LICENSE"><br><br>
-</p>
 This project is licensed under the [GPLicense](./LICENSE).
+  
+</p>
+
 
 <p align="center">
   <img src="https://img.shields.io/badge/CONTACT-white?style=for-the-badge&labelColor=black" alt="CONTACT"><br><br>
+office@cybersynapse.ro
 </p>
-To come!
+
 
 
 
