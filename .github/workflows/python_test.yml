@@ -3,7 +3,7 @@ name: Test HARDN with Conda
 on:
   push:
     branches:
-      - 'Dev-Testing'
+      - main
   pull_request:
     branches:
       - main
@@ -11,11 +11,16 @@ on:
   schedule:
     - cron: '0 0 * * 1' # Every Monday at midnight UTC
 
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
 
-    steps:  
+    steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -36,23 +41,17 @@ jobs:
 
       - name: Verify flake8 installation
         run: |
-          source activate test-env
-          conda install -y flake8
-          flake8 --version
+          conda run -n test-env flake8 --version
 
       - name: Lint with flake8
         run: |
-          source activate test-env
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+          conda run -n test-env flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          conda run -n test-env flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
       - name: Verify pytest installation
         run: |
-          source activate test-env
-          conda install -y pytest
-          pytest --version
+          conda run -n test-env pytest --version
 
       - name: Run tests with pytest
         run: |
-          source activate test-env
-          pytest src/setup
+          conda run -n test-env pytest src
