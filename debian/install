@@ -1,31 +1,51 @@
 #!/bin/bash
 
-# HARDN Endpoint Deployment BASELINE
-# This (should) install HARDN-endpoint on a Debian-based system.
+# HARDN Endpoint Deployment Packaging
 
 set -e
 
 echo "Starting HARDN Endpoint installation..."
+
+# Variables
+INSTALL_DIR="/opt/hardn"
+SERVICE_FILE="/etc/systemd/system/hardn.service"
+REPO_URL="https://github.com/opensource-for-freedom/hardn.git"
+LOG_FILE="/var/log/hardn-install.log"
+
+# Logging setup
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+# Update and install dependencies
 echo "Updating package list and installing dependencies..."
 sudo apt-get update
 sudo apt-get install -y curl wget git python3 python3-pip
 
+# Create installation directory
 echo "Creating necessary directories..."
-INSTALL_DIR="/opt/hardn-endpoint"
 sudo mkdir -p "$INSTALL_DIR"
 sudo chown "$USER":"$USER" "$INSTALL_DIR"
 
-# Clone main
+# Clone repository
 echo "Cloning HARDN repository..."
-REPO_URL="https://github.com/opensource-for-freedom/hardn-endpoint.git"
-git clone "$REPO_URL" "$INSTALL_DIR"
+if git clone "$REPO_URL" "$INSTALL_DIR"; then
+    echo "Repository cloned successfully."
+else
+    echo "Failed to clone repository. Exiting."
+    exit 1
+fi
 
-
+# Install Python dependencies
 cd "$INSTALL_DIR"
 echo "Installing Python dependencies..."
-pip3 install -r requirements.txt
+if pip3 install -r requirements.txt; then
+    echo "Python dependencies installed successfully."
+else
+    echo "Failed to install Python dependencies. Exiting."
+    exit 1
+fi
+
+# Create systemd service file
 echo "Setting up systemd service..."
-SERVICE_FILE="/etc/systemd/system/hardn-endpoint.service"
 sudo bash -c "cat > $SERVICE_FILE" <<EOL
 [Unit]
 Description=HARDN Endpoint Service
@@ -41,9 +61,11 @@ Restart=always
 WantedBy=multi-user.target
 EOL
 
-# Reload 
+# Reload systemd and enable service
+echo "Reloading systemd and enabling HARDN service..."
 sudo systemctl daemon-reload
-sudo systemctl enable hardn-endpoint.service
+sudo systemctl enable hardn.service
 
-echo "Installation complete. You may start HARDN:"
-echo "  sudo systemctl start hardn-endpoint.service"
+# Completion message
+echo "Installation complete. You may start HARDN with the following command:"
+echo "sudo systemctl start hardn.service"
