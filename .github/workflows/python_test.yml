@@ -54,4 +54,4 @@ jobs:
 
       - name: Run tests with pytest
         run: |
-          conda run -n test-env pytest src/tests
+          conda run -n test-env pytest src/tests src/gui
