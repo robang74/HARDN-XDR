@@ -3,6 +3,12 @@ import sys
 import subprocess
 from src.gui.main import launch_gui  # Import GUI >>> from src/gui/main.py
 
+import sys
+import os
+
+# Add the src directory>>> for wrkflw
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
+
 def validate_environment():
     if os.geteuid() != 0:
         print("This script must be run as root. Please use 'sudo'.")
