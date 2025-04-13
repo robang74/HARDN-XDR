@@ -53,5 +53,7 @@ jobs:
           conda run -n test-env pytest --version
 
       - name: Run tests with pytest
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
         run: |
-          conda run -n test-env pytest src/tests src/gui
+          conda run -n test-env pytest -v src/tests src/gui
