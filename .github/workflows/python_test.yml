@@ -52,7 +52,29 @@ jobs:
           conda install -y pytest
           pytest --version
 
-      - name: Run tests with pytest
+      - name: Run Python tests with pytest
         run: |
           source activate test-env
-          pytest src/setup
+          export PYTHONPATH=$PYTHONPATH:$(pwd)/src
+          pytest -v src/tests src/gui
+
+      - name: Run Shell Script Tests
+        run: |
+          echo "Testing shell scripts..."
+          for script in $(find setup -name "*.sh" -o -name "*.bash"); do
+            echo "Running $script..."
+            bash -n "$script" || exit 1
+            echo "$script passed syntax check."
+          done
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Run Rust Tests
+        run: |
+          echo "Testing Rust scripts..."
+          cd src
+          cargo test --verbose

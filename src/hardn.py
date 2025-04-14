@@ -51,11 +51,11 @@ def run_kernel():
 
 def main():
     validate_environment()
-    set_executable_permissions()  # Ensure all required files are executable
-    launch_gui()  # Launch the GUI
-    run_script("setup/setup.sh")  # Run setup.sh
-    run_script("setup/packages.sh")  # Run packages.sh
-    run_kernel()  # Run kernel.rs
+    set_executable_permissions()  # chmod
+    launch_gui()  
+    run_script("setup/setup.sh")  
+    run_script("setup/packages.sh")  
+    run_kernel()  
 
 if __name__ == "__main__":
     main()
