@@ -39,6 +39,9 @@ jobs:
           activate-environment: test-env
           environment-file: environment.yml
 
+      - name: Set PYTHONPATH to search all directories
+        run: echo "PYTHONPATH=${{ github.workspace }}" >> $GITHUB_ENV
+
       - name: Verify flake8 installation
         run: |
           conda run -n test-env flake8 --version
@@ -53,7 +56,5 @@ jobs:
           conda run -n test-env pytest --version
 
       - name: Run tests with pytest
-        env:
-          PYTHONPATH: ${{ github.workspace }}/src
         run: |
           conda run -n test-env pytest -v src/tests src/gui
