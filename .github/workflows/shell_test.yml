@@ -1,1 +1,50 @@
-test
+name: Shell Script Tests
+
+on:
+  workflow_run:
+    workflows:
+      - python_test.yml
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+jobs:
+  test_shell_scripts:
+    runs-on: ubuntu-latest
+    container:
+      image: debian:latest # Use the latest Debian image
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      - name: Install dependencies
+        run: |
+          apt-get update && apt-get install -y shellcheck bash
+
+
+      - name: Lint shell scripts with shellcheck
+        run: |
+          echo "Linting all shell scripts..."
+          find . -type f -name "*.sh" | while read -r script; do
+            echo "Linting $script"
+            shellcheck "$script" || { echo "Lint failed for $script"; exit 1; }
+          done
+
+
+      - name: Make shell scripts executable
+        run: |
+          echo "Making all shell scripts executable..."
+          find . -type f -name "*.sh" -exec chmod +x {} \;
+
+
+      - name: Test shell scripts
+        run: |
+          echo "Executing all shell scripts..."
+          find . -type f -name "*.sh" | while read -r script; do
+            echo "Running $script"
+            bash "$script" || { echo "Execution failed for $script"; exit 1; }
+          done
