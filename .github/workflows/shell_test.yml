@@ -2,6 +2,7 @@ name: Shell Script Tests
 # shell tet using debian 
 on:
   workflow_run:
+    cron: 
     workflows:
       - python_test.yml
     types:
