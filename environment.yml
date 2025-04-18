@@ -6,6 +6,7 @@ dependencies:
   - python=3.11
   - flake8
   - pytest
+  - pyqt
   - pip
   - pip:
       - pytest-cov
