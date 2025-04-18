@@ -51,6 +51,7 @@ jobs:
 
       - name: Run Python tests with pytest
         run: |
+          export PYTHONPATH=$GITHUB_WORKSPACE
           conda run -n test-env pytest -v src/tests src/gui
 
       - name: Run Shell Script Tests
