@@ -1,8 +1,14 @@
 name: Shell Script Tests
-# shell tet using debian 
+
+
+
 on:
+  schedule:
+    - cron: '0 0 * * *' 
+  push:
+    branches:
+      - vein # Trigger on pushes to the "main vein" branch
   workflow_run:
-    cron: 
     workflows:
       - python_test.yml
     types:
@@ -11,21 +17,21 @@ on:
 permissions:
   contents: read
 
+
+
+
 jobs:
   test_shell_scripts:
     runs-on: ubuntu-latest
     container:
       image: debian:latest # Use the latest Debian image
     steps:
-
       - name: Checkout repository
         uses: actions/checkout@v4
-
 
       - name: Install dependencies
         run: |
           apt-get update && apt-get install -y shellcheck bash
-
 
       - name: Lint shell scripts with shellcheck
         run: |
@@ -35,12 +41,10 @@ jobs:
             shellcheck "$script" || { echo "Lint failed for $script"; exit 1; }
           done
 
-
       - name: Make shell scripts executable
         run: |
           echo "Making all shell scripts executable..."
           find . -type f -name "*.sh" -exec chmod +x {} \;
-
 
       - name: Test shell scripts
         run: |
