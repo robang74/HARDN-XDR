@@ -1,11 +1,12 @@
 name: test-env
 channels:
-  - defaults
   - conda-forge
+  - defaults
 dependencies:
   - python=3.11
   - flake8
   - pytest
+  - pyqt=5
   - pip
   - pip:
-    - pytest-cov
+      - pytest-cov

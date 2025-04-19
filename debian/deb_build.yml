@@ -13,23 +13,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the code
+      
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # Step 2: Set up Python (if required for the project)
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
-      # Step 3: Install dependencies
+
       - name: Install Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential devscripts debhelper fakeroot
 
-      # Step 4: Build the DEB package
+
       - name: Build DEB Package
         run: |
           mkdir -p build
@@ -37,7 +37,7 @@ jobs:
           cd build
           debuild -us -uc || { echo "DEB package build failed"; exit 1; }
 
-      # Step 5: Upload DEB package as an artifact
+
       - name: Upload DEB Artifact
         uses: actions/upload-artifact@v3
         with:
