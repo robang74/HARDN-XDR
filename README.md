@@ -80,6 +80,52 @@ office@cybersynapse.ro
 </p>
 
 
+<p align="center">
+### FILE STRUCTURE
 
-
-
+```
+HARDN/
+├── .github/                # workflows
+│   └── workflows/
+│       ├── deb-build.yml
+│       ├── python_test.yml
+│       └── shell_test.yml
+├── debian/                 # packaging files
+│   ├── changelog
+│   ├── compat
+│   ├── control
+│   ├── rules
+│   ├── hardn.install
+│   └── ...
+├── src/                    # Source code
+│   ├── gui/                # GUI-related files
+│   │   ├── __init__.py
+│   │   ├── app.py
+│   │   ├── main_window.py
+│   │   ├── docs/           # Documentation 
+│   │   ├── controllers/
+│   │   ├── models/
+│   │   ├── resources/
+│   │   ├── utils/
+│   │   └── views/
+│   ├── setup/              # Setup s
+│   │   ├── __init__.py
+│   │   ├── setup.sh
+│   │   └── packages.sh
+│   ├── kernel.rs           # Kernel hardening 
+│   ├── hardn.py            # Main entry point
+│   └── ...
+├── tests/                  # file and unit integration tests
+│   ├── test_hardn.py
+│   ├── test_kernel.rs
+│   ├── test_main.c
+│   └── ...
+├── build/                  # build artifacts (ignored in `.gitignore`)
+├── dist/                   # Distribution packages (ignored in `.gitignore`)
+├── README.md               # Project documentation
+├── Makefile                # Build automation
+├── requirements.txt        # Python dependencies
+├── pyproject.toml          # Python project metadata
+└── environment.yml         # Conda environment file (if applicable)
+```
+</p>

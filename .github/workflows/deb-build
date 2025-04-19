@@ -1,45 +1,31 @@
-name: Build DEB Package
+name: Build and Test
 
 on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
+      - dev-testing
 
 jobs:
-  build-deb:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      # Step 1: Checkout the code
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Set up Python (if required for the project)
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
+          python-version: '3.11'
 
-      # Step 3: Install dependencies
-      - name: Install Dependencies
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest tests/
+
+      - name: Build Debian package
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential devscripts debhelper fakeroot
-
-      # Step 4: Build the DEB package
-      - name: Build DEB Package
-        run: |
-          mkdir -p build
-          cp -r . build/
-          cd build
-          debuild -us -uc || { echo "DEB package build failed"; exit 1; }
-
-      # Step 5: Upload DEB package as an artifact
-      - name: Upload DEB Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: hardn-deb-package
-          path: build/*.deb
+          sudo apt-get install -y build-essential devscripts debhelper
+          dpkg-buildpackage -us -uc
