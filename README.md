@@ -81,7 +81,7 @@ office@cybersynapse.ro
 
 
 <p align="center">
-### FILE STRUCTURE
+=====FILE STRUCTURE=====
 
 ```
 HARDN/
