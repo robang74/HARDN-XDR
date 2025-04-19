@@ -34,7 +34,7 @@ def set_executable_permissions():
 def run_script(script_name):
     try:
         print(f"Running {script_name}...")
-        subprocess.check_call(["/bin/bash", script_name])
+        subprocess.check_call(["sudo", "/bin/bash", script_name])
         print(f"{script_name} executed successfully.")
     except subprocess.CalledProcessError as e:
         print(f"Error running {script_name}: {e}")
