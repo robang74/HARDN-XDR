@@ -1,7 +1,7 @@
 <p align="center">
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/OpenSource-For-Freedom/HARDN?include_prereleases)
-![GitHub issues](https://img.shields.io/github/issues/OpenSource-For-Freedom/HARDN)
-![GitHub stars](https://img.shields.io/github/stars/OpenSource-For-Freedom/HARDN)
+  ![GitHub release (latest by date)](https://img.shields.io/github/v/release/OpenSource-For-Freedom/HARDN?include_prereleases)
+  ![GitHub issues](https://img.shields.io/github/issues/OpenSource-For-Freedom/HARDN)
+  ![GitHub stars](https://img.shields.io/github/stars/OpenSource-For-Freedom/HARDN)
 </p>
 
 
