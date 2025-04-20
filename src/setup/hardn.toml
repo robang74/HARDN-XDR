@@ -3,17 +3,17 @@ name = "hardn"
 version = "0.1.0"
 description = "A project to orchestrate system setup and kernel hardening using C and Bash"
 authors = [
-    { name = "HARDN team", email = "support@SIG.org" }
+    { name = "SIG team", email = "support@SIG.org" }
 ]
-license = { text = "MIT" }
+license = { text = "GNU" }
 readme = "README.md"
 keywords = ["security", "orchestration", "c", "bash", "kernel"]
 classifiers = [
     "Programming Language :: C",
     "Programming Language :: Unix Shell",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: POSIX :: Linux",
-    "Topic :: System :: Systems Administration",
+    "License :: OSI Approved :: GNU License",
+    "Operating System :: POSIX :: Debian",
+    "Topic :: System :: Systems Security",
     "Topic :: Security"
 ]
 
