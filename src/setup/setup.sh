@@ -2,7 +2,6 @@
 set -e # Exit on errors
 set -x # Debug mode
 
-
 ########################################
 #            HARDN - Setup             #
 #  Please have repo cloned beforehand  #
@@ -20,18 +19,15 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-# Update system packages
 update_system_packages() {
     printf "\033[1;31m[+] Updating system packages...\033[0m\n"
     apt update -y && apt upgrade -y
 }
 
-# Install package dependencies
 install_pkgdeps() {
     printf "\033[1;31m[+] Installing package dependencies...\033[0m\n"
     apt install -y wget curl git gawk mariadb-common mysql-common policycoreutils \
         python3-matplotlib-data unixodbc-common firejail python3-pyqt6
-}
 }
 
 echo "========================================================"
@@ -39,7 +35,6 @@ echo "             [+] HARDN - Security Features              "
 echo "       [+] Installing required Security Services        "
 echo "========================================================"
 
-# Install and configure SELinux
 install_selinux() {
     printf "\033[1;31m[+] Installing and configuring SELinux...\033[0m\n"
     apt update
@@ -61,14 +56,12 @@ install_selinux() {
     printf "\033[1;31m[+] SELinux installation and configuration completed.\033[0m\n"
 }
 
-# Install security tools
 install_security_tools() {
     printf "\033[1;31m[+] Installing required system security tools...\033[0m\n"
     apt install -y ufw fail2ban apparmor apparmor-profiles apparmor-utils firejail tcpd lynis debsums \
         libpam-pwquality libvirt-daemon-system libvirt-clients qemu-system-x86 openssh-server openssh-client
 }
 
-# Configure UFW
 configure_ufw() {
     printf "\033[1;31m[+] Configuring UFW...\033[0m\n"
     ufw default deny incoming
@@ -79,39 +72,109 @@ configure_ufw() {
     printf "\033[1;31m[+] UFW configuration completed.\033[0m\n"
 }
 
-# Enable and configure Fail2Ban and AppArmor
 enable_services() {
     printf "\033[1;31m[+] Enabling and starting Fail2Ban and AppArmor services...\033[0m\n"
     systemctl enable --now fail2ban
     systemctl enable --now apparmor
-
     printf "\033[1;31m[+] Applying stricter AppArmor profiles...\033[0m\n"
     aa-enforce /etc/apparmor.d/* || printf "\033[1;31m[-] Warning: Failed to enforce some AppArmor profiles.\033[0m\n"
-    printf "\033[1;31m[+] AppArmor profiles enforced.\033[0m\n"
-
     systemctl restart fail2ban
-    printf "\033[1;31m[+] Fail2Ban configured and restarted.\033[0m\n"
 }
 
-# Install additional tools
 install_additional_tools() {
     printf "\033[1;31m[+] Installing chkrootkit and LMD...\033[0m\n"
     apt install -y chkrootkit
-    printf "\033[1;31m[+] Installing Linux Malware Detect...\033[0m\n"
     temp_dir=$(mktemp -d)
-    cd "$temp_dir" || { printf "\033[1;31m[-] Failed to create temporary directory\033[0m\n"; return 1; }
+    cd "$temp_dir" || { printf "\033[1;31m[-] Failed to create temp directory\033[0m\n"; return 1; }
     if git clone https://github.com/rfxn/linux-malware-detect.git; then
-        cd linux-malware-detect || { printf "\033[1;31m[-] Failed to change to maldetect directory\033[0m\n"; return 1; }
+        cd linux-malware-detect || { printf "\033[1;31m[-] Could not enter maldetect dir\033[0m\n"; return 1; }
         chmod +x install.sh
         ./install.sh
     else
-        printf "\033[1;31m[-] Failed to clone maldetect repository\033[0m\n"
+        printf "\033[1;31m[-] Failed to clone maldetect repo\033[0m\n"
     fi
     cd /tmp || true
     rm -rf "$temp_dir"
 }
 
-# Final message
+# --- STIG Compliance (No OpenSCAP) ---
+
+stig_password_policy() {
+    apt install -y libpam-pwquality
+    sed -i 's/^# minlen.*/minlen = 14/' /etc/security/pwquality.conf
+    sed -i 's/^# dcredit.*/dcredit = -1/' /etc/security/pwquality.conf
+    sed -i 's/^# ucredit.*/ucredit = -1/' /etc/security/pwquality.conf
+    sed -i 's/^# ocredit.*/ocredit = -1/' /etc/security/pwquality.conf
+    sed -i 's/^# lcredit.*/lcredit = -1/' /etc/security/pwquality.conf
+    sed -i '/pam_pwquality.so/ s/$/ retry=3 enforce_for_root/' /etc/pam.d/common-password || true
+}
+
+stig_lock_inactive_accounts() {
+    useradd -D -f 35
+    for user in $(awk -F: '$3 >= 1000 && $1 != "nobody" {print $1}' /etc/passwd); do
+        chage --inactive 35 "$user"
+    done
+}
+
+stig_login_banners() {
+    echo "You are accessing a U.S. Government (USG) Information System (IS)..." > /etc/issue
+    echo "Use of this IS constitutes consent to monitoring..." > /etc/issue.net
+    chmod 644 /etc/issue /etc/issue.net
+}
+
+stig_secure_filesystem() {
+    chown root:root /etc/{passwd,shadow,group}
+    chmod 644 /etc/passwd /etc/group
+    chmod 000 /etc/shadow
+}
+
+stig_audit_rules() {
+    apt install -y auditd audispd-plugins
+    cat <<EOF > /etc/audit/rules.d/stig.rules
+-w /etc/passwd -p wa -k identity
+-w /etc/shadow -p wa -k identity
+-w /etc/group -p wa -k identity
+-w /etc/gshadow -p wa -k identity
+-w /etc/security/opasswd -p wa -k identity
+-e 2
+EOF
+    augenrules --load
+    systemctl enable --now auditd
+}
+
+stig_disable_usb() {
+    echo "install usb-storage /bin/false" > /etc/modprobe.d/usb-storage.conf
+}
+
+stig_disable_core_dumps() {
+    echo "* hard core 0" >> /etc/security/limits.conf
+    echo "fs.suid_dumpable = 0" > /etc/sysctl.d/99-coredump.conf
+    sysctl -w fs.suid_dumpable=0
+}
+
+stig_disable_ctrl_alt_del() {
+    systemctl mask ctrl-alt-del.target
+    systemctl daemon-reexec
+}
+
+stig_disable_ipv6() {
+    echo "net.ipv6.conf.all.disable_ipv6 = 1" >> /etc/sysctl.d/99-sysctl.conf
+    echo "net.ipv6.conf.default.disable_ipv6 = 1" >> /etc/sysctl.d/99-sysctl.conf
+    sysctl -p
+}
+
+apply_stig_hardening() {
+    stig_password_policy
+    stig_lock_inactive_accounts
+    stig_login_banners
+    stig_secure_filesystem
+    stig_audit_rules
+    stig_disable_usb
+    stig_disable_core_dumps
+    stig_disable_ctrl_alt_del
+    stig_disable_ipv6
+}
+
 setup_complete() {
     echo "======================================================="
     echo "             [+] HARDN - Setup Complete                "
@@ -119,16 +182,15 @@ setup_complete() {
     echo "======================================================="
 }
 
-# Main function
 main() {
     update_system_packages
-    install_python_deps
     install_pkgdeps
     install_selinux
     install_security_tools
     configure_ufw
     enable_services
     install_additional_tools
+    apply_stig_hardening
     setup_complete
 }
 
