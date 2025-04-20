@@ -1,6 +1,7 @@
 use clap::{App, Arg};
 use std::env;
-use std::fs;
+use std::fs::{self, OpenOptions};
+use std::io::Write;
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::process::{Command, exit};
@@ -9,6 +10,7 @@ use std::sync::mpsc::channel;
 use std::time::Duration;
 
 const LOG_FILE: &str = "/var/log/hardn.log";
+const SYSTEMD_UNIT: &str = "/etc/systemd/system/hardn.service";
 
 fn validate_environment() {
     if !nix::unistd::Uid::effective().is_root() {
@@ -43,17 +45,22 @@ fn set_executable_permissions(base_dir: &str) {
 }
 
 fn run_script(script_name: &str) {
+    if !Path::new(script_name).exists() {
+        eprintln!("Error: script {} not found!", script_name);
+        log::error!("Missing script: {}", script_name);
+        exit(1);
+    }
+
     println!("Running {}...", script_name);
     log::info!("Running {}...", script_name);
 
-    let status = Command::new("sudo")
-        .arg("/bin/bash")
+    let status = Command::new("/bin/bash")
         .arg(script_name)
         .status()
         .expect("Failed to execute script");
 
     if !status.success() {
-        eprintln!("Error running {}: {:?}", script_name, status);
+        eprintln!("Error running {}: {}", script_name, status);
         log::error!("Error running {}: {:?}", script_name, status);
         exit(1);
     }
@@ -131,7 +138,6 @@ fn monitor_system() {
             Ok(event) => {
                 println!("Detected system change: {:?}", event);
                 log::info!("Detected system change: {:?}", event);
-                // Handle updates or incidents here
             }
             Err(e) => {
                 eprintln!("Watch error: {:?}", e);
@@ -139,6 +145,52 @@ fn monitor_system() {
             }
         }
     }
+}
+
+fn create_systemd_service(exec_path: &str) {
+    println!("Creating systemd service: {}", SYSTEMD_UNIT);
+    log::info!("Creating systemd service");
+
+    let unit_contents = format!(
+        "[Unit]
+Description=HARDN Orchestration Service
+After=network.target auditd.service
+Requires=network.target
+
+[Service]
+Type=simple
+ExecStart={} --all
+Restart=on-failure
+RestartSec=10
+User=root
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+", exec_path);
+
+    let mut file = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(true)
+        .open(SYSTEMD_UNIT)
+        .expect("Failed to create systemd unit file");
+
+    file.write_all(unit_contents.as_bytes()).expect("Failed to write systemd unit file");
+
+    Command::new("systemctl")
+        .args(&["daemon-reload"])
+        .status()
+        .expect("Failed to reload systemd");
+
+    Command::new("systemctl")
+        .args(&["enable", "--now", "hardn.service"])
+        .status()
+        .expect("Failed to enable/start HARDN systemd service");
+
+    println!("Systemd service created and started.");
+    log::info!("Systemd service created and started.");
 }
 
 fn main() {
@@ -153,12 +205,25 @@ fn main() {
         .arg(Arg::with_name("gui").long("gui").help("Launch the GUI"))
         .arg(Arg::with_name("monitor").long("monitor").help("Monitor the system for changes"))
         .arg(Arg::with_name("all").long("all").help("Run all steps (default)"))
+        .arg(Arg::with_name("install-service").long("install-service").help("Create and enable systemd service"))
         .get_matches();
 
-    let base_dir = env::current_dir().unwrap().to_str().unwrap().to_string();
+    let base_dir = env::current_dir()
+        .expect("Failed to read current directory")
+        .canonicalize()
+        .expect("Failed to resolve full path")
+        .to_str()
+        .unwrap()
+        .to_string();
 
     validate_environment();
     set_executable_permissions(&base_dir);
+
+    if matches.is_present("install-service") {
+        let binary_path = std::env::current_exe().unwrap();
+        create_systemd_service(binary_path.to_str().unwrap());
+        return;
+    }
 
     if matches.is_present("setup") || matches.is_present("all") {
         run_script(&format!("{}/setup/setup.sh", base_dir));
