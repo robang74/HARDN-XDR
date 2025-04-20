@@ -1,49 +1,31 @@
-name: Build DEB Package
+name: Build and Test
 
 on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
+      - dev-testing
 
 jobs:
-  build-deb:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
+          python-version: '3.11'
 
-      - name: Install Build Dependencies
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest tests/
+
+      - name: Build Debian package
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential devscripts debhelper fakeroot lintian python3 gcc
-
-      - name: Prepare DEB Structure
-        run: |
-          mkdir -p hardn
-          rsync -av --exclude='.git' --exclude='build' ./ hardn/
-          cd hardn
-          if [ ! -d "debian" ]; then
-            echo "::error ::Missing debian/ control files in root of repo"
-            exit 1
-          fi
-
-      - name: Build DEB Package
-        run: |
-          cd hardn
-          fakeroot debian/rules clean
+          sudo apt-get install -y build-essential devscripts debhelper
           dpkg-buildpackage -us -uc
-
-      - name: Upload DEB Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: hardn-deb-package
-          path: ./*.deb
