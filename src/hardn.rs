@@ -152,23 +152,8 @@ fn create_systemd_service(exec_path: &str) {
     log::info!("Creating systemd service");
 
     let unit_contents = format!(
-        "[Unit]
-Description=HARDN Orchestration Service
-After=network.target auditd.service
-Requires=network.target
-
-[Service]
-Type=simple
-ExecStart={} --all
-Restart=on-failure
-RestartSec=10
-User=root
-StandardOutput=journal
-StandardError=journal
-
-[Install]
-WantedBy=multi-user.target
-", exec_path);
+        "[Unit]\nDescription=HARDN Orchestration Service\nAfter=network.target auditd.service\nRequires=network.target\n\n[Service]\nType=simple\nExecStart={} --all\nRestart=on-failure\nRestartSec=10\nUser=root\nStandardOutput=journal\nStandardError=journal\n\n[Install]\nWantedBy=multi-user.target\n",
+        exec_path);
 
     let mut file = OpenOptions::new()
         .create(true)
@@ -193,6 +178,72 @@ WantedBy=multi-user.target
     log::info!("Systemd service created and started.");
 }
 
+fn install_systemd_timers(base_dir: &str) {
+    let systemd_dir = "/etc/systemd/system";
+
+    let pkg_service = format!("{}/hardn-packages.service", systemd_dir);
+    let pkg_timer = format!("{}/hardn-packages.timer", systemd_dir);
+
+    let kernel_service = format!("{}/hardn-kernel.service", systemd_dir);
+    let kernel_timer = format!("{}/hardn-kernel.timer", systemd_dir);
+
+    let pkg_service_content = format!(
+        "[Unit]\nDescription=Daily STIG Validation (packages.sh)\n\n[Service]\nType=oneshot\nExecStart=/bin/bash {}/setup/packages.sh --fix\n",
+        base_dir);
+
+    let pkg_timer_content = "[Unit]\nDescription=Daily STIG Validation\n\n[Timer]\nOnCalendar=*-*-* 02:00:00\nPersistent=true\n\n[Install]\nWantedBy=timers.target\n";
+
+    let kernel_service_content = format!(
+        "[Unit]\nDescription=Weekly Kernel Hardening\n\n[Service]\nType=oneshot\nExecStart={}/kernel\n",
+        base_dir);
+
+    let kernel_timer_content = "[Unit]\nDescription=Weekly Kernel Hardening\n\n[Timer]\nOnCalendar=Sun *-*-* 03:00:00\nPersistent=true\n\n[Install]\nWantedBy=timers.target\n";
+
+    fs::write(&pkg_service, pkg_service_content).expect("Failed to write pkg .service");
+    fs::write(&pkg_timer, pkg_timer_content).expect("Failed to write pkg .timer");
+
+    fs::write(&kernel_service, kernel_service_content).expect("Failed to write kernel .service");
+    fs::write(&kernel_timer, kernel_timer_content).expect("Failed to write kernel .timer");
+
+    for timer in ["hardn-packages.timer", "hardn-kernel.timer"] {
+        Command::new("systemctl")
+            .args(["enable", "--now", timer])
+            .status()
+            .expect("Failed to enable timer");
+    }
+
+    println!("[+] Installed systemd STIG timers");
+    log::info!("Systemd timers installed");
+}
+
+fn remove_systemd_timers() {
+    for name in ["hardn-packages", "hardn-kernel"] {
+        let timer = format!("{}.timer", name);
+        let service = format!("{}.service", name);
+
+        Command::new("systemctl")
+            .args(["disable", "--now", &timer])
+            .status()
+            .ok();
+        Command::new("rm")
+            .args(["-f", &format!("/etc/systemd/system/{}", timer)])
+            .status()
+            .ok();
+        Command::new("rm")
+            .args(["-f", &format!("/etc/systemd/system/{}", service)])
+            .status()
+            .ok();
+    }
+
+    Command::new("systemctl")
+        .arg("daemon-reload")
+        .status()
+        .ok();
+
+    println!("[+] Removed systemd STIG timers");
+    log::info!("Systemd timers removed");
+}
+
 fn main() {
     env_logger::init();
 
@@ -206,6 +257,8 @@ fn main() {
         .arg(Arg::with_name("monitor").long("monitor").help("Monitor the system for changes"))
         .arg(Arg::with_name("all").long("all").help("Run all steps (default)"))
         .arg(Arg::with_name("install-service").long("install-service").help("Create and enable systemd service"))
+        .arg(Arg::with_name("install-timers").long("install-timers").help("Install STIG systemd timers"))
+        .arg(Arg::with_name("remove-cron").long("remove-cron").help("Remove all HARDN cron/timer jobs"))
         .get_matches();
 
     let base_dir = env::current_dir()
@@ -222,6 +275,16 @@ fn main() {
     if matches.is_present("install-service") {
         let binary_path = std::env::current_exe().unwrap();
         create_systemd_service(binary_path.to_str().unwrap());
+        return;
+    }
+
+    if matches.is_present("install-timers") {
+        install_systemd_timers(&base_dir);
+        return;
+    }
+
+    if matches.is_present("remove-cron") {
+        remove_systemd_timers();
         return;
     }
 
