@@ -1,5 +1,5 @@
 #!/bin/bash
-# Validates setup.sh for install and configuration setups (only)
+# Validates setup.sh for install and configuration setups + STIG compliance 
 
 ########################################
 #           HARDN - Packages           #
@@ -14,107 +14,117 @@
 
 LOG_FILE="/var/log/packages_validation.log"
 
-# Initialize log file
 initialize_log() {
-    printf "\033[1;31m[+] Initializing log file: $LOG_FILE...\033[0m\n"
+    mkdir -p "$(dirname "$LOG_FILE")"
     echo "HARDN-Packages Validation Log - $(date)" > "$LOG_FILE"
     echo "=========================================" >> "$LOG_FILE"
 }
 
-# Validate package configurations
-validate_packages() {
-    printf "\033[1;31m[+] Validating package configurations...\033[0m\n" | tee -a "$LOG_FILE"
+# STIG hardening validation
+validate_stig_hardening() {
+    echo "[+] Validating STIG compliance..." | tee -a "$LOG_FILE"
 
-    # Validate SELinux
-    if command -v getenforce > /dev/null 2>&1; then
-        selinux_status=$(getenforce)
-        if [ "$selinux_status" != "Enforcing" ]; then
-            printf "\033[1;31m[-] SELinux is not in enforcing mode. Please configure it.\033[0m\n" | tee -a "$LOG_FILE"
-            return 1
-        fi
-        printf "\033[1;31m[+] SELinux is properly configured.\033[0m\n" | tee -a "$LOG_FILE"
+    # Password policy (pwquality.conf)
+    grep -q 'minlen = 14' /etc/security/pwquality.conf &&
+    grep -q 'dcredit = -1' /etc/security/pwquality.conf &&
+    grep -q 'ucredit = -1' /etc/security/pwquality.conf &&
+    grep -q 'ocredit = -1' /etc/security/pwquality.conf &&
+    grep -q 'lcredit = -1' /etc/security/pwquality.conf &&
+    echo "[+] Password policy is STIG compliant." | tee -a "$LOG_FILE" ||
+    { echo "[-] Password policy not compliant." | tee -a "$LOG_FILE"; return 1; }
+
+    # Inactive user lockout
+    user_default=$(useradd -D | grep INACTIVE | awk -F= '{print $2}')
+    if [ "$user_default" -le 35 ] && [ "$user_default" -ne -1 ]; then
+        echo "[+] User inactivity lockout set to $user_default days." | tee -a "$LOG_FILE"
     else
-        printf "\033[1;31m[-] SELinux is not installed. Please install SELinux.\033[0m\n" | tee -a "$LOG_FILE"
+        echo "[-] User inactivity lockout not configured properly." | tee -a "$LOG_FILE"
         return 1
     fi
 
-    # Validate UFW
-    if ufw status | grep -q "Status: active"; then
-        printf "\033[1;31m[+] UFW is active and configured.\033[0m\n" | tee -a "$LOG_FILE"
-    else
-        printf "\033[1;31m[-] UFW is not active. Please enable it.\033[0m\n" | tee -a "$LOG_FILE"
-        return 1
-    fi
+    # Login banners
+    grep -q "U.S. Government" /etc/issue && grep -q "consent to monitoring" /etc/issue.net &&
+    echo "[+] Login banners configured." | tee -a "$LOG_FILE" ||
+    { echo "[-] Login banners missing or incomplete." | tee -a "$LOG_FILE"; return 1; }
 
-    # Validate Fail2Ban
-    if systemctl is-active --quiet fail2ban; then
-        printf "\033[1;31m[+] Fail2Ban is running properly.\033[0m\n" | tee -a "$LOG_FILE"
-    else
-        printf "\033[1;31m[-] Fail2Ban is not running. Please start it.\033[0m\n" | tee -a "$LOG_FILE"
-        return 1
-    fi
+    # File permissions
+    perms=$(stat -c "%a" /etc/shadow)
+    [ "$perms" = "000" ] && echo "[+] /etc/shadow permissions correct." | tee -a "$LOG_FILE" ||
+    { echo "[-] /etc/shadow permissions are $perms, expected 000." | tee -a "$LOG_FILE"; return 1; }
 
-    # Validate AppArmor
-    if command -v aa-status > /dev/null 2>&1 && systemctl is-active --quiet apparmor; then
-        printf "\033[1;31m[+] AppArmor is running properly.\033[0m\n" | tee -a "$LOG_FILE"
-    else
-        printf "\033[1;31m[-] AppArmor is not running. Please enable it.\033[0m\n" | tee -a "$LOG_FILE"
-        return 1
-    fi
+    # auditd rule presence
+    grep -q '\-w /etc/passwd -p wa -k identity' /etc/audit/rules.d/stig.rules &&
+    echo "[+] auditd rules present." | tee -a "$LOG_FILE" ||
+    { echo "[-] auditd STIG rules missing." | tee -a "$LOG_FILE"; return 1; }
 
-    # Validate Firejail
-    if command -v firejail > /dev/null 2>&1; then
-        printf "\033[1;31m[+] Firejail is installed.\033[0m\n" | tee -a "$LOG_FILE"
-    else
-        printf "\033[1;31m[-] Firejail is not installed. Please install it.\033[0m\n" | tee -a "$LOG_FILE"
-        return 1
-    fi
+    # USB storage
+    grep -q "install usb-storage /bin/false" /etc/modprobe.d/usb-storage.conf &&
+    echo "[+] USB storage is blocked." | tee -a "$LOG_FILE" ||
+    { echo "[-] USB storage not blocked." | tee -a "$LOG_FILE"; return 1; }
 
-    # Validate chkrootkit
-    if command -v chkrootkit > /dev/null 2>&1; then
-        printf "\033[1;31m[+] chkrootkit is installed.\033[0m\n" | tee -a "$LOG_FILE"
-    else
-        printf "\033[1;31m[-] chkrootkit is not installed. Please install it.\033[0m\n" | tee -a "$LOG_FILE"
-        return 1
-    fi
+    # Ctrl+Alt+Del mask
+    systemctl status ctrl-alt-del.target | grep -q "Masked" &&
+    echo "[+] Ctrl+Alt+Del reboot disabled." | tee -a "$LOG_FILE" ||
+    { echo "[-] Ctrl+Alt+Del reboot is still active." | tee -a "$LOG_FILE"; return 1; }
 
-    # Validate Linux Malware Detect (LMD)
-    if command -v maldet > /dev/null 2>&1; then
-        printf "\033[1;31m[+] Linux Malware Detect (LMD) is installed.\033[0m\n" | tee -a "$LOG_FILE"
-    else
-        printf "\033[1;31m[-] Linux Malware Detect (LMD) is not installed. Please install it.\033[0m\n" | tee -a "$LOG_FILE"
-        return 1
-    fi
+    # Core dump disable
+    grep -q "fs.suid_dumpable = 0" /etc/sysctl.d/99-coredump.conf &&
+    echo "[+] Core dumps are disabled." | tee -a "$LOG_FILE" ||
+    { echo "[-] Core dumps are not properly disabled." | tee -a "$LOG_FILE"; return 1; }
 
-    # Validate auditd
-    if systemctl is-active --quiet auditd; then
-        printf "\033[1;31m[+] auditd is running properly.\033[0m\n" | tee -a "$LOG_FILE"
-    else
-        printf "\033[1;31m[-] auditd is not running. Please start it.\033[0m\n" | tee -a "$LOG_FILE"
-        return 1
-    fi
-
-    # Validate USB storage blocking
-    if grep -q "install usb-storage /bin/false" /etc/modprobe.d/usb-storage.conf; then
-        printf "\033[1;31m[+] USB storage devices are blocked.\033[0m\n" | tee -a "$LOG_FILE"
-    else
-        printf "\033[1;31m[-] USB storage devices are not blocked. Please configure it.\033[0m\n" | tee -a "$LOG_FILE"
-        return 1
-    fi
+    # IPv6 disable
+    grep -q "net.ipv6.conf.all.disable_ipv6 = 1" /etc/sysctl.d/99-sysctl.conf &&
+    echo "[+] IPv6 is disabled." | tee -a "$LOG_FILE" ||
+    { echo "[-] IPv6 not disabled." | tee -a "$LOG_FILE"; return 1; }
 }
 
-# Validate configuration
+# Package/service validation
+validate_packages() {
+    echo "[+] Validating package configurations..." | tee -a "$LOG_FILE"
+
+    command -v getenforce >/dev/null && [ "$(getenforce)" = "Enforcing" ] &&
+    echo "[+] SELinux is enforcing." | tee -a "$LOG_FILE" ||
+    { echo "[-] SELinux not enforcing." | tee -a "$LOG_FILE"; return 1; }
+
+    ufw status | grep -q "Status: active" &&
+    echo "[+] UFW is active." | tee -a "$LOG_FILE" ||
+    { echo "[-] UFW not active." | tee -a "$LOG_FILE"; return 1; }
+
+    systemctl is-active --quiet fail2ban &&
+    echo "[+] Fail2Ban is active." | tee -a "$LOG_FILE" ||
+    { echo "[-] Fail2Ban not active." | tee -a "$LOG_FILE"; return 1; }
+
+    command -v aa-status >/dev/null && systemctl is-active --quiet apparmor &&
+    echo "[+] AppArmor is active." | tee -a "$LOG_FILE" ||
+    { echo "[-] AppArmor not active." | tee -a "$LOG_FILE"; return 1; }
+
+    command -v firejail >/dev/null &&
+    echo "[+] Firejail is installed." | tee -a "$LOG_FILE" ||
+    { echo "[-] Firejail missing." | tee -a "$LOG_FILE"; return 1; }
+
+    command -v chkrootkit >/dev/null &&
+    echo "[+] chkrootkit installed." | tee -a "$LOG_FILE" ||
+    { echo "[-] chkrootkit missing." | tee -a "$LOG_FILE"; return 1; }
+
+    command -v maldet >/dev/null || [ -x /usr/local/maldetect/maldet ] &&
+    echo "[+] LMD installed." | tee -a "$LOG_FILE" ||
+    { echo "[-] LMD not found." | tee -a "$LOG_FILE"; return 1; }
+
+    systemctl is-active --quiet auditd &&
+    echo "[+] auditd is running." | tee -a "$LOG_FILE" ||
+    { echo "[-] auditd not running." | tee -a "$LOG_FILE"; return 1; }
+}
+
 validate_configuration() {
-    printf "\033[1;31m[+] Validating configuration...\033[0m\n" | tee -a "$LOG_FILE"
-    if validate_packages; then
-        printf "\033[1;32m[+] ======== ALL CONFIGURATIONS ARE SUCCESSFUL =========\033[0m\n" | tee -a "$LOG_FILE"
+    echo "[+] Validating configuration..." | tee -a "$LOG_FILE"
+    if validate_packages && validate_stig_hardening; then
+        echo -e "\033[1;32m[+] ======== ALL CONFIGURATIONS ARE SUCCESSFUL =========\033[0m" | tee -a "$LOG_FILE"
     else
-        printf "\033[1;31m[-] Some configurations failed. Check the log: $LOG_FILE\033[0m\n" | tee -a "$LOG_FILE"
+        echo -e "\033[1;31m[-] Some configurations failed. See log: $LOG_FILE\033[0m" | tee -a "$LOG_FILE"
         exit 1
     fi
 }
 
-# Main function
 main() {
     initialize_log
     validate_configuration
