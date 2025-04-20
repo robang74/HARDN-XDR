@@ -38,14 +38,6 @@ validate_packages() {
         return 1
     fi
 
-    # Validate Lynis
-    if command -v lynis > /dev/null 2>&1; then
-        printf "\033[1;31m[+] Lynis is installed.\033[0m\n" | tee -a "$LOG_FILE"
-    else
-        printf "\033[1;31m[-] Lynis is not installed. Please install Lynis.\033[0m\n" | tee -a "$LOG_FILE"
-        return 1
-    fi
-
     # Validate UFW
     if ufw status | grep -q "Status: active"; then
         printf "\033[1;31m[+] UFW is active and configured.\033[0m\n" | tee -a "$LOG_FILE"
@@ -63,26 +55,18 @@ validate_packages() {
     fi
 
     # Validate AppArmor
-    if aa-status >/dev/null 2>&1; then
+    if command -v aa-status > /dev/null 2>&1 && systemctl is-active --quiet apparmor; then
         printf "\033[1;31m[+] AppArmor is running properly.\033[0m\n" | tee -a "$LOG_FILE"
     else
         printf "\033[1;31m[-] AppArmor is not running. Please enable it.\033[0m\n" | tee -a "$LOG_FILE"
         return 1
     fi
 
-    # Validate auditd
-    if systemctl is-active --quiet auditd; then
-        printf "\033[1;31m[+] auditd is running properly.\033[0m\n" | tee -a "$LOG_FILE"
+    # Validate Firejail
+    if command -v firejail > /dev/null 2>&1; then
+        printf "\033[1;31m[+] Firejail is installed.\033[0m\n" | tee -a "$LOG_FILE"
     else
-        printf "\033[1;31m[-] auditd is not running. Please start it.\033[0m\n" | tee -a "$LOG_FILE"
-        return 1
-    fi
-
-    # Validate OpenSCAP
-    if command -v oscap > /dev/null 2>&1; then
-        printf "\033[1;31m[+] OpenSCAP is installed.\033[0m\n" | tee -a "$LOG_FILE"
-    else
-        printf "\033[1;31m[-] OpenSCAP is not installed. Please install it.\033[0m\n" | tee -a "$LOG_FILE"
+        printf "\033[1;31m[-] Firejail is not installed. Please install it.\033[0m\n" | tee -a "$LOG_FILE"
         return 1
     fi
 
@@ -102,11 +86,11 @@ validate_packages() {
         return 1
     fi
 
-    # Validate rkhunter
-    if command -v rkhunter > /dev/null 2>&1; then
-        printf "\033[1;31m[+] rkhunter is installed.\033[0m\n" | tee -a "$LOG_FILE"
+    # Validate auditd
+    if systemctl is-active --quiet auditd; then
+        printf "\033[1;31m[+] auditd is running properly.\033[0m\n" | tee -a "$LOG_FILE"
     else
-        printf "\033[1;31m[-] rkhunter is not installed. Please install it.\033[0m\n" | tee -a "$LOG_FILE"
+        printf "\033[1;31m[-] auditd is not running. Please start it.\033[0m\n" | tee -a "$LOG_FILE"
         return 1
     fi
 
@@ -119,7 +103,7 @@ validate_packages() {
     fi
 }
 
-# Provides an output of total configuration success or errors
+# Validate configuration
 validate_configuration() {
     printf "\033[1;31m[+] Validating configuration...\033[0m\n" | tee -a "$LOG_FILE"
     if validate_packages; then

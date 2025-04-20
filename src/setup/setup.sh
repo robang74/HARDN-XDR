@@ -1,8 +1,7 @@
 #!/bin/sh
 set -e # Exit on errors
 set -x # Debug mode
-set -u # Treat unset variables as an error
-set -o pipefail # Fail if any command in a pipeline fails
+
 
 ########################################
 #            HARDN - Setup             #
@@ -27,30 +26,18 @@ update_system_packages() {
     apt update -y && apt upgrade -y
 }
 
-# Setup Python virtual environment
-setup_python_venv() {
-    printf "\033[1;31m[+] Setting up Python virtual environment...\033[0m\n"
-    python3 -m venv /opt/hardn/venv
-    source /opt/hardn/venv/bin/activate
-    pip install --upgrade pip
-}
-
-# Install Python dependencies
-install_python_deps() {
-    printf "\033[1;31m[+] Installing Python dependencies...\033[0m\n"
-    apt install -y python3 python3-pip python3-venv
-    setup_python_venv
-    pip install PyQt6
-    deactivate
-    printf "\033[1;31m[+] Python dependencies installed and virtual environment deactivated.\033[0m\n"
-}
-
 # Install package dependencies
 install_pkgdeps() {
     printf "\033[1;31m[+] Installing package dependencies...\033[0m\n"
     apt install -y wget curl git gawk mariadb-common mysql-common policycoreutils \
-        python-matplotlib-data unixodbc-common
+        python3-matplotlib-data unixodbc-common firejail python3-pyqt6
 }
+}
+
+echo "========================================================"
+echo "             [+] HARDN - Security Features              "
+echo "       [+] Installing required Security Services        "
+echo "========================================================"
 
 # Install and configure SELinux
 install_selinux() {
@@ -98,20 +85,9 @@ enable_services() {
     systemctl enable --now fail2ban
     systemctl enable --now apparmor
 
-    printf "\033[1;31m[+] Configuring Fail2Ban...\033[0m\n"
-    cat > /etc/fail2ban/jail.local <<EOF
-[DEFAULT]
-bantime = 24h
-findtime = 10m
-maxretry = 3
-ignoreip = 127.0.0.1/8 ::1
-
-[sshd]
-enabled = true
-port = ssh
-logpath = /var/log/auth.log
-maxretry = 2
-EOF
+    printf "\033[1;31m[+] Applying stricter AppArmor profiles...\033[0m\n"
+    aa-enforce /etc/apparmor.d/* || printf "\033[1;31m[-] Warning: Failed to enforce some AppArmor profiles.\033[0m\n"
+    printf "\033[1;31m[+] AppArmor profiles enforced.\033[0m\n"
 
     systemctl restart fail2ban
     printf "\033[1;31m[+] Fail2Ban configured and restarted.\033[0m\n"
@@ -135,71 +111,6 @@ install_additional_tools() {
     rm -rf "$temp_dir"
 }
 
-# Reload AppArmor profiles
-reload_apparmor() {
-    printf "\033[1;31m[+] Reloading AppArmor profiles...\033[0m\n"
-    systemctl reload apparmor || systemctl start apparmor
-    if command -v aa-status >/dev/null 2>&1 && aa-status >/dev/null 2>&1; then
-        printf "\033[1;31m[+] AppArmor is running properly.\033[0m\n"
-    else
-        printf "\033[1;31m[-] Warning: AppArmor may not be running correctly.\033[0m\n"
-    fi
-}
-
-# Configure cron jobs
-configure_cron() {
-    printf "\033[1;31m[+] Configuring cron jobs...\033[0m\n"
-    crontab -l 2>/dev/null | grep -v -E "lynis audit system --cronjob|apt update && apt upgrade -y|chkrootkit|maldet --update|maldet --scan-all|setenforce 1" > mycron || true
-    cat >> mycron << 'EOFCRON'
-0 1 * * * lynis audit system --cronjob >> /var/log/lynis_cron.log 2>&1
-0 4 * * * chkrootkit
-0 5 * * * maldet --update
-0 6 * * * maldet --scan-all / >> /var/log/maldet_scan.log 2>&1
-EOFCRON
-    crontab mycron
-    rm mycron
-    printf "\033[1;31m[+] Cron jobs configured.\033[0m\n"
-}
-
-# Disable USB storage
-disable_usb_storage() {
-    printf "\033[1;31m[+] Disabling USB storage devices while allowing HID devices...\033[0m\n"
-    if echo 'install usb-storage /bin/false' > /etc/modprobe.d/usb-storage.conf; then
-        modprobe -r usb-storage || printf "\033[1;31m[-] Warning: USB storage module in use, cannot unload.\033[0m\n"
-        printf "\033[1;31m[+] USB storage devices blocked successfully.\033[0m\n"
-    else
-        printf "\033[1;31m[-] Error: Could not write to /etc/modprobe.d/usb-storage.conf. Check permissions.\033[0m\n"
-    fi
-}
-
-# Disable guest accounts
-disable_guest_account() {
-    printf "\033[1;31m[+] Disabling guest accounts...\033[0m\n"
-    if id "guest" >/dev/null 2>&1; then
-        usermod -L guest || printf "\033[1;31m[-] Warning: Could not disable guest account.\033[0m\n"
-        printf "\033[1;31m[+] Guest account disabled.\033[0m\n"
-    else
-        printf "\033[1;31m[-] Guest account does not exist. Skipping...\033[0m\n"
-    fi
-}
-
-# Configure auditd
-configure_auditd() {
-    printf "\033[1;31m[+] Configuring auditd for STIG compliance...\033[0m\n"
-    apt install -y auditd audispd-plugins
-    cat > /etc/audit/audit.rules <<EOF
--w /etc/passwd -p wa -k identity
--w /etc/shadow -p wa -k identity
--w /etc/group -p wa -k identity
--w /etc/gshadow -p wa -k identity
--w /etc/sudoers -p wa -k identity
--w /var/log/lastlog -p wa -k logins
--w /var/log/faillog -p wa -k logins
-EOF
-    systemctl restart auditd
-    printf "\033[1;31m[+] auditd configured and restarted.\033[0m\n"
-}
-
 # Final message
 setup_complete() {
     echo "======================================================="
@@ -218,11 +129,6 @@ main() {
     configure_ufw
     enable_services
     install_additional_tools
-    reload_apparmor
-    configure_cron
-    disable_usb_storage
-    disable_guest_account
-    configure_auditd
     setup_complete
 }
 

@@ -1,0 +1,22 @@
+[project]
+name = "hardn"
+version = "0.1.0"
+description = "A project to orchestrate system setup and kernel hardening using C and Bash"
+authors = [
+    { name = "HARDN team", email = "support@SIG.org" }
+]
+license = { text = "MIT" }
+readme = "README.md"
+keywords = ["security", "orchestration", "c", "bash", "kernel"]
+classifiers = [
+    "Programming Language :: C",
+    "Programming Language :: Unix Shell",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Security"
+]
+
+[build-system]
+requires = []
+build-backend = "setuptools.build_meta"
