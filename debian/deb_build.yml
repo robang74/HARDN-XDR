@@ -13,33 +13,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      
       - name: Checkout Code
         uses: actions/checkout@v3
-
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
-
-      - name: Install Dependencies
+      - name: Install Build Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential devscripts debhelper fakeroot
+          sudo apt-get install -y build-essential devscripts debhelper fakeroot lintian python3 gcc
 
+      - name: Prepare DEB Structure
+        run: |
+          mkdir -p hardn
+          rsync -av --exclude='.git' --exclude='build' ./ hardn/
+          cd hardn
+          if [ ! -d "debian" ]; then
+            echo "::error ::Missing debian/ control files in root of repo"
+            exit 1
+          fi
 
       - name: Build DEB Package
         run: |
-          mkdir -p build
-          cp -r . build/
-          cd build
-          debuild -us -uc || { echo "DEB package build failed"; exit 1; }
-
+          cd hardn
+          fakeroot debian/rules clean
+          dpkg-buildpackage -us -uc
 
       - name: Upload DEB Artifact
         uses: actions/upload-artifact@v3
         with:
           name: hardn-deb-package
-          path: build/*.deb
+          path: ./*.deb
