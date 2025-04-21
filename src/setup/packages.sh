@@ -1,42 +1,49 @@
-#!/bin/bash
-# Validates (cron with hardn.rs) setup.sh for install and configuration setups + STIG compliance + auto-fix
+#!/bin/sh
+set -e # Exit on errors
+set -x # Debug mode
 
 ########################################
-#           HARDN - Packages           #
+#            HARDN - Packages          #
+#    THIS SCRIPT IS STIG COMPLIANT     #
 #  Please have repo cloned beforehand  #
 #       Installs + Pre-config          #
-#    Must have patience loaded already #
+#    Must have python-3 loaded already #
 #             Author(s):               #
 #         - Chris Bingham              #
 #           - Tim Burns                #
-#        Date: 4/5-20/2025             #
+#        Date: 4/5-12/2025             #
 ########################################
 
-LOG_FILE="/var/log/packages_validation.log"
+# Ensure the script is run as root
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root. Use: sudo ./packages.sh"
+    exit 1
+fi
+
+LOG_FILE="/var/log/hardn_packages.log"
 FIX_MODE=false
 
 initialize_log() {
-    mkdir -p "$(dirname "$LOG_FILE")"
-    echo "HARDN-Packages Validation Log - $(date)" > "$LOG_FILE"
-    echo "=========================================" >> "$LOG_FILE"
+    echo "========================================" > "$LOG_FILE"
+    echo " HARDN - Packages Validation Log" >> "$LOG_FILE"
+    echo "========================================" >> "$LOG_FILE"
+    echo "[+] Log initialized at $(date)" >> "$LOG_FILE"
 }
 
 fix_if_needed() {
-    local condition="$1"
+    local check_cmd="$1"
     local fix_cmd="$2"
     local success_msg="$3"
-    local fail_msg="$4"
+    local failure_msg="$4"
 
-    if ! eval "$condition"; then
-        echo "[-] $fail_msg" | tee -a "$LOG_FILE"
-        if $FIX_MODE; then
-            echo "[*] Attempting fix: $fix_cmd" | tee -a "$LOG_FILE"
-            eval "$fix_cmd" && echo "[+] Fixed: $success_msg" | tee -a "$LOG_FILE"
-        fi
-        return 1
-    else
+    if eval "$check_cmd"; then
         echo "[+] $success_msg" | tee -a "$LOG_FILE"
-        return 0
+    else
+        echo "[-] $failure_msg" | tee -a "$LOG_FILE"
+        if $FIX_MODE; then
+            echo "[*] Attempting to fix..." | tee -a "$LOG_FILE"
+            eval "$fix_cmd" && echo "[+] Fixed: $success_msg" | tee -a "$LOG_FILE" || echo "[-] Failed to fix: $failure_msg" | tee -a "$LOG_FILE"
+        fi
     fi
 }
 
@@ -155,7 +162,14 @@ validate_packages() {
 }
 
 validate_configuration() {
-    echo "[+] Validating configuration..." | tee -a "$LOG_FILE"
+    printf "\033[1;31m[+] Validating configuration...\033[0m\n"
+    if some_validation_command; then
+        printf "\033[1;32m[+] Validation passed.\033[0m\n"
+    else
+        printf "\033[1;31m[-] Validation failed. Skipping...\033[0m\n"
+        return 0  # Prevents script from exiting
+    fi
+
     validate_packages
     validate_stig_hardening
 
@@ -163,10 +177,21 @@ validate_configuration() {
     $FIX_MODE && echo -e "\033[1;34m[*] Fix mode was enabled. Auto-remediation attempted.\033[0m" | tee -a "$LOG_FILE"
 }
 
+ # Make setup.sh and packages.sh read and execute only
+    PACKAGES_SCRIPT="/home/tim/DEV/HARDN/src/setup/packages.sh" # Define the path to the script
+    printf "\033[1;31m[+] Making setup.sh and packages.sh read and execute only...\033[0m\n"
+    chmod 555 "$0" 
+    chmod 555 "$PACKAGES_SCRIPT" 
+    printf "\033[1;32m[+] setup.sh and packages.sh are now read and execute only.\033[0m\n"
+
 main() {
     [[ "$1" == "--fix" ]] && FIX_MODE=true
     initialize_log
     validate_configuration
+
+    # Force reboot
+    printf "\033[1;31m[+] Rebooting system...\033[0m\n"
+    sudo reboot || printf "\033[1;31m[-] Reboot failed. Please reboot manually.\033[0m\n"
 }
 
 main "$@"

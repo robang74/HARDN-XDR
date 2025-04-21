@@ -13,6 +13,8 @@
 </p>
 HARDN Endpoint is a robust and secure endpoint management solution designed to simplify and enhance the management of devices in your network. It provides advanced features for monitoring, securing, and maintaining endpoints efficiently.
 
+We also bring you with this release `STIG` COMPLIANCE" to align with best security practices required by the U.S. Government Information systems. 
+
 <p align="center">
   <img src="https://img.shields.io/badge/FEATURES-white?style=for-the-badge&labelColor=black" alt="FEATURES"><br><br>
 </p>
@@ -21,6 +23,7 @@ HARDN Endpoint is a robust and secure endpoint management solution designed to s
 - **Enhanced Security**: Protect endpoints with advanced security protocols.
 - **Scalability**: Manage endpoints across small to large-scale networks.
 - **User-Friendly Interface**: Intuitive design for seamless navigation and management.
+- **STIG Compliance**: This release brings the utmost, security for Debian Government based informatin systems. 
 
 <p align="center">
   <img src="https://img.shields.io/badge/PURPOSE-white?style=for-the-badge&labelColor=black" alt="PURPOSE"><br><br>
@@ -38,22 +41,20 @@ The purpose of HARDN Endpoint is to empower IT administrators and users with the
   git clone https://github.com/opensource-for-freedom/HARDN.git
   ```
 2. Navigate to the `src` directory:
-  ```bash
+ ```bash
   cd HARDN/src/setup
+  sudo chmod +x setup.sh
+  sudo ./setup.sh
+
   ```
-3. Make the two bash files executable:
-  ```bash
-  chmod +x setup.sh packages.sh
-  ```
-4. Run the first bash file:
-  ```bash
-  ./setup.sh
-  ```
-5. After the first script completes, run the second bash file:
-  ```bash
-  ./packages.sh
-  ```
-6. Follow any additional setup instructions provided in the `docs` directory.
+  This will kick off the full setup of HARDN with `STIG` princiiples. 
+  ### NOTE: 
+  #### AIDE will 20-60 minutes to fully establish the "ADVANCED INTRUSION DETECTION SYSTEM"
+  - This script will run syncronously and reboot your system when complete. 
+  - DO-NOT turn your system off: We have established an update routine with reboots using CRON. 
+  - HARDN-Endpoint in itself once executed, will keep your Debian system secure and up to date. 
+
+6. Follow any additional setup instructions and information provided in the `docs` directory.
 
 
 <p align="center">
