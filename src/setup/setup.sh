@@ -30,11 +30,6 @@ install_pkgdeps() {
         python3-matplotlib unixodbc-common firejail python3-pyqt6
 }
 
-echo "========================================================"
-echo "             [+] HARDN - Security Features              "
-echo "       [+] Installing required Security Services        "
-echo "========================================================"
-
 install_selinux() {
     printf "\033[1;31m[+] Installing and configuring SELinux...\033[0m\n"
     apt update
@@ -62,13 +57,14 @@ install_security_tools() {
         libpam-pwquality libvirt-daemon-system libvirt-clients qemu-system-x86 openssh-server openssh-client
 }
 
-
 enable_services() {
     printf "\033[1;31m[+] Enabling and starting Fail2Ban and AppArmor services...\033[0m\n"
     systemctl enable --now fail2ban
     systemctl enable --now apparmor
     printf "\033[1;31m[+] Applying stricter AppArmor profiles...\033[0m\n"
-    aa-enforce /etc/apparmor.d/* || printf "\033[1;31m[-] Warning: Failed to enforce some AppArmor profiles.\033[0m\n"
+    for profile in /etc/apparmor.d/*; do
+        aa-enforce "$profile" || printf "\033[1;31m[-] Warning: Failed to enforce profile: %s\033[0m\n" "$profile"
+    done
     systemctl restart fail2ban
 }
 
@@ -88,18 +84,14 @@ install_additional_tools() {
     rm -rf "$temp_dir"
 }
 
-# RUST
 install_rust() {
     printf "\033[1;31m[+] Installing Rust...\033[0m\n"
-
     if command -v rustc > /dev/null 2>&1; then
         printf "\033[1;32m[+] Rust is already installed. Skipping installation.\033[0m\n"
         return 0
     fi
-
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
     export PATH="$HOME/.cargo/bin:$PATH"
-
     if command -v rustc > /dev/null 2>&1; then
         printf "\033[1;32m[+] Rust installed successfully.\033[0m\n"
         rustc --version
@@ -109,84 +101,32 @@ install_rust() {
     fi
 }
 
-
-
-# --- STIG Compliance (No OpenSCAP) ---
-
-stig_password_policy() {
-    apt install -y libpam-pwquality
-    sed -i 's/^# minlen.*/minlen = 14/' /etc/security/pwquality.conf
-    sed -i 's/^# dcredit.*/dcredit = -1/' /etc/security/pwquality.conf
-    sed -i 's/^# ucredit.*/ucredit = -1/' /etc/security/pwquality.conf
-    sed -i 's/^# ocredit.*/ocredit = -1/' /etc/security/pwquality.conf
-    sed -i 's/^# lcredit.*/lcredit = -1/' /etc/security/pwquality.conf
-    sed -i '/pam_pwquality.so/ s/$/ retry=3 enforce_for_root/' /etc/pam.d/common-password || true
-}
-
-stig_lock_inactive_accounts() {
-    useradd -D -f 35
-    for user in $(awk -F: '$3 >= 1000 && $1 != "nobody" {print $1}' /etc/passwd); do
-        chage --inactive 35 "$user"
+randomize_nic_mac() {
+    printf "\033[1;31m[+] Randomizing NIC MAC addresses...\033[0m\n"
+    for nic in $(ls /sys/class/net | grep -v lo); do
+        ip link set dev "$nic" down
+        mac=$(hexdump -n6 -e '/1 ":%02X"' /dev/urandom | sed 's/^://')
+        ip link set dev "$nic" address "$mac"
+        ip link set dev "$nic" up
+        printf "\033[1;32m[+] Randomized MAC for %s: %s\033[0m\n" "$nic" "$mac"
     done
 }
 
-stig_login_banners() {
-    echo "You are accessing a fully secured SIG Information System (IS)..." > /etc/issue
-    echo "Use of this IS constitutes consent to monitoring..." > /etc/issue.net
-    chmod 644 /etc/issue /etc/issue.net
+# the CRON train 
+setup_cron_jobs() {
+printf "\033[1;31m[+] Setting up cron jobs for security packages and updates...\033[0m\n"
+echo "0 3 * * * root apt update -y && apt upgrade -y" > /etc/cron.d/system_updates_3am
+echo "0 5 * * * root apt update -y && apt upgrade -y" > /etc/cron.d/system_updates_5am
+echo "0 3 * * * root fail2ban-client reload" > /etc/cron.d/fail2ban_reload
+echo "0 3 * * * root lynis audit system --quick" > /etc/cron.d/lynis_audit
+echo "0 3 * * * root /usr/local/sbin/maldet --update" > /etc/cron.d/maldet_update
+echo "0 3 * * 0 root update-grub" > /etc/cron.d/grub_update
+echo "0 6 * * * root /sbin/reboot" > /etc/cron.d/daily_reboot
+chmod 644 /etc/cron.d/system_updates_3am /etc/cron.d/system_updates_5am /etc/cron.d/fail2ban_reload /etc/cron.d/lynis_audit /etc/cron.d/maldet_update /etc/cron.d/grub_update /etc/cron.d/daily_reboot
+printf "\033[1;32m[+] Cron jobs for security packages, updates, GRUB updates, and daily reboot have been set up.\033[0m\n"
 }
 
-stig_secure_filesystem() {
-    chown root:root /etc/{passwd,shadow,group}
-    chmod 644 /etc/passwd /etc/group
-    chmod 000 /etc/shadow
-}
 
-stig_audit_rules() {
-    apt install -y auditd audispd-plugins
-    cat <<EOF > /etc/audit/rules.d/stig.rules
--w /etc/passwd -p wa -k identity
--w /etc/shadow -p wa -k identity
--w /etc/group -p wa -k identity
--w /etc/gshadow -p wa -k identity
--w /etc/security/opasswd -p wa -k identity
--e 2
-EOF
-    augenrules --load
-    systemctl enable --now auditd
-}
-
-stig_disable_usb() {
-    echo "install usb-storage /bin/false" > /etc/modprobe.d/usb-storage.conf
-}
-
-stig_disable_core_dumps() {
-    echo "* hard core 0" >> /etc/security/limits.conf
-    echo "fs.suid_dumpable = 0" > /etc/sysctl.d/99-coredump.conf
-    sysctl -w fs.suid_dumpable=0
-}
-
-stig_disable_ctrl_alt_del() {
-    systemctl mask ctrl-alt-del.target
-    systemctl daemon-reexec
-}
-
-stig_disable_ipv6() {
-    echo "net.ipv6.conf.all.disable_ipv6 = 1" >> /etc/sysctl.d/99-sysctl.conf
-    echo "net.ipv6.conf.default.disable_ipv6 = 1" >> /etc/sysctl.d/99-sysctl.conf
-    sysctl -p
-}
-
-configure_ufw() {
-    printf "\033[1;31m[+] Configuring UFW...\033[0m\n"
-    ufw default deny incoming
-    ufw default allow outgoing
-    ufw allow out 53    # Allow DNS for LMD signature updates and Rust installs
-    ufw allow out 443   # Allow HTTPS for LMD signature updates and Rust installs
-    ufw enable || printf "\033[1;31m[-] Warning: Could not enable UFW.\033[0m\n"
-    ufw reload || printf "\033[1;31m[-] Warning: Could not reload UFW.\033[0m\n"
-    printf "\033[1;31m[+] UFW configuration completed.\033[0m\n"
-}
 
 apply_stig_hardening() {
     stig_password_policy
@@ -198,6 +138,7 @@ apply_stig_hardening() {
     stig_disable_core_dumps
     stig_disable_ctrl_alt_del
     stig_disable_ipv6
+    randomize_nic_mac
 }
 
 setup_complete() {
