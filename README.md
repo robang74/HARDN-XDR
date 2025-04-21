@@ -3,10 +3,16 @@
 
 
 <p align="center">
+  <img src="https://img.shields.io/badge/OS: DEBIAN 12-red?style=for-the-badge&labelColor=grey" alt="OS: DEBIAN 12"><br><br>
+</p>
+
+<p align="center">
   <img src="docs/assets/HARDN(1).png" alt="HARDN Logo" width="300px" /><br><br>
   <img src="https://img.shields.io/badge/The_Linux_Security_Project-red?style=for-the-badge&labelColor=black" alt="The Linux Security Project"><br><br>
   <code>HARDN-Endpoint</code>
 </p>
+
+
 
 <p align="center">
   <img src="https://img.shields.io/badge/OVERVIEW-white?style=for-the-badge&labelColor=black" alt="OVERVIEW"><br><br>
