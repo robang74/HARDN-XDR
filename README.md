@@ -13,7 +13,7 @@
 </p>
 HARDN Endpoint is a robust and secure endpoint management solution designed to simplify and enhance the management of devices in your network. It provides advanced features for monitoring, securing, and maintaining endpoints efficiently.
 
-We also bring you with this release `STIG` COMPLIANCE" to align with best security practices required by the U.S. Government Information systems. 
+We also bring you with this release `STIG` COMPLIANCE" to align with the Security Technical Information Guides provided by the DOD Cyber Exchange.
 
 <p align="center">
   <img src="https://img.shields.io/badge/FEATURES-white?style=for-the-badge&labelColor=black" alt="FEATURES"><br><br>
@@ -47,15 +47,17 @@ The purpose of HARDN Endpoint is to empower IT administrators and users with the
   sudo ./setup.sh
 
   ```
-  This will kick off the full setup of HARDN with `STIG` princiiples. 
+  This will kick off the full setup of HARDN with `STIG` principles. 
   ### NOTE: 
+
+  
   #### AIDE will 20-60 minutes to fully establish the "ADVANCED INTRUSION DETECTION SYSTEM"
   - This script will run syncronously and reboot your system when complete. 
   - DO-NOT turn your system off: We have established an update routine with reboots using CRON. 
   - HARDN-Endpoint in itself once executed, will keep your Debian system secure and up to date. 
 
 6. Follow any additional setup instructions and information provided in the `docs` directory.
-
+</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/CONTRIBUTION-white?style=for-the-badge&labelColor=black" alt="CONTRIBUTION"><br><br>
