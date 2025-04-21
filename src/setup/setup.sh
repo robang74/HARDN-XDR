@@ -57,6 +57,17 @@ install_security_tools() {
         libpam-pwquality libvirt-daemon-system libvirt-clients qemu-system-x86 openssh-server openssh-client
 }
 
+configure_ufw() {
+    printf "\033[1;31m[+] Configuring UFW firewall...\033[0m\n"
+    ufw default deny incoming
+    ufw default allow outgoing
+    ufw allow ssh
+    ufw allow 443/tcp
+    ufw enable
+    ufw reload
+    printf "\033[1;31m[+] UFW firewall configured and enabled.\033[0m\n"
+}
+
 enable_services() {
     printf "\033[1;31m[+] Enabling and starting Fail2Ban and AppArmor services...\033[0m\n"
     systemctl enable --now fail2ban
@@ -158,8 +169,12 @@ main() {
     install_additional_tools
     install_rust
     apply_stig_hardening
-    configure_ufw
     setup_complete
+
+
+    # Make packages.sh executable and call it
+    chmod +x "$(dirname "$0")/packages.sh"
+    "$(dirname "$0")/packages.sh"
 }
 
 main
