@@ -39,7 +39,7 @@ The purpose of HARDN Endpoint is to empower IT administrators and users with the
   ```
 2. Navigate to the `src` directory:
   ```bash
-  cd HARDN/src
+  cd HARDN/src/setup
   ```
 3. Make the two bash files executable:
   ```bash
