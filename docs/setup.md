@@ -1,3 +1,0 @@
-# HARDN Setup Walkthough
-
-- 
