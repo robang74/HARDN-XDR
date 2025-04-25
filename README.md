@@ -21,6 +21,27 @@ HARDN Endpoint is a robust and secure endpoint management solution designed to s
 
 We also bring you with this release `STIG` COMPLIANCE" to align with the Security Technical Information Guides provided by the DOD Cyber Exchange.
 
+
+```bash
+HARDN/
+├── .gitignore
+├── README.md
+├── changelog.md
+├── docs/
+│   ├── LICENSE
+│   └── assets/
+│       ├── HARDN(1).png
+│       └── cybersynapse.png
+├── src/
+│   └── setup/
+│       ├── packages.sh
+│       └── setup.sh
+```
+
+</p>
+
+
+
 <p align="center">
   <img src="https://img.shields.io/badge/FEATURES-white?style=for-the-badge&labelColor=black" alt="FEATURES"><br><br>
 </p>
@@ -94,22 +115,5 @@ This project is licensed under the GPLicense
 office@cybersynapse.ro
 </p>
 
-<p align="center">
 
-```bash
-HARDN/
-├── .gitignore
-├── README.md
-├── changelog.md
-├── docs/
-│   ├── LICENSE
-│   └── assets/
-│       ├── HARDN(1).png
-│       └── cybersynapse.png
-├── src/
-│   └── setup/
-│       ├── packages.sh
-│       └── setup.sh
-```
 
-</p>
