@@ -94,7 +94,22 @@ This project is licensed under the GPLicense
 office@cybersynapse.ro
 </p>
 
+<p align="center">
 
+```bash
+HARDN/
+├── .gitignore
+├── README.md
+├── changelog.md
+├── docs/
+│   ├── LICENSE
+│   └── assets/
+│       ├── HARDN(1).png
+│       └── cybersynapse.png
+├── src/
+│   └── setup/
+│       ├── packages.sh
+│       └── setup.sh
+```
 
-
-
+</p>
