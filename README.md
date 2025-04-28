@@ -23,7 +23,7 @@
 - This installation is only for **BARE-METAL INSTALLS of DEBIAN 12**
 -  Is a robust and secure endpoint management solution designed to simplify and enhance the management of devices in your network. It provides advanced features for monitoring, securing, and maintaining endpoints efficiently.
 
-- We also bring you with this release `STIG` COMPLIANCE" to align with the Security Technical Information Guides provided by the DOD Cyber Exchange.
+- We also bring you with this release `STIG` COMPLIANCE to align with the Security Technical Information Guides provided by the DOD Cyber Exchange.
 
 
 ```bash
