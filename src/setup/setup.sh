@@ -49,6 +49,7 @@ fi
 set_generic_hostname() {
     printf "\033[1;31m[+] Setting a generic hostname...\033[0m\n"
     sudo hostnamectl set-hostname "MY-PC"
+    echo "127.0.1.1 MY-PC" | sudo tee -a /etc/hosts
     if [ $? -eq 0 ]; then
         printf "\033[1;32m[+] Hostname successfully changed to MY-PC.\033[0m\n"
     else
