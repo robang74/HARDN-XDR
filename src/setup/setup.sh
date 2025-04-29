@@ -281,46 +281,7 @@ stig_disable_ctrl_alt_del() {
     sudo systemctl daemon-reexec
 }
 
-stig_enforce_partitioning() {
-    printf "\033[1;31m[+] Checking for existing STIG-compliant partitioning...\033[0m\n"
 
-    if sudo lvdisplay | grep -q "LV Name"; then
-        printf "\033[1;32m[+] Logical volumes already exist. Skipping partitioning setup.\033[0m\n"
-        return 0
-    fi
-
-    printf "\033[1;31m[+] Enforcing STIG-compliant partitioning...\033[0m\n"
-
-    sudo apt install -y lvm2
-    sudo pvcreate /dev/sda
-    sudo vgcreate lvm /dev/sda
-    sudo lvcreate -L 10G -n root lvm
-    sudo lvcreate -L 5G -n home lvm
-    sudo lvcreate -L 5G -n var lvm
-    sudo lvcreate -L 2G -n tmp lvm
-    sudo lvcreate -L 3G -n opt lvm
-    sudo lvcreate -L 8G -n usr lvm
-    sudo mkfs.ext4 /dev/lvm/root
-    sudo mount /dev/lvm/root /mnt
-    sudo mkdir -p /mnt/home /mnt/var /mnt/tmp /mnt/opt /mnt/usr
-
-    sudo mkfs.ext4 /dev/lvm/home
-    sudo mount /dev/lvm/home /mnt/home
-
-    sudo mkfs.ext4 /dev/lvm/var
-    sudo mount /dev/lvm/var /mnt/var
-
-    sudo mkfs.ext4 /dev/lvm/tmp
-    sudo mount /dev/lvm/tmp /mnt/tmp
-
-    sudo mkfs.ext4 /dev/lvm/opt
-    sudo mount /dev/lvm/opt /mnt/opt
-
-    sudo mkfs.ext4 /dev/lvm/usr
-    sudo mount /dev/lvm/usr /mnt/usr
-
-    printf "\033[1;31m[+] STIG-compliant partitioning applied successfully.\033[0m\n"
-}
 
 stig_disable_ipv6() {
     sudo echo "net.ipv6.conf.all.disable_ipv6 = 1" >> /etc/sysctl.d/99-sysctl.conf
@@ -375,7 +336,6 @@ update_firmware() {
 
 apply_stig_hardening() {
     stig_password_policy
-    stig_enforce_partitioning
     stig_lock_inactive_accounts
     stig_login_banners
     stig_kernel_setup
