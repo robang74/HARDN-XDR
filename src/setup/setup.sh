@@ -49,6 +49,12 @@ fi
 set_generic_hostname() {
     printf "\033[1;31m[+] Setting a generic hostname...\033[0m\n"
     sudo hostnamectl set-hostname "MY-PC"
+    if [ $? -eq 0 ]; then
+        printf "\033[1;32m[+] Hostname successfully changed to MY-PC.\033[0m\n"
+    else
+        printf "\033[1;31m[-] Failed to change hostname. Ensure you have the necessary permissions.\033[0m\n"
+    fi
+
 }
 
 update_system_packages() {
