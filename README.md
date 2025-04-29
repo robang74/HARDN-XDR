@@ -22,8 +22,19 @@
 ### HARDN Endpoint
 - This installation is only for **BARE-METAL INSTALLS of DEBIAN 12**
 -  Is a robust and secure endpoint management solution designed to simplify and enhance the management of devices in your network. It provides advanced features for monitoring, securing, and maintaining endpoints efficiently.
-
 - We also bring you with this release `STIG` COMPLIANCE to align with the Security Technical Information Guides provided by the DOD Cyber Exchange.
+
+<p align="center">
+  <img src="https://img.shields.io/badge/FEATURES-white?style=for-the-badge&labelColor=black" alt="FEATURES"><br><br>
+</p>
+
+- **Comprehensive Monitoring**: Real-time insights into endpoint performance and activity.
+- **Enhanced Security**: Protect endpoints with advanced security protocols.
+- **Scalability**: Manage endpoints across small to large-scale networks.
+- **User-Friendly Interface**: Intuitive design for seamless navigation and management.
+- **STIG Compliance**: This release brings the utmost, security for Debian Government based informatin systems. 
+
+### File Structure
 
 
 ```bash
@@ -44,17 +55,6 @@ HARDN/
 
 </p>
 
-
-
-<p align="center">
-  <img src="https://img.shields.io/badge/FEATURES-white?style=for-the-badge&labelColor=black" alt="FEATURES"><br><br>
-</p>
-
-- **Comprehensive Monitoring**: Real-time insights into endpoint performance and activity.
-- **Enhanced Security**: Protect endpoints with advanced security protocols.
-- **Scalability**: Manage endpoints across small to large-scale networks.
-- **User-Friendly Interface**: Intuitive design for seamless navigation and management.
-- **STIG Compliance**: This release brings the utmost, security for Debian Government based informatin systems. 
 
 <p align="center">
   <img src="https://img.shields.io/badge/PURPOSE-white?style=for-the-badge&labelColor=black" alt="PURPOSE"><br><br>
