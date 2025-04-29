@@ -82,10 +82,10 @@ The purpose of HARDN Endpoint is to empower IT administrators and users with the
   ### NOTE: 
 
   
-  #### AIDE will 20-60 minutes to fully establish the "ADVANCED INTRUSION DETECTION SYSTEM"
+  #### AIDE will 20-60 minutes to fully establish the "ADVANCED INTRUSION DETECTION SYSTEM" however, this runs in the background. 
   - This script will run syncronously and reboot your system when complete. 
   - DO-NOT turn your system off: We have established an update routine with reboots using CRON. 
-  - HARDN-Endpoint in itself once executed, will keep your Debian system secure and up to date. 
+  - HARDN in itself once executed, will keep your Debian system secure and up to date. 
 
 6. Follow any additional setup instructions and information provided in the `docs` directory.
 </p>
