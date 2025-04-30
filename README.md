@@ -95,6 +95,8 @@ The purpose of HARDN Endpoint is to empower IT administrators and users with the
 We welcome contributions! 
 
 ![GitHub stats](https://github-readme-stats.vercel.app/api?username=opensource-for-freedom&show_icons=true&theme=dark)
+![GitHub stats](https://github-readme-stats.vercel.app/api?username=AnonVortex&show_icons=true&theme=dark)
+![GitHub stats](https://github-readme-stats.vercel.app/api?username=LinuxUser255&show_icons=true&theme=dark)
 
 </p>
 
