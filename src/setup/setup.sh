@@ -36,7 +36,7 @@ EOF
 
 print_ascii_banner
 
-sleep 5 &>/dev/null
+sleep 5 
 
 
 
@@ -71,21 +71,34 @@ install_pkgdeps() {
 
 
 install_selinux() {
-    printf "\033[1;31m[+] Installing and configuring SELinux as sudo...\033[0m\n"
+    printf "\033[1;31m[+] Installing and configuring SELinux alongside AppArmor as sudo...\033[0m\n"
     sudo apt update
-    sudo apt install -y selinux-utils selinux-basics policycoreutils policycoreutils-python-utils selinux-policy-default
+    sudo apt install -y selinux-utils selinux-basics policycoreutils policycoreutils-python-utils selinux-policy-default apparmor apparmor-utils lynis
+
     if ! command -v getenforce > /dev/null 2>&1; then
         printf "\033[1;31m[-] SELinux installation failed. Please check system logs.\033[0m\n"
         return 1
     fi
+
     if getenforce | grep -q "Disabled"; then
         printf "\033[1;31m[-] SELinux is disabled. Configuring it to enforcing mode at boot...\033[0m\n"
-        sudo sed -i 's/^SELINUX=.*/SELINUX=enforcing/' /etc/selinux/config
-        printf "\033[1;31m[+] SELinux configured to enforcing mode at boot.\033[0m\n"
+        sudo sed -i 's/^SELINUX=.*/SELINUX=permissive/' /etc/selinux/config
+        printf "\033[1;31m[+] SELinux configured to permissive mode at boot to avoid conflicts with desktop environments.\033[0m\n"
     else
-        sudo setenforce 1 || printf "\033[1;31m[-] Could not set SELinux to enforcing mode immediately. Please reboot to apply changes.\033[0m\n"
+        sudo setenforce 0 || printf "\033[1;31m[-] Could not set SELinux to permissive mode immediately. Please reboot to apply changes.\033[0m\n"
     fi
-    printf "\033[1;31m[+] SELinux installation and configuration completed.\033[0m\n"
+
+    printf "\033[1;31m[+] Applying strong SELinux policies...\033[0m\n"
+    sudo semodule -DB || printf "\033[1;31m[-] Failed to disable SELinux policy debugging.\033[0m\n"
+    sudo semodule -B || printf "\033[1;31m[-] Failed to rebuild SELinux policy.\033[0m\n"
+
+    printf "\033[1;31m[+] Enforcing AppArmor profiles...\033[0m\n"
+    sudo aa-enforce /etc/apparmor.d/* || printf "\033[1;31m[-] Warning: Failed to enforce some AppArmor profiles.\033[0m\n"
+
+    printf "\033[1;31m[+] Configuring Lynis for system auditing...\033[0m\n"
+    sudo lynis audit system || printf "\033[1;31m[-] Lynis audit failed. Please check the logs.\033[0m\n"
+
+    printf "\033[1;31m[+] SELinux set to permissive mode to ensure compatibility with GNOME, XFCE4, and LightDM. Reboot required to apply changes.\033[0m\n"
 }
 
 install_security_tools() {
@@ -112,6 +125,8 @@ install_additional_tools() {
         cd linux-malware-detect || { printf "\033[1;31m[-] Could not enter maldetect dir\033[0m\n"; return 1; }
         sudo chmod +x install.sh
         sudo ./install.sh
+        sudo systemctl enable maldet
+        printf "\033[1;32m[+] Maldet installed and enabled to run at startup.\033[0m\n"
     else
         printf "\033[1;31m[-] Failed to clone maldetect repo\033[0m\n"
     fi
@@ -122,32 +137,42 @@ install_additional_tools() {
 
 install_aide() {
     printf "\033[1;31m[+] Installing and configuring AIDE...\033[0m\n"
-    {
-        sudo apt install -y aide aide-common &&
-        sudo aideinit -y &&
-        sudo aide --config-check --config=/etc/aide/aide.conf &&
-        sudo aideinit &&
-        if [ -f /var/lib/aide/aide.db.new ]; then
-            sudo mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db
-            sudo chmod 600 /var/lib/aide/aide.db
-            printf "\033[1;31m[+] AIDE installation and initial database setup completed with proper permissions.\033[0m\n"
-        else
-            printf "\033[1;31m[-] AIDE database file not found. Continuing...\033[0m\n"
-        fi
-    } > /var/log/aide_install.log 2>&1 &
-    printf "\033[1;31m[+] AIDE installation running in the background. Check /var/log/aide_install.log for details.\033[0m\n"
+
+    sudo apt install -y aide aide-common
+
+    # Exclude problematic directories and files
+    echo "!/run/user/1000/doc/.*" | sudo tee -a /etc/aide/aide.conf > /dev/null
+    echo "!/run/user/1000/gvfs/.*" | sudo tee -a /etc/aide/aide.conf > /dev/null
+    echo "!/home/tim/.config/Code/User/globalStorage/.*" | sudo tee -a /etc/aide/aide.conf > /dev/null
+    echo "!/home/tim/.config/Code/User/workspaceStorage/.*" | sudo tee -a /etc/aide/aide.conf > /dev/null
+    echo "!/home/tim/.config/Code/logs/.*" | sudo tee -a /etc/aide/aide.conf > /dev/null
+
+    # Initialize AIDE
+    sudo aideinit
+    if [ -f /var/lib/aide/aide.db.new ]; then
+        sudo mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db
+        sudo chmod 600 /var/lib/aide/aide.db
+        printf "\033[1;32m[+] AIDE initialization completed successfully.\033[0m\n"
+    else
+        printf "\033[1;31m[-] AIDE initialization failed. Please check the logs.\033[0m\n"
+    fi
+
+    # Schedule AIDE checks
+    printf "\033[1;31m[+] Scheduling AIDE to run daily...\033[0m\n"
+    echo "0 2 * * * root /usr/bin/aide --check" | sudo tee /etc/cron.d/aide > /dev/null
+    sudo systemctl restart cron || printf "\033[1;31m[-] Failed to restart cron service.\033[0m\n"
 }
 
 configure_firejail() {
     printf "\033[1;31m[+] Configuring Firejail for Firefox and Chrome...\033[0m\n"
 
-    # Ensure Firejail is installed
+   
     if ! command -v firejail > /dev/null 2>&1; then
         printf "\033[1;31m[-] Firejail is not installed. Please install it first.\033[0m\n"
         return 1
     fi
 
-    # Configure Firejail for Firefox
+    
     if command -v firefox > /dev/null 2>&1; then
         printf "\033[1;31m[+] Setting up Firejail for Firefox...\033[0m\n"
         sudo ln -sf /usr/bin/firejail /usr/local/bin/firefox
@@ -155,7 +180,7 @@ configure_firejail() {
         printf "\033[1;31m[-] Firefox is not installed. Skipping Firejail setup for Firefox.\033[0m\n"
     fi
 
-    # Configure Firejail for Chrome
+    
     if command -v google-chrome > /dev/null 2>&1; then
         printf "\033[1;31m[+] Setting up Firejail for Google Chrome...\033[0m\n"
         sudo ln -sf /usr/bin/firejail /usr/local/bin/google-chrome
@@ -209,7 +234,7 @@ stig_lock_inactive_accounts() {
 }
 
 stig_login_banners() {
-    echo "You are accessing a fully secured SIG Information System (IS)..." > /etc/issue
+    echo "You are accessing a fully secured Security International Group Information System (IS)..." > /etc/issue
     echo "Use of this IS constitutes consent to monitoring..." > /etc/issue.net
     sudo chmod 644 /etc/issue /etc/issue.net
 }
@@ -237,32 +262,45 @@ EOF
    sudo systemctl enable --now auditd
 }
 
-    
+   
 stig_kernel_setup() {
     printf "\033[1;31m[+] Setting up STIG-compliant kernel parameters...\033[0m\n"
     sudo tee /etc/sysctl.d/stig-kernel.conf > /dev/null <<EOF
-kernel.randomize_va_space = 2
-kernel.exec-shield = 1
-kernel.panic_on_oops = 1
-kernel.panic = 10
-kernel.kptr_restrict = 2
-kernel.dmesg_restrict = 1
-fs.protected_hardlinks = 1
-fs.protected_symlinks = 1
-net.ipv4.conf.all.rp_filter = 1
+
+
+
+kernel.randomize_va_space = 2         # Enable address space layout randomization (ASLR)
+kernel.exec-shield = 1               # Enable ExecShield protection
+kernel.panic_on_oops = 1             # Panic on kernel oops
+kernel.panic = 10                    # Reboot after 10 seconds on panic
+kernel.kptr_restrict = 2             # Restrict access to kernel pointers
+kernel.dmesg_restrict = 1            # Restrict access to dmesg logs
+fs.protected_hardlinks = 1           # Protect hardlinks
+fs.protected_symlinks = 1            # Protect symlinks
+net.ipv4.conf.all.rp_filter = 1      # Enable reverse path filtering
 net.ipv4.conf.default.rp_filter = 1
-net.ipv4.conf.all.accept_redirects = 0
+net.ipv4.conf.all.accept_redirects = 0  # Disable ICMP redirects
 net.ipv4.conf.default.accept_redirects = 0
-net.ipv4.conf.all.secure_redirects = 0
+net.ipv4.conf.all.secure_redirects = 0  # Disable secure ICMP redirects
 net.ipv4.conf.default.secure_redirects = 0
-net.ipv4.conf.all.send_redirects = 0
+net.ipv4.conf.all.send_redirects = 0    # Disable sending of ICMP redirects
 net.ipv4.conf.default.send_redirects = 0
-net.ipv4.tcp_syncookies = 1
-net.ipv4.conf.all.log_martians = 1
+net.ipv4.tcp_syncookies = 1            # Enable TCP SYN cookies
+net.ipv4.conf.all.log_martians = 1     # Log packets with impossible addresses
 net.ipv4.conf.default.log_martians = 1
-net.ipv6.conf.all.disable_ipv6 = 1
-net.ipv6.conf.default.disable_ipv6 = 1
+net.ipv6.conf.all.disable_ipv6 = 1     # Disable IPv6
+net.ipv4.icmp_echo_ignore_broadcasts = 1  # Ignore ICMP broadcast requests
+net.ipv4.icmp_ignore_bogus_error_responses = 1  # Ignore bogus ICMP error responses
+net.ipv4.tcp_rfc1337 = 1                 # Enable TCP RFC1337 protections
+net.ipv4.conf.all.accept_source_route = 0  # Disable source routing
+net.ipv4.conf.default.accept_source_route = 0
+net.ipv4.conf.all.forwarding = 0         # Disable IP forwarding
+net.ipv4.conf.default.forwarding = 0
+
+
 EOF
+
+    
     sudo sysctl --system || printf "\033[1;31m[-] Failed to reload sysctl settings.\033[0m\n"
 }
 
@@ -283,7 +321,6 @@ stig_disable_ctrl_alt_del() {
 }
 
 
-
 stig_disable_ipv6() {
     sudo echo "net.ipv6.conf.all.disable_ipv6 = 1" >> /etc/sysctl.d/99-sysctl.conf
     sudo echo "net.ipv6.conf.default.disable_ipv6 = 1" >> /etc/sysctl.d/99-sysctl.conf
@@ -294,27 +331,55 @@ echo "You are accessing a fully secured SIG Information System (IS)..." > /etc/i
 echo "Use of this IS constitutes consent to monitoring..." > /etc/issue.net
 sudo chmod 644 /etc/issue /etc/issue.net
 
-configure_ufw() {
-    printf "\033[1;31m[+] Configuring UFW...\033[0m\n"
-    sudo ufw default deny incoming
-    sudo ufw default allow outgoing
-    sudo ufw allow out 53    # Allow DNS for LMD signature updates and Rust installs
-    sudo ufw allow out 443   # Allow HTTPS for LMD signature updates and Rust installs
-    sudo ufw enable || printf "\033[1;31m[-] Warning: Could not enable UFW.\033[0m\n"
-    sudo ufw reload || printf "\033[1;31m[-] Warning: Could not reload UFW.\033[0m\n"
-    printf "\033[1;31m[+] UFW configuration completed.\033[0m\n"
-
+stig_configure_iptables() {
+    printf "\033[1;31m[+] Configuring iptables...\033[0m\n"
+    
+    sudo systemctl stop ufw
+    sudo systemctl disable ufw
+    sudo mkdir -p /etc/iptables
+    sudo iptables -F
+    sudo iptables -X
+    sudo iptables -t nat -F
+    sudo iptables -t nat -X
+    sudo iptables -t mangle -F
+    sudo iptables -t mangle -X
+    sudo iptables -P INPUT DROP
+    sudo iptables -P FORWARD DROP
+    sudo iptables -P OUTPUT ACCEPT
+    sudo iptables -A INPUT -i lo -j ACCEPT
+    sudo iptables -A OUTPUT -o lo -j ACCEPT
+    sudo iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    sudo iptables -A OUTPUT -p udp --dport 53 -j ACCEPT
+    sudo iptables -A OUTPUT -p tcp --dport 53 -j ACCEPT
+    sudo iptables -A OUTPUT -p tcp --dport 80 -j ACCEPT
+    sudo iptables -A OUTPUT -p tcp --dport 443 -j ACCEPT
+    printf "\033[1;31m[+] Blocking ICMP requests...\033[0m\n"
+    sudo iptables -A INPUT -p icmp --icmp-type echo-request -j DROP
+    sudo iptables -A INPUT -p icmp -j DROP
+    printf "\033[1;31m[+] Saving iptables rules...\033[0m\n"
+    sudo iptables-save > /etc/iptables/rules.v4 || printf "\033[1;31m[-] Warning: Could not save iptables rules.\033[0m\n"   
+    printf "\033[1;31m[+] iptables configuration completed.\033[0m\n"
 }
 
-enforce_apparmor_whitelist() {
-    printf "\033[1;31m[+] Enforcing AppArmor whitelist...\033[0m\n"
-    if [ ! -f /etc/apparmor.d/local/hardn.whitelist ]; then
-        echo "/usr/local/bin/hardn rix," > /etc/apparmor.d/local/hardn.whitelist
+stig_enforce_apparmor() {
+    printf "\033[1;31m[+] Enforcing AppArmor profiles for Debian 12...\033[0m\n"
+    
+    if ! command -v aa-status > /dev/null 2>&1; then
+        printf "\033[1;31m[-] AppArmor is not installed. Installing AppArmor...\033[0m\n"
+        sudo apt install -y apparmor apparmor-utils || { printf "\033[1;31m[-] Failed to install AppArmor.\033[0m\n"; return 1; }
     fi
-    sudo apparmor_parser -r /etc/apparmor.d/local/hardn.whitelist || printf "\033[1;31m[-] Failed to enforce AppArmor whitelist.\033[0m\n"
+    sudo aa-enforce /etc/apparmor.d/* || printf "\033[1;31m[-] Warning: Failed to enforce some AppArmor profiles.\033[0m\n"
+
+    sudo systemctl restart apparmor || printf "\033[1;31m[-] Failed to restart AppArmor service.\033[0m\n"
+
+    if sudo aa-status | grep -q "profiles are in enforce mode"; then
+        printf "\033[1;32m[+] AppArmor profiles successfully enforced.\033[0m\n"
+    else
+        printf "\033[1;31m[-] AppArmor profiles enforcement verification failed.\033[0m\n"
+    fi
 }
 
-set_randomize_va_space() {
+stig_set_randomize_va_space() {
     printf "\033[1;31m[+] Setting kernel.randomize_va_space...\033[0m\n"
     echo "kernel.randomize_va_space = 2" > /etc/sysctl.d/hardn.conf
     sudo sysctl -w kernel.randomize_va_space=2 || printf "\033[1;31m[-] Failed to set randomize_va_space.\033[0m\n"
@@ -336,20 +401,25 @@ update_firmware() {
 
 
 apply_stig_hardening() {
-    stig_password_policy
-    stig_lock_inactive_accounts
-    stig_login_banners
-    stig_kernel_setup
-    stig_secure_filesystem
-    stig_audit_rules
-    stig_disable_usb
-    stig_disable_core_dumps
-    stig_disable_ctrl_alt_del
-    stig_disable_ipv6
-    set_randomize_va_space
-    enforce_apparmor_whitelist
-    update_firmware
+    printf "\033[1;31m[+] Applying STIG hardening tasks...\033[0m\n"
+
     
+    stig_password_policy || { printf "\033[1;31m[-] Failed to apply password policy.\033[0m\n"; exit 1; }
+    stig_lock_inactive_accounts || { printf "\033[1;31m[-] Failed to lock inactive accounts.\033[0m\n"; exit 1; }
+    stig_login_banners || { printf "\033[1;31m[-] Failed to set login banners.\033[0m\n"; exit 1; }
+    stig_kernel_setup || { printf "\033[1;31m[-] Failed to configure kernel parameters.\033[0m\n"; exit 1; }
+    stig_secure_filesystem || { printf "\033[1;31m[-] Failed to secure filesystem permissions.\033[0m\n"; exit 1; }
+    stig_audit_rules || { printf "\033[1;31m[-] Failed to configure audit rules.\033[0m\n"; exit 1; }
+    stig_disable_usb || { printf "\033[1;31m[-] Failed to disable USB storage.\033[0m\n"; exit 1; }
+    stig_disable_core_dumps || { printf "\033[1;31m[-] Failed to disable core dumps.\033[0m\n"; exit 1; }
+    stig_disable_ctrl_alt_del || { printf "\033[1;31m[-] Failed to disable Ctrl+Alt+Del.\033[0m\n"; exit 1; }
+    stig_disable_ipv6 || { printf "\033[1;31m[-] Failed to disable IPv6.\033[0m\n"; exit 1; }
+    stig_configure_iptables || { printf "\033[1;31m[-] Failed to configure iptables.\033[0m\n"; exit 1; }
+    stig_set_randomize_va_space || { printf "\033[1;31m[-] Failed to set randomize_va_space.\033[0m\n"; exit 1; }
+    stig_enforce_apparmor || { printf "\033[1;31m[-] Failed to enforce AppArmor.\033[0m\n"; exit 1; }
+    update_firmware || { printf "\033[1;31m[-] Failed to update firmware.\033[0m\n"; exit 1; }
+
+    printf "\033[1;32m[+] STIG hardening tasks applied successfully.\033[0m\n"
 }
 
 setup_complete() {
@@ -358,62 +428,8 @@ setup_complete() {
     echo "             calling Validation Script                 "
     echo "                                                       "
     echo "======================================================="
-}
 
-main() {
-    printf "\033[1;31m[+] Updating system packages...\033[0m\n"
-    update_system_packages
-
-    printf "\033[1;31m[+] Setting generic hostname...\033[0m\n"
-    set_generic_hostname
-    apply_stig_hardening
-  
-  
-    printf "\033[1;31m========================================================\033[0m\n"
-    printf "\033[1;31m             [+] HARDN - Setting Up                     \033[0m\n"
-    printf "\033[1;31m       [+] Installing required Security Services        \033[0m\n"
-    printf "\033[1;31m========================================================\033[0m\n"
-
-    install_pkgdeps
-    install_selinux
-
-    printf "\033[1;31m========================================================\033[0m\n"
-    printf "\033[1;31m                  [+] HARDN - SELinux                   \033[0m\n"
-    printf "\033[1;31m       [+] SELinux will not run until after reboot      \033[0m\n"
-    printf "\033[1;31m========================================================\033[0m\n"
-
-    install_security_tools
-
-    printf "\033[1;31m========================================================\033[0m\n"
-    printf "\033[1;31m            [+] HARDN - Installing Security Tools       \033[0m\n"
-    printf "\033[1;31m                [+] Applying Secruity Settings          \033[0m\n"
-    printf "\033[1;31m========================================================\033[0m\n"
-
-    install_aide
-    configure_firejail
-    configure_ufw
-    enable_services
-
-    printf "\033[1;31m========================================================\033[0m\n"
-    printf "\033[1;31m             [+] HARDN - Enable services                \033[0m\n"
-    printf "\033[1;31m                 [+] Applying Services                  \033[0m\n"
-    printf "\033[1;31m========================================================\033[0m\n"
-
-    install_additional_tools
-    install_rust
-
-    printf "\033[1;31m========================================================\033[0m\n"
-    printf "\033[1;31m             [+] HARDN - STIG Hardening                 \033[0m\n"
-    printf "\033[1;31m       [+] Applying STIG hardening to system            \033[0m\n"
-    printf "\033[1;31m========================================================\033[0m\n"
-
-    
-    setup_complete
-}
-
-main
-
-sleep 3 &>/dev/null
+sleep 3
 
 PACKAGES_SCRIPT="/home/tim/DEV/HARDN/src/setup/packages.sh"
 printf "\033[1;31m[+] Looking for packages.sh at: %s\033[0m\n" "$PACKAGES_SCRIPT"
@@ -427,6 +443,61 @@ if [ -f "$PACKAGES_SCRIPT" ]; then
 else
     printf "\033[1;31m[-] packages.sh not found at: %s. Skipping...\033[0m\n" "$PACKAGES_SCRIPT"
 fi
+
+
+}
+
+
+
+main() {
+    printf "\033[1;31m[+] Updating system packages...\033[0m\n"
+    update_system_packages
+
+    printf "\033[1;31m[+] Setting generic hostname...\033[0m\n"
+    set_generic_hostname
+
+    printf "\033[1;31m========================================================\033[0m\n"
+    printf "\033[1;31m             [+] HARDN - Setting Up                     \033[0m\n"
+    printf "\033[1;31m       [+] Installing required Security Services        \033[0m\n"
+    printf "\033[1;31m========================================================\033[0m\n"
+    install_pkgdeps
+    install_selinux
+    
+
+    printf "\033[1;31m========================================================\033[0m\n"
+    printf "\033[1;31m                  [+] HARDN - SELinux                   \033[0m\n"
+    printf "\033[1;31m       [+] SELinux will not run until after reboot      \033[0m\n"
+    printf "\033[1;31m========================================================\033[0m\n"
+
+    
+
+    printf "\033[1;31m========================================================\033[0m\n"
+    printf "\033[1;31m            [+] HARDN - Installing Security Tools       \033[0m\n"
+    printf "\033[1;31m                [+] Applying Security Settings          \033[0m\n"
+    printf "\033[1;31m========================================================\033[0m\n"
+    install_security_tools
+    printf "\033[1;31m========================================================\033[0m\n"
+    printf "\033[1;31m             [+] HARDN - STIG Hardening                 \033[0m\n"
+    printf "\033[1;31m       [+] Applying STIG hardening to system            \033[0m\n"
+    printf "\033[1;31m========================================================\033[0m\n"
+    apply_stig_hardening
+    install_aide
+    configure_firejail
+    enable_services
+
+    printf "\033[1;31m========================================================\033[0m\n"
+    printf "\033[1;31m             [+] HARDN - Enable services                \033[0m\n"
+    printf "\033[1;31m                 [+] Applying Services                  \033[0m\n"
+    printf "\033[1;31m========================================================\033[0m\n"
+    install_additional_tools
+    install_rust
+    sleep 3
+    setup_complete
+}
+
+main
+
+
 
 
 
