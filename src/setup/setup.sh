@@ -194,25 +194,7 @@ configure_firejail() {
 
 
 
-install_rust() {
-    printf "\033[1;31m[+] Installing Rust...\033[0m\n"
 
-    if command -v rustc > /dev/null 2>&1; then
-        printf "\033[1;32m[+] Rust is already installed. Skipping installation.\033[0m\n"
-        return 0
-    fi
-
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-    export PATH="$HOME/.cargo/bin:$PATH"
-
-    if command -v rustc > /dev/null 2>&1; then
-        printf "\033[1;32m[+] Rust installed successfully.\033[0m\n"
-        rustc --version
-    else
-        printf "\033[1;31m[-] Rust installation failed. Please check the logs.\033[0m\n"
-        return 1
-    fi
-}
 
    
 
@@ -490,7 +472,7 @@ main() {
     printf "\033[1;31m                 [+] Applying Services                  \033[0m\n"
     printf "\033[1;31m========================================================\033[0m\n"
     install_additional_tools
-    install_rust
+    
     sleep 3
     setup_complete
 }
