@@ -1,4 +1,4 @@
-# Debian STIG Compliance Overview
+# HARDN-Debian STIG Compliance Overview
 
 This document summarizes the DISA STIG (Security Technical Implementation Guide) controls and hardening measures implemented by the HARDN project for Debian-based systems.
 
