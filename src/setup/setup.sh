@@ -104,6 +104,8 @@ enable_fail2ban() {
     printf "\033[1;31m[+] Enabling and starting Fail2Ban...\033[0m\n"
     sudo systemctl enable --now fail2ban
     sudo systemctl restart fail2ban
+    sudo sed -i 's/^#*PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+    sudo systemctl reload sshd
 
     printf "\033[1;31m[+] Enabling SSH jail in Fail2Ban...\033[0m\n"
     sudo tee -a /etc/fail2ban/jail.local > /dev/null <<EOF
