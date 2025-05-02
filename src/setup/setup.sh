@@ -443,14 +443,14 @@ main() {
     printf "\033[1;31m       [+] Installing required Security Services        \033[0m\n"
     printf "\033[1;31m========================================================\033[0m\n"
     install_pkgdeps
-    install_selinux
+    configure_firejail
     
 
     printf "\033[1;31m========================================================\033[0m\n"
     printf "\033[1;31m                  [+] HARDN - SELinux                   \033[0m\n"
     printf "\033[1;31m       [+] SELinux will not run until after reboot      \033[0m\n"
     printf "\033[1;31m========================================================\033[0m\n"
-
+    install_selinux
     
 
     printf "\033[1;31m========================================================\033[0m\n"
@@ -458,20 +458,23 @@ main() {
     printf "\033[1;31m                [+] Applying Security Settings          \033[0m\n"
     printf "\033[1;31m========================================================\033[0m\n"
     install_security_tools
+    install_aide
+    
+    
     printf "\033[1;31m========================================================\033[0m\n"
     printf "\033[1;31m             [+] HARDN - STIG Hardening                 \033[0m\n"
     printf "\033[1;31m       [+] Applying STIG hardening to system            \033[0m\n"
     printf "\033[1;31m========================================================\033[0m\n"
     apply_stig_hardening
-    install_aide
-    configure_firejail
-    enable_services
+    
+
 
     printf "\033[1;31m========================================================\033[0m\n"
     printf "\033[1;31m             [+] HARDN - Enable services                \033[0m\n"
     printf "\033[1;31m                 [+] Applying Services                  \033[0m\n"
     printf "\033[1;31m========================================================\033[0m\n"
     install_additional_tools
+    enable_services
     
     sleep 3
     setup_complete
