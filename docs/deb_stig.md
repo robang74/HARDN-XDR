@@ -62,6 +62,7 @@ This document summarizes the DISA STIG (Security Technical Implementation Guide)
 
 - **Fail2Ban:**  
   - SSH jail enabled  
+  - No ssh root login (sshd) with auditing
   - Custom ban time, find time, and max retry settings
 
 - **AppArmor:**  

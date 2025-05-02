@@ -27,7 +27,7 @@ print_ascii_banner() {
                                                          ███    ███ 
                                     
                                        
-                                                    v 1.1.2               
+                                                    v 1.1.2
 EOF
     printf "${RESET}"
 }
@@ -106,6 +106,8 @@ enable_fail2ban() {
     sudo systemctl restart fail2ban
     sudo sed -i 's/^#*PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
     sudo systemctl reload sshd
+    echo '-a always,exit -F arch=b64 -F euid=0 -S execve -k rootcmd' | sudo tee -a /etc/audit/rules.d/root-activity.rules
+    sudo augenrules --load
 
     printf "\033[1;31m[+] Enabling SSH jail in Fail2Ban...\033[0m\n"
     sudo tee -a /etc/fail2ban/jail.local > /dev/null <<EOF
@@ -119,6 +121,13 @@ findtime = 600
 EOF
     sudo systemctl restart fail2ban
 }
+
+
+
+
+
+
+
 
 enable_apparmor() {
     printf "\033[1;31m[+] Installing and enabling AppArmor...\033[0m\n"
