@@ -3,9 +3,11 @@ set -e # Exit on errors
 set -x # Debug mode
 
 
-
-
 print_ascii_banner() {
+    CYAN_BOLD="\033[1;36m"
+    RESET="\033[0m"
+
+    printf "${CYAN_BOLD}"
     cat << "EOF"
                               ▄█    █▄       ▄████████    ▄████████ ████████▄  ███▄▄▄▄   
                              ███    ███     ███    ███   ███    ███ ███   ▀███ ███▀▀▀██▄ 
@@ -24,13 +26,11 @@ print_ascii_banner() {
                                                                      
                                        
                                                     v 1.1.2               
-                                    
-                                                               
-                                  
 EOF
+    printf "${RESET}"
 }
 
-print_ascii_banner
+
 
 sleep 7
 
