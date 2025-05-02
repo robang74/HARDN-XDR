@@ -19,10 +19,13 @@ print_ascii_banner() {
                              ███    █▀      ███    █▀    ███    ███ ████████▀   ▀█   █▀  
                                                          ███    ███ 
                      
-                                                                      
+                                               V A L I D A T I O N
+                                                     
+                                                    v 1.1.2
+                                                                       
                                                                      
                                        
-                                                    v 1.1.2               
+                                                              
 EOF
     printf "${RESET}"
 }
@@ -30,6 +33,11 @@ EOF
 print_ascii_banner
 
 sleep 7
+
+SCRIPT_PATH="$(readlink -f "$0")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+PACKAGES_SCRIPT="$SCRIPT_DIR/fips.sh"
+
 
 
 if [ "$(id -u)" -ne 0 ]; then
@@ -340,6 +348,16 @@ cron_alert() {
     fi
 }
 
+
+# call_fips(){
+#     if [ -f "$PACKAGES_SCRIPT" ]; then
+#         echo "[+] Calling FIPS script..." | tee -a "$LOG_FILE"
+#         bash "$PACKAGES_SCRIPT"
+#     else
+#         echo "[-] FIPS script not found at $PACKAGES_SCRIPT" | tee -a "$LOG_FILE"
+#     fi
+# }
+
 main() {
     printf "\033[1;31m[+] Validating configuration...\033[0m\n"
     ensure_aide_initialized
@@ -362,6 +380,7 @@ main() {
     echo -e "\033[1;32m[+] ======== VALIDATION COMPLETE PLEASE REBOOT YOUR SYSTEM=========\033[0m" | tee -a "$LOG_FILE"
     sleep 3
     print_ascii_banner
+    call_fips 
 }
 
 main
