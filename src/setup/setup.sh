@@ -92,7 +92,9 @@ install_security_tools() {
 enable_fail2ban() {
     printf "\033[1;31m[+] Resetting Fail2Ban settings for Debian 12...\033[0m\n"
     sudo systemctl stop fail2ban
-    sudo rm -rf /etc/fail2ban/jail.local
+    if [ -f /etc/fail2ban/jail.local ]; then
+        sudo rm -f /etc/fail2ban/jail.local
+    fi
     sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
 
     printf "\033[1;31m[+] Configuring Fail2Ban securely for user-based machines...\033[0m\n"
