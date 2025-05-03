@@ -3,7 +3,7 @@
 # Enhanced FIPS 140-3 Compliance Script (Safe Mode)
 # Authors: Tim Burns, Kiumarz Hashemi, Copilot Enhanced
 # Date: 2025-05-02
-# Version: 1.3
+# Version: 1.4
 # Description:
 # This script enables FIPS 140-3 compliance safely by checking NICs, backing up GRUB/initramfs,
 # logging actions, and supporting dry-run mode to avoid breaking connectivity.
@@ -11,10 +11,13 @@
 set -euo pipefail
 
 LOG_FILE="/var/log/fips-setup.log"
+BACKUP_DIR="/var/backups/fips"
+DRY_RUN=false
+
+# Enable logging
 exec > >(tee -a "$LOG_FILE") 2>&1
 
 # Dry-run support
-DRY_RUN=false
 [[ "${1:-}" == "--dry-run" ]] && DRY_RUN=true && echo "[DRY RUN MODE ENABLED]"
 
 print_ascii_banner() {
@@ -35,7 +38,7 @@ print_ascii_banner() {
                                     
                                         F I P S  C O M P L I A N C E
 
-                                                   v 1.3 SAFE
+                                                   v 1.4 SAFE
 EOF
     printf "${RESET}"
 }
@@ -55,7 +58,8 @@ check_nic_modules() {
 
 backup_grub_settings() {
     echo "[INFO] Backing up GRUB config..."
-    cp /etc/default/grub "/etc/default/grub.bak.$(date +%s)"
+    mkdir -p "$BACKUP_DIR"
+    cp /etc/default/grub "$BACKUP_DIR/grub.bak.$(date +%s)"
 }
 
 setup_fips_compliance() {
@@ -101,8 +105,8 @@ regenerate_initramfs() {
     echo "[STEP] Regenerating initramfs with FIPS modules..."
     if $DRY_RUN; then echo "[DRY RUN] Skipping dracut"; return 0; fi
 
-    mkdir -p /backup/initrd
-    cp /boot/initrd.img-$(uname -r) /backup/initrd/initrd.img-$(uname -r).bak || true
+    mkdir -p "$BACKUP_DIR/initrd"
+    cp /boot/initrd.img-$(uname -r) "$BACKUP_DIR/initrd.img-$(uname -r).bak" || true
 
     if ! dracut --force --add fips /boot/initramfs-$(uname -r).img $(uname -r) | tee /tmp/dracut.log | grep -q "ERROR"; then
         echo "[OK] Initramfs regenerated."
@@ -146,6 +150,7 @@ main() {
     verify_fips_mode
 
     echo "[DONE] FIPS setup completed. See $LOG_FILE for full trace."
+    echo "[INFO] Please reboot the system to activate FIPS mode."
 }
 
 main "$@"
