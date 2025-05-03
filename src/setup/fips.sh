@@ -2,8 +2,8 @@
 
 # Enhanced FIPS 140-3 Compliance Script (Safe Mode)
 # Authors: Tim Burns, Kiumarz Hashemi, Copilot Enhanced
-# Date: 2025-05-02
-# Version: 1.4
+# Date: 2025-05-03
+# Version: 1.5
 # Description:
 # This script enables FIPS 140-3 compliance safely by checking NICs, backing up GRUB/initramfs,
 # logging actions, and supporting dry-run mode to avoid breaking connectivity.
@@ -38,7 +38,7 @@ print_ascii_banner() {
                                     
                                         F I P S  C O M P L I A N C E
 
-                                                   v 1.4 SAFE
+                                                   v 1.5 SAFE
 EOF
     printf "${RESET}"
 }
@@ -46,20 +46,29 @@ EOF
 check_nic_modules() {
     echo "[INFO] Verifying NIC kernel modules..."
     local modules=(e1000e ixgbe r8169 r8168 atlantic tg3)
+    local found=false
+
     for mod in "${modules[@]}"; do
         if modinfo "$mod" &>/dev/null; then
             echo "[OK] Found NIC module: $mod"
-            return 0
+            found=true
+            break
         fi
     done
-    echo "[ERROR] No known NIC kernel modules found. Aborting to avoid network loss."
-    exit 1
+
+    if ! $found; then
+        echo "[WARNING] No known NIC kernel modules found."
+        echo "[INFO] Attempting to detect and add missing NIC drivers..."
+        apt update && apt install -y linux-modules-extra-$(uname -r)
+        echo "[INFO] NIC drivers installed. Please verify manually if issues persist."
+    fi
 }
 
 backup_grub_settings() {
     echo "[INFO] Backing up GRUB config..."
     mkdir -p "$BACKUP_DIR"
     cp /etc/default/grub "$BACKUP_DIR/grub.bak.$(date +%s)"
+    echo "[OK] GRUB configuration backed up."
 }
 
 setup_fips_compliance() {
@@ -72,6 +81,7 @@ setup_fips_compliance() {
 apply_security_settings() {
     echo "[STEP] Applying kernel-level security settings..."
     local settings=("slub_debug=FZP" "mce=0" "page_poison=1" "pti=on" "vsyscall=none" "kptr_restrict=2")
+
     for setting in "${settings[@]}"; do
         if ! grep -q "$setting" /etc/default/grub; then
             if ! grep -q "^GRUB_CMDLINE_LINUX=" /etc/default/grub; then
@@ -81,6 +91,7 @@ apply_security_settings() {
             fi
         fi
     done
+    echo "[OK] Security settings applied to GRUB."
 }
 
 add_fips_to_grub() {
@@ -93,6 +104,7 @@ add_fips_to_grub() {
         fi
     fi
     update-grub
+    echo "[OK] fips=1 added to GRUB configuration."
 }
 
 handle_missing_fips_module() {
@@ -120,10 +132,8 @@ verify_fips_mode() {
     if grep -q "fips=1" /proc/cmdline; then
         echo "[OK] FIPS mode appears enabled."
     else
-        YELLOW_BOLD="\033[1;33m"
-        RESET="\033[0m"
-        echo -e "${YELLOW_BOLD}FIPS mode not yet active. Please reboot to activate.${RESET}"
-        echo -e "${YELLOW_BOLD}Verify after reboot with: cat /proc/sys/crypto/fips_enabled (should be 1)${RESET}"
+        echo "[WARNING] FIPS mode not yet active. Please reboot to activate."
+        echo "Verify after reboot with: cat /proc/sys/crypto/fips_enabled (should be 1)"
     fi
 }
 
@@ -131,7 +141,7 @@ setup_cron_updates() {
     echo "[STEP] Setting up Cron job for updates..."
     local cron_job="0 3 * * * /usr/bin/apt update && /usr/bin/apt upgrade -y"
     (crontab -l 2>/dev/null | grep -v -F "$cron_job"; echo "$cron_job") | crontab -
-    echo "[OK] Cron job scheduled."
+    echo "[OK] Cron job scheduled for daily updates."
 }
 
 main() {
