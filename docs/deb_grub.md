@@ -12,9 +12,11 @@ The `grub.sh` script is designed to enhance security on Debian 12 by implementin
 - Replace or update existing cryptographic components with FIPS 140-certified modules.
 - Ensure compliance by leveraging tools like OpenSSL and GRUB's password protection.
 
-### 2. **Configuring and Enabling FIPS Mode**
+### 2. **Configuring and Enabling Secure Mode**
 - Automate kernel parameter configuration using `grub.sh`.
 - Enable encryption mode for secure cryptographic operations.
+- Setting permissions and signatures on Kernal updates and Certificates.
+  - enabling monitoring using opens source tools list in `HARDN.md`
 
 ### 3. **Updating GRUB Configuration**
 - Use `grub.sh` to:
@@ -35,16 +37,16 @@ The `grub.sh` script is designed to enhance security on Debian 12 by implementin
 - Automate validation steps in `grub.sh`.
 
 ### 2. **Functional Testing**
-- Test encryption, decryption, and hashing in FIPS mode.
+- Test encryption, decryption, and hashing.
 - Verify `grub.sh` configurations do not disrupt existing functionality.
 
 ### 3. **Performance Testing**
-- Measure the performance impact of FIPS mode.
+- Measure the performance impact of cryptography mode.
 - Optimize `grub.sh` to minimize overhead.
 
 ### 4. **Regression Testing**
 - Ensure changes made by `grub.sh` do not cause regressions.
-- Validate system stability after enabling FIPS mode.
+- Validate system stability.
 
 ### 5. **User Acceptance Testing**
 - Gather feedback from stakeholders to refine `grub.sh`.
