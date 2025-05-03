@@ -26,7 +26,8 @@ print_ascii_banner() {
                              ███    █▀      ███    █▀    ███    ███ ████████▀   ▀█   █▀  
                                                          ███    ███ 
                                     
-                                       
+                                                   S E T U P
+                                                   
                                                     v 1.1.2
 EOF
     printf "${RESET}"
@@ -338,7 +339,6 @@ stig_secure_filesystem() {
 
 
 
-
 stig_audit_rules() {
     sudo apt install -y auditd audispd-plugins
     sudo tee /etc/audit/rules.d/stig.rules > /dev/null <<EOF
@@ -351,10 +351,16 @@ stig_audit_rules() {
 
 EOF
 
-   sudo augenrules --load
-   sudo systemctl enable --now auditd
-   sudo systemctl restart auditd
-   sudo auditctl -e 1 || printf "\033[1;31m[-] Failed to enable auditd.\033[0m\n"
+    # Ensure correct permissions for audit rules and log directory
+    sudo chown root:root /etc/audit/rules.d/*.rules
+    sudo chmod 600 /etc/audit/rules.d/*.rules
+    sudo chown -R root:root /var/log/audit
+    sudo chmod 700 /var/log/audit
+
+    sudo augenrules --load
+    sudo systemctl enable --now auditd
+    sudo systemctl restart auditd
+    sudo auditctl -e 1 || printf "\033[1;31m[-] Failed to enable auditd.\033[0m\n"
 }
 
 
