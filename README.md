@@ -20,7 +20,7 @@
 
 
 ### HARDN Endpoint
-- This installation is only for **BARE-METAL INSTALLS of DEBIAN 12**
+- This installation is only for **BARE-METAL INSTALLS of DEBIAN 12 and Ubunut 24.04 Bare Metal and Virtual Machines**
 -  Is a robust and secure endpoint management solution designed to simplify and enhance the management of devices in your network. It provides advanced features for monitoring, securing, and maintaining endpoints efficiently.
 - We also bring you with this release `STIG` COMPLIANCE to align with the Security Technical Information Guides provided by the DOD Cyber Exchange.
 
@@ -42,15 +42,16 @@ HARDN/
 ├── .gitignore
 ├── README.md
 ├── changelog.md
-├── docs/
+├── docs/*
 │   ├── LICENSE
 │   └── assets/
 │       ├── HARDN(1).png
 │       └── cybersynapse.png
 ├── src/
 │   └── setup/
-│       ├── packages.sh
-│       └── setup.sh
+|       |__ hardn-grub.sh
+│       ├── hardn-packages.sh
+│       └── hardn-setup.sh
 ```
 
 </p>
@@ -74,8 +75,8 @@ The purpose of HARDN Endpoint is to empower IT administrators and users with the
 2. Navigate to the `src` directory:
  ```bash
   cd HARDN/src/setup
-  sudo chmod +x setup.sh
-  sudo ./setup.sh
+  sudo chmod +x hardn-setup.sh
+  sudo ./hardn-setup.sh
 
   ```
   This will kick off the full setup of HARDN with `STIG` principles. 
@@ -89,6 +90,17 @@ The purpose of HARDN Endpoint is to empower IT administrators and users with the
 
 6. Follow any additional setup instructions and information provided in the `docs` directory.
 </p>
+
+### MAINTAINERS
+
+* Building a debian package
+```bash
+debuild -us -uc
+```
+* Clean the repo after building a debian package
+```bash
+debuild -- clean
+```
 
 <p align="center">
   <img src="https://img.shields.io/badge/CONTRIBUTION-white?style=for-the-badge&labelColor=black" alt="CONTRIBUTION"><br><br>
