@@ -40,6 +40,7 @@ sleep 5
 SCRIPT_PATH="$(readlink -f "$0")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 PACKAGES_SCRIPT="$SCRIPT_DIR/packages.sh"
+GRUB_SCRIPT="$SCRIPT_DIR/grub.sh"
 
 if [ "$(id -u)" -ne 0 ]; then
     echo "This script must be run as root. Use: sudo ./setup.sh"
@@ -82,6 +83,28 @@ install_pkgdeps() {
 
 
 
+
+call_grub_script() {
+    printf "\033[1;31m[+] Calling grub.sh script...\033[0m\n"
+    if [ -f "$GRUB_SCRIPT" ]; then
+        printf "\033[1;31m[+] Setting executable permissions for grub.sh...\033[0m\n"
+        chmod +x "$GRUB_SCRIPT"
+        sudo "$GRUB_SCRIPT"
+        if [ $? -ne 0 ]; then
+            printf "\033[1;31m[-] grub.sh execution failed. Exiting setup.\033[0m\n"
+            exit 1
+        fi
+    else
+        printf "\033[1;31m[-] grub.sh not found at: %s. Exiting setup.\033[0m\n" "$GRUB_SCRIPT"
+        exit 1
+    fi
+}
+
+
+
+
+
+
 install_security_tools() {
     printf "\033[1;31m[+] Installing required system security tools...\033[0m\n"
     sudo apt install -y ufw fail2ban apparmor apparmor-profiles apparmor-utils firejail tcpd lynis debsums \
@@ -109,8 +132,24 @@ enable_fail2ban() {
     sudo systemctl restart fail2ban
     sudo sed -i 's/^#*PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
     sudo systemctl reload sshd
-    echo '-a always,exit -F arch=b64 -F euid=0 -S execve -k rootcmd' | sudo tee -a /etc/audit/rules.d/root-activity.rules
-    sudo augenrules --load
+
+   
+    if ! command -v augenrules &> /dev/null; then
+        printf "\033[1;31m[+] Installing auditd for audit rule loading…\033[0m\n"
+        sudo apt update
+        sudo apt install -y auditd audispd-plugins
+    fi
+
+    sudo mkdir -p /etc/audit/rules.d
+    echo '-a always,exit -F arch=b64 -F euid=0 -S execve -k rootcmd' \
+      | sudo tee /etc/audit/rules.d/root-activity.rules > /dev/null
+
+    
+    if command -v augenrules &> /dev/null; then
+        sudo augenrules --load
+    else
+        sudo auditctl -R /etc/audit/rules.d/*.rules
+    fi
 
     printf "\033[1;31m[+] Enabling SSH jail in Fail2Ban...\033[0m\n"
     sudo tee -a /etc/fail2ban/jail.local > /dev/null <<EOF
@@ -133,15 +172,29 @@ EOF
 
 
 enable_apparmor() {
-    printf "\033[1;31m[+] Installing and enabling AppArmor...\033[0m\n"
-    sudo apt install -y apparmor apparmor-utils || { printf "\033[1;31m[-] Failed to install AppArmor.\033[0m\n"; return 1; }
-    sudo systemctl restart apparmor || printf "\033[1;31m[-] Failed to restart AppArmor service.\033[0m\n"
-    sudo systemctl enable --now apparmor || printf "\033[1;31m[-] Failed to enable AppArmor service.\033[0m\n"
-    printf "\033[1;31m[+] AppArmor successfully installed, reset, and reloaded.\033[0m\n"
-    printf "\033[1;31m[+] Resetting AppArmor profiles...\033[0m\n"
-    sudo apparmor_parser -R /etc/apparmor.d/* || printf "\033[1;31m[-] Failed to reset AppArmor profiles.\033[0m\n"
-    
+    printf "\033[1;31m[+] Installing and enabling AppArmor…\033[0m\n"
+    sudo apt install -y apparmor apparmor-utils apparmor-profiles || {
+        printf "\033[1;31m[-] Failed to install AppArmor.\033[0m\n"
+        return 1
+    }
+
+  
+    sudo systemctl restart apparmor || {
+        printf "\033[1;31m[-] Failed to restart AppArmor service.\033[0m\n"
+        return 1
+    }
+
+    sudo systemctl enable --now apparmor || {
+        printf "\033[1;31m[-] Failed to enable AppArmor service.\033[0m\n"
+        return 1
+    }
+
+    printf "\033[1;32m[+] AppArmor successfully installed and reloaded.\033[0m\n"
 }
+
+
+
+
 
 
 
@@ -209,14 +262,38 @@ enable_rkhunter(){
 
 install_aide() {
     printf "\033[1;31m[+] Installing and configuring AIDE...\033[0m\n"
-
-    # Install AIDE and its dependencies
-    if ! sudo apt install -y aide aide-common; then
-        printf "\033[1;31m[-] Failed to install AIDE. Please check your package manager.\033[0m\n"
+    sudo apt install -y aide aide-common || {
+        printf "\033[1;31m[-] Failed to install AIDE.\033[0m\n"
         return 1
+    }
+
+    # Check if AIDE is already initialized
+    if [ -f /var/lib/aide/aide.db ]; then
+        printf "\033[1;32m[+] AIDE is already initialized. Skipping initialization.\033[0m\n"
+    else
+        # Clean any previous DB artifacts
+        sudo rm -f /var/lib/aide/aide.db.new /var/lib/aide/aide.db
+
+        # Initialize AIDE database, auto‐confirm overwrite
+        printf "\033[1;31m[+] Initializing AIDE database...\033[0m\n"
+        yes | sudo aide --init
+        if [ -f /var/lib/aide/aide.db.new ]; then
+            sudo mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db
+            sudo chmod 600 /var/lib/aide/aide.db
+            printf "\033[1;32m[+] AIDE initialization completed successfully.\033[0m\n"
+        else
+            printf "\033[1;31m[-] AIDE database initialization failed. Check /var/log/aide/aide.log.\033[0m\n"
+            return 1
+        fi
     fi
 
-    # Exclude problematic directories and files
+    # Enable periodic check
+    printf "\033[1;31m[+] Enabling and starting AIDE timer...\033[0m\n"
+    sudo systemctl enable --now aidecheck.timer || {
+        printf "\033[1;31m[-] Failed to enable AIDE timer.\033[0m\n"
+    }
+
+    # Exclude unnecessary paths
     printf "\033[1;31m[+] Updating AIDE configuration to exclude unnecessary paths...\033[0m\n"
     sudo tee -a /etc/aide/aide.conf > /dev/null <<EOF
 !/run/user/1000/doc/.*
@@ -225,27 +302,6 @@ install_aide() {
 !/home/tim/.config/Code/User/workspaceStorage/.*
 !/home/tim/.config/Code/logs/.*
 EOF
-
-    # Initialize AIDE database
-    printf "\033[1;31m[+] Initializing AIDE database...\033[0m\n"
-    if echo "y" | sudo aideinit; then
-        if [ -f /var/lib/aide/aide.db.new ]; then
-            sudo cp /var/lib/aide/aide.db.new /var/lib/aide/aide.db
-            sudo chmod 600 /var/lib/aide/aide.db
-            printf "\033[1;32m[+] AIDE initialization completed successfully.\033[0m\n"
-        else
-            printf "\033[1;31m[-] AIDE database initialization failed. Please check the logs.\033[0m\n"
-            return 1
-        fi
-    else
-        printf "\033[1;31m[-] AIDE initialization command failed. Please check the logs.\033[0m\n"
-        return 1
-    fi
-
-    # Enable and start AIDE service
-    printf "\033[1;31m[+] Enabling and starting AIDE service...\033[0m\n"
-    sudo systemctl enable aidecheck.timer || printf "\033[1;31m[-] Failed to enable AIDE timer.\033[0m\n"
-    sudo systemctl start aidecheck.timer || printf "\033[1;31m[-] Failed to start AIDE timer.\033[0m\n"
 }
 
 
@@ -358,7 +414,8 @@ EOF
     sudo chmod 700 /var/log/audit
 
     sudo augenrules --load
-    sudo systemctl enable --now auditd
+    sudo systemctl enable auditd
+    sudo systemctl start auditd
     sudo systemctl restart auditd
     sudo auditctl -e 1 || printf "\033[1;31m[-] Failed to enable auditd.\033[0m\n"
 }
@@ -587,7 +644,7 @@ main() {
     printf "\033[1;31m       [+] Installing required Security Services        \033[0m\n"
     printf "\033[1;31m========================================================\033[0m\n"
     install_pkgdeps
-    
+    call_grub_script
     
 
     printf "\033[1;31m========================================================\033[0m\n"

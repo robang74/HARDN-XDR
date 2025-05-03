@@ -302,6 +302,7 @@ cron_packages() {
     echo "0 0 */2 * * root /usr/sbin/auditctl -e 1" | sudo tee -a /etc/crontab
     echo "0 0 */2 * * root /usr/sbin/auditd -f" | sudo tee -a /etc/crontab
     echo "0 0 */2 * * root /usr/sbin/auditd -r" | sudo tee -a /etc/crontab
+    
 }
 
 cron_alert() {
@@ -349,14 +350,6 @@ cron_alert() {
 }
 
 
-# call_fips(){
-#     if [ -f "$PACKAGES_SCRIPT" ]; then
-#         echo "[+] Calling FIPS script..." | tee -a "$LOG_FILE"
-#         bash "$PACKAGES_SCRIPT"
-#     else
-#         echo "[-] FIPS script not found at $PACKAGES_SCRIPT" | tee -a "$LOG_FILE"
-#     fi
-# }
 
 main() {
     printf "\033[1;31m[+] Validating configuration...\033[0m\n"
@@ -377,10 +370,11 @@ main() {
         printf "\033[1;32m[+] Validation successful. No errors found.\033[0m\n"
     fi
 
-    echo -e "\033[1;32m[+] ======== VALIDATION COMPLETE PLEASE REBOOT YOUR SYSTEM=========\033[0m" | tee -a "$LOG_FILE"
+    
     sleep 3
     print_ascii_banner
-    #call_fips 
+    echo -e "\033[1;32m[+] ======== VALIDATION COMPLETE PLEASE REBOOT YOUR SYSTEM=========\033[0m" | tee -a "$LOG_FILE"
+    
 }
 
 main
