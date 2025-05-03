@@ -380,7 +380,7 @@ main() {
     echo -e "\033[1;32m[+] ======== VALIDATION COMPLETE PLEASE REBOOT YOUR SYSTEM=========\033[0m" | tee -a "$LOG_FILE"
     sleep 3
     print_ascii_banner
-    call_fips 
+    #call_fips 
 }
 
 main
