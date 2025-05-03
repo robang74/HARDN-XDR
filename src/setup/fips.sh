@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Enhanced FIPS 140-3 Compliance Script (Safe Mode)
-# Authors: Tim Burns, Kiumarz Hashemi, Copilot Enhanced
+# Authors: Tim Burns, Kiumarz Hashemi
 # Date: 2025-05-03
 # Version: 1.5
 # Description:
