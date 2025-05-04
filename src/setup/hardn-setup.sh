@@ -198,33 +198,59 @@ enable_apparmor() {
 
 
 
-install_additional_tools() {
-    printf "\033[1;31m[+] Installing chkrootkit, LMD, and rkhunter as sudo...\033[0m\n"
-    
-    
-    apt install -y chkrootkit
-    if [ $? -ne 0 ]; then
-        printf "\033[1;31m[-] Failed to install chkrootkit. Please check your package manager.\033[0m\n"
+install_aide() {
+    printf "\033[1;31m[+] Installing and configuring AIDE...\033[0m\n"
+    apt install -y aide aide-common || {
+        printf "\033[1;31m[-] Failed to install AIDE.\033[0m\n"
+        return 1
+    }
+
+    if [ ! -f /etc/aide/aide.conf ]; then
+        printf "\033[1;31m[-] Missing AIDE configuration file.\033[0m\n"
         return 1
     fi
-    printf "\033[1;31m[+] chkrootkit installed successfully.\033[0m\n"
-    
-   
-    temp_dir=$(mktemp -d)
-    cd "$temp_dir" || { printf "\033[1;31m[-] Failed to create temp directory\033[0m\n"; return 1; }
-    if git clone https://github.com/rfxn/linux-malware-detect.git; then
-        cd linux-malware-detect || { printf "\033[1;31m[-] Could not enter maldetect dir\033[0m\n"; return 1; }
-        chmod +x install.sh
-        ./install.sh
-        systemctl enable maldet
-        printf "\033[1;32m[+] Maldet installed and enabled.\033[0m\n"
+
+    if [ -f /var/lib/aide/aide.db ]; then
+        printf "\033[1;32m[+] AIDE is already initialized. Skipping initialization.\033[0m\n"
     else
-        printf "\033[1;31m[-] Failed to clone maldetect repo\033[0m\n"
+        rm -f /var/lib/aide/aide.db.new /var/lib/aide/aide.db
+        printf "\033[1;31m[+] Initializing AIDE database...\033[0m\n"
+        yes | aide --config /etc/aide/aide.conf --init
+        if [ -f /var/lib/aide/aide.db.new ]; then
+            mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db
+            chmod 600 /var/lib/aide/aide.db
+            printf "\033[1;32m[+] AIDE initialization completed successfully.\033[0m\n"
+        else
+            printf "\033[1;31m[-] AIDE database initialization failed. Check /var/log/aide/aide.log.\033[0m\n"
+            return 1
+        fi
     fi
-    cd /tmp || true
-    rm -rf "$temp_dir"
-    
-    
+
+    printf "\033[1;31m[+] Enabling and starting AIDE timer...\033[0m\n"
+    systemctl enable --now aidecheck.timer || {
+        printf "\033[1;31m[-] Failed to enable AIDE timer.\033[0m\n"
+    }
+
+    printf "\033[1;31m[+] Updating AIDE configuration to exclude unnecessary user paths...\033[0m\n"
+    for USERNAME in $(awk -F: '$3 >= 1000 && $1 != "nobody" {print $1}' /etc/passwd); do
+        USER_HOME=$(eval echo "~$USERNAME")
+        USER_ID=$(id -u "$USERNAME")
+        USER_RUNTIME=$(loginctl show-user "$USERNAME" -p RuntimePath 2>/dev/null | cut -d= -f2)
+        USER_RUNTIME=${USER_RUNTIME:-/run/user/$USER_ID}
+
+        tee -a /etc/aide/aide.conf > /dev/null <<EOF
+!$USER_RUNTIME/doc/.*
+!$USER_RUNTIME/gvfs/.*
+!$USER_HOME/.config/Code/User/globalStorage/.*
+!$USER_HOME/.config/Code/User/workspaceStorage/.*
+!$USER_HOME/.config/Code/logs/.*
+EOF
+    done
+
+    printf "\033[1;31m[+] Running initial AIDE file integrity check...\033[0m\n"
+    aide --config /etc/aide/aide.conf --check | logger -t aide-check
+
+    printf "\033[1;32m[+] AIDE check completed and logged to syslog.\033[0m\n"
 }
 
 
