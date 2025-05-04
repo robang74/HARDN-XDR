@@ -69,6 +69,7 @@ set_generic_hostname() {
 update_system_packages() {
     printf "\033[1;31m[+] Updating system packages...\033[0m\n"
     apt update -y && apt upgrade -y
+    apt --fix-broken install -y
 }
 
 
@@ -79,7 +80,7 @@ update_system_packages() {
 install_pkgdeps() {
     printf "\033[1;31m[+] Installing package dependencies...\033[0m\n"
     apt install -y wget curl git gawk mariadb-common mysql-common policycoreutils \
-        python3-matplotlib unixodbc-common firejail python3-pyqt6
+        python3-matplotlib unixodbc-common firejail python3-pyqt6 fonts-liberation
 }
 
 
@@ -116,61 +117,25 @@ install_security_tools() {
 
 
 enable_fail2ban() {
-    printf "\033[1;31m[+] Resetting Fail2Ban settings for Debian 12...\033[0m\n"
-    systemctl stop fail2ban
-    if [ -f /etc/fail2ban/jail.local ]; then
-        rm -f /etc/fail2ban/jail.local
-    fi
-    cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
-
-    printf "\033[1;31m[+] Configuring Fail2Ban securely for user-based machines...\033[0m\n"
-    sed -i 's/^bantime = .*/bantime = 3600/' /etc/fail2ban/jail.local
-    sed -i 's/^findtime = .*/findtime = 600/' /etc/fail2ban/jail.local
-    sed -i 's/^maxretry = .*/maxretry = 3/' /etc/fail2ban/jail.local
-    sed -i 's/^#ignoreip = 127.0.0.1\/8/ignoreip = 127.0.0.1\/8/' /etc/fail2ban/jail.local
-
-    printf "\033[1;31m[+] Enabling and starting Fail2Ban...\033[0m\n"
+    printf "\033[1;31m[+] Installing and enabling Fail2Ban...\033[0m\n"
+    apt update
+    apt install -y fail2ban
     systemctl enable --now fail2ban
-    systemctl restart fail2ban
-    sed -i 's/^#*PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
-    systemctl reload sshd
+    printf "\033[1;32m[+] Fail2Ban installed and enabled successfully.\033[0m\n"
 
-   
-    if ! command -v augenrules &> /dev/null; then
-        printf "\033[1;31m[+] Installing auditd for audit rule loading…\033[0m\n"
-        apt update
-        apt install -y auditd audispd-plugins
-    fi
-
-    mkdir -p /etc/audit/rules.d
-    echo '-a always,exit -F arch=b64 -F euid=0 -S execve -k rootcmd' \
-      | tee /etc/audit/rules.d/root-activity.rules > /dev/null
-
-    
-    if command -v augenrules &> /dev/null; then
-        augenrules --load
-    else
-        auditctl -R /etc/audit/rules.d/*.rules
-    fi
-
-    printf "\033[1;31m[+] Enabling SSH jail in Fail2Ban...\033[0m\n"
-    tee -a /etc/fail2ban/jail.local > /dev/null <<EOF
+    printf "\033[1;31m[+] Configuring Fail2Ban for SSH...\033[0m\n"
+    cat << EOF > /etc/fail2ban/jail.local
 [sshd]
 enabled = true
 port = ssh
 logpath = /var/log/auth.log
-maxretry = 3
+maxretry = 5
 bantime = 3600
-findtime = 600
 EOF
+
     systemctl restart fail2ban
+    printf "\033[1;32m[+] Fail2Ban configured and restarted successfully.\033[0m\n"
 }
-
-
-
-
-
-
 
 
 enable_apparmor() {
@@ -200,59 +165,28 @@ enable_apparmor() {
 
 
 
-install_aide() {
-    printf "\033[1;31m[+] Installing and configuring AIDE...\033[0m\n"
+enable_aide() {
+    printf "\033[1;31m[+] Checking if AIDE is already installed and initialized…\033[0m\n"
+    if command -v aide >/dev/null 2>&1 && [ -f /var/lib/aide/aide.db ]; then
+        printf "\033[1;32m[+] AIDE already initialized. Skipping.\033[0m\n"
+        return 0
+    fi
+
+    printf "\033[1;31m[+] Installing AIDE and initializing database…\033[0m\n"
     apt install -y aide aide-common || {
         printf "\033[1;31m[-] Failed to install AIDE.\033[0m\n"
         return 1
     }
-
-    if [ ! -f /etc/aide/aide.conf ]; then
-        printf "\033[1;31m[-] Missing AIDE configuration file.\033[0m\n"
+    aideinit || {
+        printf "\033[1;31m[-] Failed to initialize AIDE database.\033[0m\n"
         return 1
-    fi
-
-    if [ -f /var/lib/aide/aide.db ]; then
-        printf "\033[1;32m[+] AIDE is already initialized. Skipping initialization.\033[0m\n"
-    else
-        rm -f /var/lib/aide/aide.db.new /var/lib/aide/aide.db
-        printf "\033[1;31m[+] Initializing AIDE database...\033[0m\n"
-        yes | aide --config /etc/aide/aide.conf --init
-        if [ -f /var/lib/aide/aide.db.new ]; then
-            mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db
-            chmod 600 /var/lib/aide/aide.db
-            printf "\033[1;32m[+] AIDE initialization completed successfully.\033[0m\n"
-        else
-            printf "\033[1;31m[-] AIDE database initialization failed. Check /var/log/aide/aide.log.\033[0m\n"
-            return 1
-        fi
-    fi
-
-    printf "\033[1;31m[+] Enabling and starting AIDE timer...\033[0m\n"
-    systemctl enable --now aidecheck.timer || {
-        printf "\033[1;31m[-] Failed to enable AIDE timer.\033[0m\n"
+    }
+    mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db || {
+        printf "\033[1;31m[-] Failed to replace AIDE database.\033[0m\n"
+        return 1
     }
 
-    printf "\033[1;31m[+] Updating AIDE configuration to exclude unnecessary user paths...\033[0m\n"
-    for USERNAME in $(awk -F: '$3 >= 1000 && $1 != "nobody" {print $1}' /etc/passwd); do
-        USER_HOME=$(eval echo "~$USERNAME")
-        USER_ID=$(id -u "$USERNAME")
-        USER_RUNTIME=$(loginctl show-user "$USERNAME" -p RuntimePath 2>/dev/null | cut -d= -f2)
-        USER_RUNTIME=${USER_RUNTIME:-/run/user/$USER_ID}
-
-        tee -a /etc/aide/aide.conf > /dev/null <<EOF
-!$USER_RUNTIME/doc/.*
-!$USER_RUNTIME/gvfs/.*
-!$USER_HOME/.config/Code/User/globalStorage/.*
-!$USER_HOME/.config/Code/User/workspaceStorage/.*
-!$USER_HOME/.config/Code/logs/.*
-EOF
-    done
-
-    printf "\033[1;31m[+] Running initial AIDE file integrity check...\033[0m\n"
-    aide --config /etc/aide/aide.conf --check | logger -t aide-check
-
-    printf "\033[1;32m[+] AIDE check completed and logged to syslog.\033[0m\n"
+    printf "\033[1;32m[+] AIDE successfully installed and configured.\033[0m\n"
 }
 
 
@@ -283,53 +217,6 @@ enable_rkhunter(){
 
     rkhunter --propupd
     printf "\033[1;32m[+] rkhunter installed and updated.\033[0m\n"
-}
-
-
-
-
-install_aide() {
-    printf "\033[1;31m[+] Installing and configuring AIDE...\033[0m\n"
-    apt install -y aide aide-common || {
-        printf "\033[1;31m[-] Failed to install AIDE.\033[0m\n"
-        return 1
-    }
-
-    # Check if AIDE is already initialized
-    if [ -f /var/lib/aide/aide.db ]; then
-        printf "\033[1;32m[+] AIDE is already initialized. Skipping initialization.\033[0m\n"
-    else
-        # Clean any previous DB artifacts
-        rm -f /var/lib/aide/aide.db.new /var/lib/aide/aide.db
-
-        # Initialize AIDE database, auto‐confirm overwrite
-        printf "\033[1;31m[+] Initializing AIDE database...\033[0m\n"
-        yes | aide --init
-        if [ -f /var/lib/aide/aide.db.new ]; then
-            mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db
-            chmod 600 /var/lib/aide/aide.db
-            printf "\033[1;32m[+] AIDE initialization completed successfully.\033[0m\n"
-        else
-            printf "\033[1;31m[-] AIDE database initialization failed. Check /var/log/aide/aide.log.\033[0m\n"
-            return 1
-        fi
-    fi
-
-    # Enable periodic check
-    printf "\033[1;31m[+] Enabling and starting AIDE timer...\033[0m\n"
-    systemctl enable --now aidecheck.timer || {
-        printf "\033[1;31m[-] Failed to enable AIDE timer.\033[0m\n"
-    }
-
-    # Exclude unnecessary paths
-    printf "\033[1;31m[+] Updating AIDE configuration to exclude unnecessary paths...\033[0m\n"
-    tee -a /etc/aide/aide.conf > /dev/null <<EOF
-!/run/user/1000/doc/.*
-!/run/user/1000/gvfs/.*
-!/home/tim/.config/Code/User/globalStorage/.*
-!/home/tim/.config/Code/User/workspaceStorage/.*
-!/home/tim/.config/Code/logs/.*
-EOF
 }
 
 
@@ -415,15 +302,9 @@ stig_secure_filesystem() {
     chown root:root /etc/passwd /etc/group /etc/gshadow
     chmod 644 /etc/passwd /etc/group
     chown root:shadow /etc/shadow /etc/gshadow
-    chmod 000 /etc/shadow
-    chmod 640 /etc/gshadow
-}
+    chmod 640 /etc/shadow /etc/gshadow
 
-
-
-
-
-stig_audit_rules() {
+    printf "\033[1;31m[+] Configuring audit rules...\033[0m\n"
     apt install -y auditd audispd-plugins
     tee /etc/audit/rules.d/stig.rules > /dev/null <<EOF
 -w /etc/passwd -p wa -k identity
@@ -432,22 +313,20 @@ stig_audit_rules() {
 -w /etc/gshadow -p wa -k identity
 -w /etc/security/opasswd -p wa -k identity
 -e 2
-
 EOF
 
-    # Ensure correct permissions for audit rules and log directory
     chown root:root /etc/audit/rules.d/*.rules
     chmod 600 /etc/audit/rules.d/*.rules
+    mkdir -p /var/log/audit
     chown -R root:root /var/log/audit
     chmod 700 /var/log/audit
 
     augenrules --load
-    systemctl enable auditd
-    systemctl start auditd
-    systemctl restart auditd
+    systemctl enable auditd || { printf "\033[1;31m[-] Failed to enable auditd. Ensure the script is run as root.\033[0m\n"; return 1; }
+    systemctl start auditd || { printf "\033[1;31m[-] Failed to start auditd. Ensure the script is run as root.\033[0m\n"; return 1; }
+    systemctl restart auditd || { printf "\033[1;31m[-] Failed to restart auditd. Ensure the script is run as root.\033[0m\n"; return 1; }
     auditctl -e 1 || printf "\033[1;31m[-] Failed to enable auditd.\033[0m\n"
 }
-
 
 
 
@@ -459,31 +338,31 @@ stig_kernel_setup() {
 
 
 
-kernel.randomize_va_space = 2         # Enable address space layout randomization (ASLR)
-kernel.exec-shield = 1               # Enable ExecShield protection
-kernel.panic_on_oops = 1             # Panic on kernel oops
-kernel.panic = 10                    # Reboot after 10 seconds on panic
-kernel.kptr_restrict = 2             # Restrict access to kernel pointers
-kernel.dmesg_restrict = 1            # Restrict access to dmesg logs
-fs.protected_hardlinks = 1           # Protect hardlinks
-fs.protected_symlinks = 1            # Protect symlinks
-net.ipv4.conf.all.rp_filter = 1      # Enable reverse path filtering
+kernel.randomize_va_space = 2        
+kernel.exec-shield = 1               
+kernel.panic_on_oops = 1             
+kernel.panic = 10                    
+kernel.kptr_restrict = 2             
+kernel.dmesg_restrict = 1           
+fs.protected_hardlinks = 1           
+fs.protected_symlinks = 1            
+net.ipv4.conf.all.rp_filter = 1     
 net.ipv4.conf.default.rp_filter = 1
-net.ipv4.conf.all.accept_redirects = 0  # Disable ICMP redirects
+net.ipv4.conf.all.accept_redirects = 0  
 net.ipv4.conf.default.accept_redirects = 0
-net.ipv4.conf.all.secure_redirects = 0  # Disable secure ICMP redirects
+net.ipv4.conf.all.secure_redirects = 0  
 net.ipv4.conf.default.secure_redirects = 0
-net.ipv4.conf.all.send_redirects = 0    # Disable sending of ICMP redirects
+net.ipv4.conf.all.send_redirects = 0    
 net.ipv4.conf.default.send_redirects = 0
-net.ipv4.tcp_syncookies = 1            # Enable TCP SYN cookies
-net.ipv4.conf.all.log_martians = 1     # Log packets with impossible addresses
+net.ipv4.tcp_syncookies = 1            
+net.ipv4.conf.all.log_martians = 1     
 net.ipv4.conf.default.log_martians = 1
-net.ipv4.icmp_echo_ignore_broadcasts = 1  # Ignore ICMP broadcast requests
-net.ipv4.icmp_ignore_bogus_error_responses = 1  # Ignore bogus ICMP error responses
-net.ipv4.tcp_rfc1337 = 1                 # Enable TCP RFC1337 protections
-net.ipv4.conf.all.accept_source_route = 0  # Disable source routing
+net.ipv4.icmp_echo_ignore_broadcasts = 1  
+net.ipv4.icmp_ignore_bogus_error_responses = 1  
+net.ipv4.tcp_rfc1337 = 1                 
+net.ipv4.conf.all.accept_source_route = 0  
 net.ipv4.conf.default.accept_source_route = 0
-net.ipv4.conf.all.forwarding = 0         # Disable IP forwarding
+net.ipv4.conf.all.forwarding = 0         
 net.ipv4.conf.default.forwarding = 0
 
 
@@ -618,7 +497,6 @@ apply_stig_hardening() {
     stig_login_banners || { printf "\033[1;31m[-] Failed to set login banners.\033[0m\n"; exit 1; }
     stig_kernel_setup || { printf "\033[1;31m[-] Failed to configure kernel parameters.\033[0m\n"; exit 1; }
     stig_secure_filesystem || { printf "\033[1;31m[-] Failed to secure filesystem permissions.\033[0m\n"; exit 1; }
-    stig_audit_rules || { printf "\033[1;31m[-] Failed to configure audit rules.\033[0m\n"; exit 1; }
     stig_disable_usb || { printf "\033[1;31m[-] Failed to disable USB storage.\033[0m\n"; exit 1; }
     stig_disable_core_dumps || { printf "\033[1;31m[-] Failed to disable core dumps.\033[0m\n"; exit 1; }
     stig_disable_ctrl_alt_del || { printf "\033[1;31m[-] Failed to disable Ctrl+Alt+Del.\033[0m\n"; exit 1; }
@@ -650,15 +528,20 @@ sleep 3
     if [ -f "$PACKAGES_SCRIPT" ]; then
         printf "\033[1;31m[+] Setting executable permissions for hardn-packages.sh...\033[0m\n"
         chmod +x "$PACKAGES_SCRIPT"
+
+        
         printf "\033[1;31m[+] Setting sudo permissions for hardn-packages.sh...\033[0m\n"
-        echo "root ALL=(ALL) NOPASSWD: $PACKAGES_SCRIPT" | tee /etc/sudoers.d/packages-sh > /dev/null
-        chmod 440 /etc/sudoers.d/hardn-packages-sh
+        echo "root ALL=(ALL) NOPASSWD: $PACKAGES_SCRIPT" \
+          | sudo tee /etc/sudoers.d/hardn-packages-sh > /dev/null
+        sudo chmod 440 /etc/sudoers.d/hardn-packages-sh
+
         printf "\033[1;31m[+] Calling hardn-packages.sh with sudo...\033[0m\n"
-        "$PACKAGES_SCRIPT"
+        sudo "$PACKAGES_SCRIPT"
     else
         printf "\033[1;31m[-] hardn-packages.sh not found at: %s. Skipping...\033[0m\n" "$PACKAGES_SCRIPT"
     fi
 }
+
 
 main() {
     printf "\033[1;31m[+] Updating system packages...\033[0m\n"
@@ -680,8 +563,7 @@ main() {
     printf "\033[1;31m                [+] Applying Security Settings          \033[0m\n"
     printf "\033[1;31m========================================================\033[0m\n"
     install_security_tools
-    install_additional_tools
-    install_aide
+    enable_aide
     enable_apparmor
     configure_firejail
     enable_fail2ban
@@ -701,6 +583,8 @@ main() {
     printf "\033[1;31m========================================================\033[0m\n"
     sleep 3
     setup_complete
+    printf "\033[1;31m[+] Installing scheduled jobs via cron_packages()\033[0m\n"
+   
 
 }
 
