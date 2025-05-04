@@ -1,7 +1,9 @@
 #!/bin/bash
 set -e # Exit on errors
 
-
+# Authors: 
+# - Chris B. 
+# - Tim B. 
 
 
                                                  # Author(s):                         
