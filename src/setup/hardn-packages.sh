@@ -1,4 +1,10 @@
 #!/bin/sh
+# Authors: 
+# - Chris B. 
+# - Tim B. 
+
+
+
 set -e # Exit on errors
 LOG_FILE="/dev/null"
 
