@@ -61,65 +61,99 @@ import_dependencies() {
 }
 
 update_grub() {
-    set -x  
     echo "[INFO] Updating GRUB configuration with enhanced security measures..."
     local grub_cfg="/etc/default/grub"
-    if [ -f "$grub_cfg" ]; then
-        if ! [ -w "$grub_cfg" ]; then
-            echo "[ERROR] GRUB configuration file is not writable. Please check permissions."
-            set +x  
-            exit 1
-        fi
-        sudo mkdir -p "$BACKUP_DIR"
-        sudo cp "$grub_cfg" "$BACKUP_DIR/grub.bak.$(date +%s)"
-        
-        if ! grep -q "GRUB_CMDLINE_LINUX_DEFAULT" "$grub_cfg"; then
-            echo 'GRUB_CMDLINE_LINUX_DEFAULT="quiet module.sig_enforce=1 lockdown=integrity"' | sudo tee -a "$grub_cfg"
-        else
-            sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/GRUB_CMDLINE_LINUX_DEFAULT="quiet module.sig_enforce=1 lockdown=integrity /' "$grub_cfg"
-        fi
+    local p1 p2 raw grub_password_hash
 
-        local grub_password_file="/boot/grub/grub_passwd"
-        echo "[INFO] Setting up GRUB password protection..."
-        
-        echo "============================================================"
-        echo "                   GRUB PASSWORD SETUP"
-        echo "============================================================"
-        echo "Please enter a password to secure your GRUB configuration."
-        echo "This password will be required for administrative access."
-        echo "============================================================"
-
-        read -sp "Enter GRUB password: " grub_password
-        echo
-        read -sp "Confirm GRUB password: " grub_password_confirm
-        echo
-        if [ "$grub_password" != "$grub_password_confirm" ]; then
-            echo "[ERROR] Passwords do not match. Please try again."
-            set +x  
-            exit 1
-        fi
-
-        if ! command -v grub-mkpasswd-pbkdf2 &> /dev/null; then
-            echo "[ERROR] grub-mkpasswd-pbkdf2 command not found. Please install GRUB tools."
-            set +x  
-            exit 1
-        fi
-
-        grub_password_hash=$(echo -e "$grub_password\n$grub_password" | grub-mkpasswd-pbkdf2 | awk -F': ' '/PBKDF2 hash of your password is/ {print $2}')
-        unset grub_password grub_password_confirm
-        echo "set superusers=\"admin\"" | sudo tee -a /etc/grub.d/40_custom > /dev/null
-        echo "password_pbkdf2 admin $grub_password_hash" | sudo tee -a /etc/grub.d/40_custom > /dev/null
-        echo "[OK] GRUB password protection configured."
-
-        sudo grub-mkconfig -o /boot/grub/grub.cfg >/dev/null 2>&1
-        echo "[OK] GRUB configuration updated with enhanced security."
-    else
-        echo "[ERROR] GRUB configuration file not found at $grub_cfg."
-        set +x  
+    # sanity checks
+    if [[ ! -f "$grub_cfg" ]]; then
+        echo "[ERROR] GRUB configuration not found at $grub_cfg."
         return 1
     fi
+    if [[ ! -w "$grub_cfg" ]]; then
+        echo "[ERROR] $grub_cfg is not writable. Check permissions."
+        return 1
+    fi
+
+    # backup
+    sudo mkdir -p "$BACKUP_DIR"
+    sudo cp "$grub_cfg" "$BACKUP_DIR/grub.bak.$(date +%s)"
+
+    # inject lockdown flags only once
+    if ! grep -q 'module.sig_enforce=1' "$grub_cfg"; then
+        if grep -q '^GRUB_CMDLINE_LINUX_DEFAULT' "$grub_cfg"; then
+            sudo sed -i \
+              's@^GRUB_CMDLINE_LINUX_DEFAULT="\([^"]*\)"@GRUB_CMDLINE_LINUX_DEFAULT="\1 module.sig_enforce=1 lockdown=integrity"@' \
+              "$grub_cfg"
+        else
+            echo 'GRUB_CMDLINE_LINUX_DEFAULT="quiet module.sig_enforce=1 lockdown=integrity"' \
+                | sudo tee -a "$grub_cfg" >/dev/null
+        fi
+    fi
+
+    # prompt for password
+    YELLOW_BOLD="\033[1;33m"
+    RESET="\033[0m"
+
+    echo -e "${YELLOW_BOLD}"
+    echo "============================================================"
+    echo "                   GRUB PASSWORD SETUP                      "
+    echo "============================================================"
+    echo "        Please enter a password to secure your GRUB         "
+    echo "                  configuration.                            "
+    echo "  Password must be at least 12 characters long and not a    "
+    echo "                  dictionary word.                          "
+    echo "============================================================"
+    echo -e "${RESET}"
+
+    while true; do
+        read -sp "Enter GRUB password: " p1; echo
+        if [[ ${#p1} -lt 12 ]]; then
+            echo "[ERROR] Password must be at least 12 characters long. Please try again."
+            continue
+        fi
+        if grep -q -i -w "$p1" /usr/share/dict/words; then
+            echo "[ERROR] Password must not be a dictionary word. Please try again."
+            continue
+        fi
+        read -sp "Confirm GRUB password: " p2; echo
+        if [[ "$p1" != "$p2" ]]; then
+            echo "[ERROR] Passwords do not match. Please try again."
+            continue
+        fi
+        break
+    done
+
+    
+    if ! command -v grub-mkpasswd-pbkdf2 &>/dev/null; then
+        echo "[ERROR] grub-mkpasswd-pbkdf2 not found; install grub2-common."
+        return 1
+    fi
+
+   
+    raw=$(printf "%s\n%s\n" "$p1" "$p1" | grub-mkpasswd-pbkdf2 2>/dev/null)
+    grub_password_hash=$(awk '{print $NF}' <<<"$raw")
+    if [[ -z "$grub_password_hash" ]]; then
+        echo "[ERROR] Failed to generate GRUB password hash."
+        return 1
+    fi
+    unset p1 p2 raw
+
+  
     set +x
+    sudo tee -a /etc/grub.d/40_custom >/dev/null <<EOF
+set superusers="admin"
+password_pbkdf2 admin $grub_password_hash
+EOF
+    set -x
+
+    echo "[OK] GRUB password protection configured."
+    sudo grub-mkconfig -o /boot/grub/grub.cfg >/dev/null 2>&1
+    echo "[OK] GRUB configuration rebuilt with enhanced security."
 }
+
+
+
 
 configure_memory() {
     echo "[INFO] Configuring secure kernel, monitored updates, and protecting RAM and CPU from attacks..."
@@ -178,6 +212,12 @@ configure_memory() {
     echo "[OK] Secure kernel configuration completed."
 }
 
+setup_complete() {
+    echo "============================================================"
+    echo -e "${GREEN_BOLD}[COMPLETED] Compliance setup completed successfully.${RESET}"
+    echo "============================================================"
+}
+
 main() {
     RED_BOLD="\033[1;31m"
     GREEN_BOLD="\033[1;32m"
@@ -224,10 +264,7 @@ main() {
     update_grub
     sleep 2
     echo -e "${GREEN_BOLD}[OK] GRUB configuration updated.${RESET}"
-
-    echo "============================================================"
-    echo -e "${GREEN_BOLD}[COMPLETED] Compliance setup completed successfully.${RESET}"
-    echo "============================================================"
+    setup_complete 
 }
 
 main "$@"

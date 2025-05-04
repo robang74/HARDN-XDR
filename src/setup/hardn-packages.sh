@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Authors: 
 # - Chris B. 
 # - Tim B. 
@@ -308,54 +308,123 @@ cron_packages() {
     echo "0 0 */2 * * root /usr/sbin/auditctl -e 1" | sudo tee -a /etc/crontab
     echo "0 0 */2 * * root /usr/sbin/auditd -f" | sudo tee -a /etc/crontab
     echo "0 0 */2 * * root /usr/sbin/auditd -r" | sudo tee -a /etc/crontab
-    
+    echo "0 0 * * * root /usr/local/bin/hardn-packages.sh > /var/log/hardn-packages.log 2>&1" | sudo tee -a /etc/crontab
 }
 
-cron_alert() {
 
-    ALERTS_FILE="$HOME/Desktop/HARDN_alerts.txt"
+cron_alert() {
+    local ALERTS_FILE="$HOME/Desktop/HARDN_alerts.txt"
+    local ALERTS_DIR
     ALERTS_DIR="$(dirname "$ALERTS_FILE")"
     [ -d "$ALERTS_DIR" ] || mkdir -p "$ALERTS_DIR"
+    : > "$ALERTS_FILE"
 
-    echo "========================================" | sudo tee -a /etc/crontab
-    echo "          CRON SETUP - ALERTS           " | sudo tee -a /etc/crontab
-    echo "========================================" | sudo tee -a /etc/crontab
-
-    if command -v maldet >/dev/null || [ -x /usr/local/maldetect/maldet ]; then
-        echo "[Maldet Alerts]" >> "$ALERTS_FILE"
-        sudo timeout 60s maldet --report list | grep -i "alert" >> "$ALERTS_FILE" || echo "No alerts from Maldet." >> "$ALERTS_FILE"
-        echo "-------------------------" >> "$ALERTS_FILE"
-    fi
-
-    if command -v fail2ban-client >/dev/null; then
-        echo "[Fail2Ban Alerts]" >> "$ALERTS_FILE"
-        if sudo systemctl is-active --quiet fail2ban; then
-            sudo fail2ban-client status | grep -i "banned" >> "$ALERTS_FILE" || echo "No alerts from Fail2Ban." >> "$ALERTS_FILE"
+    echo "[Package Installation Alerts]" >> "$ALERTS_FILE"
+    local pkgs=(
+        ufw fail2ban apparmor firejail rkhunter chkrootkit maldet aide auditd lynis
+    )
+    for pkg in "${pkgs[@]}"; do
+        if dpkg -s "$pkg" &>/dev/null; then
+            printf " OK      %s\n" "$pkg" >> "$ALERTS_FILE"
         else
-            echo "Fail2Ban is not running." >> "$ALERTS_FILE"
+            printf " MISSING %s\n" "$pkg" >> "$ALERTS_FILE"
         fi
-        echo "-------------------------" >> "$ALERTS_FILE"
-    fi
-
-    if command -v aa-status >/dev/null; then
-        echo "[AppArmor Alerts]" >> "$ALERTS_FILE"
-        sudo aa-status | grep -i "profile" >> "$ALERTS_FILE" || echo "No alerts from AppArmor." >> "$ALERTS_FILE"
-        echo "-------------------------" >> "$ALERTS_FILE"
-    fi
-
-    echo "[General Security Alerts]" >> "$ALERTS_FILE"
-    sudo grep -i "alert" /var/log/syslog /var/log/auth.log /var/log/kern.log 2>/dev/null >> "$ALERTS_FILE" || echo "No general security alerts found." >> "$ALERTS_FILE"
+    done
     echo "-------------------------" >> "$ALERTS_FILE"
 
-    if [ -s "$ALERTS_FILE" ]; then
-        echo "[+] Alerts have been written to $ALERTS_FILE"
+    echo "[Service Status Alerts]" >> "$ALERTS_FILE"
+    local svcs=(
+      ufw fail2ban apparmor firejail rkhunter chkrootkit maldet aide auditd lynis
+    )
+    for svc in "${svcs[@]}"; do
+       
+        if ! systemctl list-unit-files "${svc}.service" &>/dev/null; then
+            printf " %s: not installed\n" "$svc" >> "$ALERTS_FILE"
+            continue
+        fi
+
+        systemctl is-active --quiet "$svc" && st="active" || st="inactive"
+        systemctl is-enabled --quiet "$svc" && e="enabled" || e="disabled"
+        printf " %s: %s (%s)\n" "$svc" "$st" "$e" >> "$ALERTS_FILE"
+    done
+    echo "-------------------------" >> "$ALERTS_FILE"
+
+
+    echo "[STIG Settings Alerts]" >> "$ALERTS_FILE"
+    grep -q '^minlen = 14' /etc/security/pwquality.conf \
+        && echo " OK      password minlen=14" >> "$ALERTS_FILE" \
+        || echo " MISSING password minlen=14" >> "$ALERTS_FILE"
+
+    sysctl -n net.ipv6.conf.all.disable_ipv6 | grep -q '^1$' \
+        && echo " OK      IPv6 disabled" >> "$ALERTS_FILE" \
+        || echo " MISSING IPv6 disabled" >> "$ALERTS_FILE"
+
+    systemctl is-enabled ctrl-alt-del.target &>/dev/null \
+        && echo " MISSING Ctrl+Alt+Del disabled" >> "$ALERTS_FILE" \
+        || echo " OK      Ctrl+Alt+Del disabled" >> "$ALERTS_FILE"
+
+    echo "-------------------------" >> "$ALERTS_FILE"
+
+    echo "[Maldet Alerts]" >> "$ALERTS_FILE"
+    if command -v maldet &>/dev/null; then
+        local malist
+        malist=$(sudo maldet --report list | awk '/alert/ {print}')
+        if [ -n "$malist" ]; then
+            printf "%s\n" "$malist" >> "$ALERTS_FILE"
+        else
+            echo " No alerts from maldet" >> "$ALERTS_FILE"
+        fi
+    fi
+    echo "-------------------------" >> "$ALERTS_FILE"
+
+    echo "[Fail2Ban Alerts]" >> "$ALERTS_FILE"
+    if command -v fail2ban-client &>/dev/null && systemctl is-active --quiet fail2ban; then
+        local flist
+        flist=$(sudo fail2ban-client status sshd | awk '/Banned IP list:/ {print substr($0, index($0,$4))}')
+        if [ -n "$flist" ]; then
+            printf " Banned: %s\n" "$flist" >> "$ALERTS_FILE"
+        else
+            echo " No banned IPs" >> "$ALERTS_FILE"
+        fi
     else
-        echo "[+] No alerts found. Removing empty alerts file."
+        echo " Fail2Ban not running" >> "$ALERTS_FILE"
+    fi
+    echo "-------------------------" >> "$ALERTS_FILE"
+
+    echo "[AppArmor Alerts]" >> "$ALERTS_FILE"
+    if command -v aa-status &>/dev/null; then
+        local alist
+        alist=$(sudo aa-status | awk '/profile/ {print}')
+        if [ -n "$alist" ]; then
+            printf "%s\n" "$alist" >> "$ALERTS_FILE"
+        else
+            echo " No AppArmor profile events" >> "$ALERTS_FILE"
+        fi
+    fi
+    echo "-------------------------" >> "$ALERTS_FILE"
+
+    echo "[AIDE Alerts]" >> "$ALERTS_FILE"
+    if sudo aide --check >/dev/null 2>&1; then
+        echo " No deviations detected by AIDE" >> "$ALERTS_FILE"
+    else
+        echo " Deviations detected by AIDE" >> "$ALERTS_FILE"
+    fi
+    echo "-------------------------" >> "$ALERTS_FILE"
+
+    echo "[General Alerts]" >> "$ALERTS_FILE"
+    if sudo grep -i alert /var/log/syslog /var/log/auth.log /var/log/kern.log &>/dev/null; then
+        sudo grep -i alert /var/log/syslog /var/log/auth.log /var/log/kern.log >> "$ALERTS_FILE"
+    else
+        echo " No general alerts" >> "$ALERTS_FILE"
+    fi
+
+    if [ -s "$ALERTS_FILE" ]; then
+        echo "[+] Alerts written to $ALERTS_FILE"
+    else
+        echo "[+] No alerts found; removing empty alerts file."
         rm -f "$ALERTS_FILE"
     fi
 }
-
-
 
 main() {
     printf "\033[1;31m[+] Validating configuration...\033[0m\n"
