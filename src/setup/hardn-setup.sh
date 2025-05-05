@@ -80,7 +80,7 @@ update_system_packages() {
 install_pkgdeps() {
     printf "\033[1;31m[+] Installing package dependencies...\033[0m\n"
     apt install -y wget curl git gawk mariadb-common mysql-common policycoreutils \
-        python3-matplotlib unixodbc-common firejail python3-pyqt6 fonts-liberation
+        unixodbc-common firejail python3-pyqt6 fonts-liberation
 }
 
 
