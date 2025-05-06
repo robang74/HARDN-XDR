@@ -16,7 +16,7 @@ print_ascii_banner() {
     CYAN_BOLD="\033[1;36m"
     RESET="\033[0m"
 
-    printf "${CYAN_BOLD}"
+    printf "%s" "${CYAN_BOLD}"
     cat << "EOF"
                               ▄█    █▄       ▄████████    ▄████████ ████████▄  ███▄▄▄▄   
                              ███    ███     ███    ███   ███    ███ ███   ▀███ ███▀▀▀██▄ 
@@ -32,7 +32,7 @@ print_ascii_banner() {
                                                    
                                                     v 1.1.4
 EOF
-    printf "${RESET}"
+    printf "%s" "${RESET}"
 }
 
 print_ascii_banner
@@ -63,6 +63,40 @@ fi
 
 
 
+
+detect_os() {
+    if [ -f /etc/os-release ] && [ -r /etc/os-release ]; then
+        . /etc/os-release
+        export OS_NAME="$NAME"
+        export OS_VERSION="$VERSION_ID"
+
+        case "$OS_NAME" in
+            "Debian GNU/Linux")
+                if [[ "$OS_VERSION" == "11" || "$OS_VERSION" == "12" ]]; then
+                    echo "Detected supported OS: $OS_NAME $OS_VERSION"
+                else
+                    echo "Unsupported Debian version: $OS_VERSION. Exiting."
+                    exit 1
+                fi
+                ;;
+            "Ubuntu")
+                if [[ "$OS_VERSION" == "22.04" || "$OS_VERSION" == "24.04" ]]; then
+                    echo "Detected supported OS: $OS_NAME $OS_VERSION"
+                else
+                    echo "Unsupported Ubuntu version: $OS_VERSION. Exiting."
+                    exit 1
+                fi
+                ;;
+            *)
+                echo "Unsupported OS: $OS_NAME. Exiting."
+                exit 1
+                ;;
+        esac
+    else
+        echo "Unable to read /etc/os-release. Exiting."
+        exit 1
+    fi
+}
 
 
 update_system_packages() {
@@ -163,7 +197,6 @@ enable_apparmor() {
 
 
 
-
 enable_aide() {
     printf "\033[1;31m[+] Checking if AIDE is already installed and initialized…\033[0m\n"
     if command -v aide >/dev/null 2>&1 && [ -f /var/lib/aide/aide.db ]; then
@@ -217,8 +250,6 @@ enable_rkhunter(){
     rkhunter --propupd
     printf "\033[1;32m[+] rkhunter installed and updated.\033[0m\n"
 }
-
-
 
 
 
@@ -548,8 +579,14 @@ sleep 3
 }
 
 
+
+
+
+
+
 main() {
     printf "\033[1;31m[+] Updating system packages...\033[0m\n"
+    detect_os
     update_system_packages
 
    # printf "\033[1;31m[+] Setting generic hostname...\033[0m\n"
