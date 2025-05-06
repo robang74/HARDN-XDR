@@ -13,14 +13,14 @@ set -euo pipefail
 LOG_FILE="/var/log/compliance-setup.log"
 BACKUP_DIR="/var/backups/compliance"
 
-# Enable logging
+
 exec > >(tee -a "$LOG_FILE") 2>&1
 
 print_ascii_banner() {
     CYAN_BOLD="\033[1;36m"
     RESET="\033[0m"
 
-    printf "${CYAN_BOLD}"
+    printf "%s" "${CYAN_BOLD}"
     cat << "EOF"
                               ▄█    █▄       ▄████████    ▄████████ ████████▄  ███▄▄▄▄   
                              ███    ███     ███    ███   ███    ███ ███   ▀███ ███▀▀▀██▄ 
@@ -36,7 +36,7 @@ print_ascii_banner() {
 
                                                    v 2.0
 EOF
-    printf "${RESET}"
+    printf "%s" "${RESET}"
 }
 
 
@@ -60,12 +60,17 @@ import_dependencies() {
     echo "[OK] Dependencies imported successfully."
 }
 
+
+
+
+
+
 update_grub() {
     echo "[INFO] Updating GRUB configuration with enhanced security measures..."
     local grub_cfg="/etc/default/grub"
     local p1 p2 raw grub_password_hash
 
-    # sanity checks
+   
     if [[ ! -f "$grub_cfg" ]]; then
         echo "[ERROR] GRUB configuration not found at $grub_cfg."
         return 1
@@ -75,11 +80,11 @@ update_grub() {
         return 1
     fi
 
-    # backup
+  
     sudo mkdir -p "$BACKUP_DIR"
     sudo cp "$grub_cfg" "$BACKUP_DIR/grub.bak.$(date +%s)"
 
-    # inject lockdown flags only once
+  
     if ! grep -q 'module.sig_enforce=1' "$grub_cfg"; then
         if grep -q '^GRUB_CMDLINE_LINUX_DEFAULT' "$grub_cfg"; then
             sudo sed -i \
@@ -91,7 +96,7 @@ update_grub() {
         fi
     fi
 
-    # prompt for password
+   
     YELLOW_BOLD="\033[1;33m"
     RESET="\033[0m"
 
@@ -107,7 +112,7 @@ update_grub() {
     echo -e "${RESET}"
 
     while true; do
-        read -sp "Enter GRUB password: " p1; echo
+        read -r -sp "Enter GRUB password: " p1; echo
         if [[ ${#p1} -lt 12 ]]; then
             echo "[ERROR] Password must be at least 12 characters long. Please try again."
             continue
@@ -116,7 +121,7 @@ update_grub() {
             echo "[ERROR] Password must not be a dictionary word. Please try again."
             continue
         fi
-        read -sp "Confirm GRUB password: " p2; echo
+        read -r -sp "Confirm GRUB password: " p2; echo
         if [[ "$p1" != "$p2" ]]; then
             echo "[ERROR] Passwords do not match. Please try again."
             continue
@@ -155,23 +160,26 @@ EOF
 
 
 
+
+
+
 configure_memory() {
     echo "[INFO] Configuring secure kernel, monitored updates, and protecting RAM and CPU from attacks..."
 
-    if ! grep -q "CONFIG_MODULE_SIG=y" /boot/config-$(uname -r); then
+    if ! grep -q "CONFIG_MODULE_SIG=y" "/boot/config-$(uname -r)"; then
         echo "[ERROR] Kernel does not have module signing enabled."
         return 1
     fi
     echo "[OK] Kernel supports module signing."
 
     echo "[INFO] Configuring secure RAM and CPU settings..."
-    if ! grep -q "CONFIG_HARDENED_USERCOPY=y" /boot/config-$(uname -r); then
+    if ! grep -q "CONFIG_HARDENED_USERCOPY=y" "/boot/config-$(uname -r)"; then
         echo "[ERROR] Kernel does not have hardened usercopy enabled."
         return 1
     fi
     echo "[OK] Hardened usercopy is enabled."
 
-    if ! grep -q "CONFIG_PAGE_TABLE_ISOLATION=y" /boot/config-$(uname -r); then
+    if ! grep -q "CONFIG_PAGE_TABLE_ISOLATION=y" "/boot/config-$(uname -r)"; then
         echo "[ERROR] Kernel does not have page table isolation enabled."
         return 1
     fi
@@ -212,11 +220,21 @@ configure_memory() {
     echo "[OK] Secure kernel configuration completed."
 }
 
+
+
+
+
+
 setup_complete() {
     echo "============================================================"
     echo -e "${GREEN_BOLD}[COMPLETED] Compliance setup completed successfully.${RESET}"
     echo "============================================================"
 }
+
+
+
+
+
 
 main() {
     RED_BOLD="\033[1;31m"
