@@ -13,7 +13,7 @@ print_ascii_banner() {
     CYAN_BOLD="\033[1;36m"
     RESET="\033[0m"
 
-    printf "${CYAN_BOLD}"
+    printf "%s" "${CYAN_BOLD}"
     cat << "EOF"
                               ▄█    █▄       ▄████████    ▄████████ ████████▄  ███▄▄▄▄   
                              ███    ███     ███    ███   ███    ███ ███   ▀███ ███▀▀▀██▄ 
@@ -33,17 +33,12 @@ print_ascii_banner() {
                                        
                                                               
 EOF
-    printf "${RESET}"
+    printf "%s" "${RESET}"
 }
 
 print_ascii_banner
 
 sleep 7
-
-SCRIPT_PATH="$(readlink -f "$0")"
-SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
-PACKAGES_SCRIPT="$SCRIPT_DIR/fips.sh"
-
 
 
 if [ "$(id -u)" -ne 0 ]; then
@@ -60,10 +55,12 @@ fi
 FIX_MODE=false
 
 initialize_log() {
-    echo "========================================" > "$LOG_FILE"
-    echo " HARDN - Packages Validation Log" >> "$LOG_FILE"
-    echo "========================================" >> "$LOG_FILE"
-    echo "[+] Log initialized at $(date)" >> "$LOG_FILE"
+    {
+        echo "========================================"
+        echo " HARDN - Packages Validation Log"
+        echo "========================================"
+        echo "[+] Log initialized at $(date)"
+    } > "$LOG_FILE"
 }
 
 fix_if_needed() {
@@ -79,7 +76,12 @@ fix_if_needed() {
         if $FIX_MODE; then
             echo "[*] Attempting to fix..." | tee -a "$LOG_FILE"
             if eval "$fix_cmd"; then
-                # Re-check after fix
+            
+
+
+
+
+
                 if eval "$check_cmd"; then
                     echo "[+] Fixed: $success_msg" | tee -a "$LOG_FILE"
                 else
@@ -92,6 +94,12 @@ fix_if_needed() {
     fi
 }
 
+
+
+
+
+
+
 ensure_aide_initialized() {
     if [ ! -f /var/lib/aide/aide.db ]; then
         echo "[*] Initializing AIDE database..."
@@ -101,6 +109,12 @@ ensure_aide_initialized() {
         echo "[+] AIDE database initialized."
     fi
 }
+
+
+
+
+
+
 
 validate_packages() {
     echo "[+] Validating package configurations..." | tee -a "$LOG_FILE"
@@ -153,7 +167,6 @@ validate_packages() {
 
     echo "[*] Checking chkrootkit installation..." | tee -a "$LOG_FILE"
 
-    # Improved maldet block: checks all locations and installs from GitHub if missing
     fix_if_needed \
         "[ -x /usr/local/maldetect/maldet ] || [ -x /usr/local/bin/maldet ] || command -v maldet >/dev/null" \
         "( [ ! -d /tmp/linux-malware-detect ] && cd /tmp && git clone https://github.com/rfxn/linux-malware-detect.git ) && cd /tmp/linux-malware-detect && sudo ./install.sh && sudo ln -sf /usr/local/maldetect/maldet /usr/local/bin/maldet && ( [ -x /usr/local/maldetect/maldet ] || [ -x /usr/local/bin/maldet ] || command -v maldet >/dev/null )" \
@@ -194,6 +207,11 @@ validate_packages() {
 
     echo "[*] Performing AIDE database check..." | tee -a "$LOG_FILE"
 }
+
+
+
+
+
 
 validate_stig_hardening() {
     echo "[+] Validating STIG compliance..." | tee -a "$LOG_FILE"
@@ -247,10 +265,16 @@ validate_stig_hardening() {
         "Ctrl+Alt+Del is still active"
 }
 
+
+
+
+
+
+
 validate_boot_services() {
     echo "[*] Validating boot services..." | tee -a "$LOG_FILE"
 
-    # Set fail2ban to start at boot
+    
     echo "[*] Checking if Fail2Ban is enabled at boot..." | tee -a "$LOG_FILE"
     fix_if_needed \
         "! sudo systemctl is-enabled fail2ban | grep -q 'enabled'" \
@@ -258,7 +282,7 @@ validate_boot_services() {
         "Fail2Ban is enabled at boot" \
         "Fail2Ban is disabled at boot"
 
-    # Set auditd to start at boot
+  
     echo "[*] Checking if auditd is enabled at boot..." | tee -a "$LOG_FILE"
     fix_if_needed \
         "! sudo systemctl is-enabled auditd | grep -q 'enabled'" \
@@ -266,7 +290,7 @@ validate_boot_services() {
         "auditd is enabled at boot" \
         "auditd is disabled at boot"
 
-    # Set apparmor to start at boot
+   
     echo "[*] Checking if AppArmor is enabled at boot..." | tee -a "$LOG_FILE"
     fix_if_needed \
         "! sudo systemctl is-enabled apparmor | grep -q 'enabled'" \
@@ -274,7 +298,7 @@ validate_boot_services() {
         "AppArmor is enabled at boot" \
         "AppArmor is disabled at boot"
 
-    # Set sshd to start at boot
+    
     echo "[*] Checking if sshd is enabled at boot..." | tee -a "$LOG_FILE"
     fix_if_needed \
         "! sudo systemctl is-enabled sshd | grep -q 'enabled'" \
@@ -283,7 +307,7 @@ validate_boot_services() {
         "sshd is disabled at boot"
 }
 
-cron_clean() {
+cron_clean(){
     echo "========================================" | sudo tee -a /etc/crontab
     echo "           CRON SETUP - CLEAN           " | sudo tee -a /etc/crontab
     echo "========================================" | sudo tee -a /etc/crontab
@@ -293,7 +317,11 @@ cron_clean() {
     echo "0 0 */2 * * root /usr/bin/apt-get autoclean -y" | sudo tee -a /etc/crontab
     echo "0 0 */2 * * root /usr/bin/apt-get check" | sudo tee -a /etc/crontab
     echo "0 0 */2 * * root /usr/bin/apt-get clean" | sudo tee -a /etc/crontab
+    echo "0 0 */2 * * root /usr/bin/apt update && apt upgrade -y" | sudo tee -a /etc/crontab
+    echo "0 0 */2 * * root /usr/bin/apt full-upgrade" | sudo tee -a /etc/crontab
+
 }
+
 
 cron_packages() {
     echo "========================================" | sudo tee -a /etc/crontab
@@ -310,6 +338,11 @@ cron_packages() {
     echo "0 0 */2 * * root /usr/sbin/auditd -r" | sudo tee -a /etc/crontab
     echo "0 0 * * * root /usr/local/bin/hardn-packages.sh > /var/log/hardn-packages.log 2>&1" | sudo tee -a /etc/crontab
 }
+
+
+
+
+
 
 
 cron_alert() {
@@ -425,6 +458,12 @@ cron_alert() {
         rm -f "$ALERTS_FILE"
     fi
 }
+
+
+
+
+
+
 
 main() {
     printf "\033[1;31m[+] Validating configuration...\033[0m\n"
