@@ -27,7 +27,7 @@ print_ascii_banner() {
                      
                                                V A L I D A T I O N
                                                      
-                                                    v 1.1.2
+                                                    v 1.1.4
                                                                        
                                                                      
                                        
