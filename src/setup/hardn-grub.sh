@@ -233,8 +233,8 @@ setup_complete() {
     echo "============================================================"
     echo -e "${GREEN_BOLD}[COMPLETED] Compliance setup completed successfully.${RESET}"
     echo "============================================================"
+    echo -e "\033[1;32mHARDN-GRUB Setup Complete!\033[0m"
 }
-
 
 
 
@@ -252,41 +252,29 @@ main() {
     echo "============================================================"
 
     if [ "$(id -u)" -ne 0 ]; then
-        echo "------------------------------------------------------------"
-    if ! mkdir -p "$BACKUP_DIR"; then
-        echo "[ERROR] Failed to create backup directory at $BACKUP_DIR. Please check permissions."
+        echo "[ERROR] This script must be run as root."
         exit 1
     fi
-        echo "------------------------------------------------------------"
-        exit 1
-    fi
-    sleep 2
+
     echo "------------------------------------------------------------"
     echo -e "${RED_BOLD}[STEP 2] Importing dependencies...${RESET}"
     echo "------------------------------------------------------------"
-    echo -e "${GREEN_BOLD}[OK] Dependencies imported successfully.${RESET}"
     import_dependencies
-    sleep 2
-    echo "------------------------------------------------------------"
-    echo -e "${RED_BOLD}[STEP 2] Creating backup directory at $BACKUP_DIR...${RESET}"
-    echo "------------------------------------------------------------"
-    mkdir -p "$BACKUP_DIR"
-    echo -e "${GREEN_BOLD}[OK] Backup directory created.${RESET}"
+    echo -e "${GREEN_BOLD}[OK] Dependencies imported successfully.${RESET}"
 
     echo "------------------------------------------------------------"
-    echo -e "${RED_BOLD}[STEP 3] Configuring secure memory and kernel settings...${RESET}"
+    echo -e "${RED_BOLD}[STEP 4] Configuring secure memory and kernel settings...${RESET}"
     echo "------------------------------------------------------------"
     configure_memory
-    sleep 2
     echo -e "${GREEN_BOLD}[OK] Secure memory and kernel settings configured.${RESET}"
 
     echo "------------------------------------------------------------"
-    echo -e "${RED_BOLD}[STEP 4] Updating GRUB configuration for compliance...${RESET}"
+    echo -e "${RED_BOLD}[STEP 5] Updating GRUB configuration for compliance...${RESET}"
     echo "------------------------------------------------------------"
     update_grub
-    sleep 2
     echo -e "${GREEN_BOLD}[OK] GRUB configuration updated.${RESET}"
-    setup_complete 
+
+    setup_complete
 }
 
 main "$@"
