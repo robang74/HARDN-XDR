@@ -114,6 +114,9 @@ call_grub_script() {
         exit 1
     fi
     printf "\033[1;31m[+] Proceeding to the next steps in setup...\033[0m\n"
+
+    # Ensure the script continues to the next step
+    printf "\033[1;31m[+] Transitioning to the next phase of setup...\033[0m\n"
 }
 
 call_packages_script() {
