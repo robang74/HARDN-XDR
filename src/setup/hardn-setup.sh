@@ -101,9 +101,10 @@ call_grub_script() {
     if [ -f "$GRUB_SCRIPT" ]; then
         printf "\033[1;31m[+] Setting executable permissions for hardn-grub.sh...\033[0m\n"
         chmod +x "$GRUB_SCRIPT"
-        "$GRUB_SCRIPT"
+        printf "\033[1;31m[+] Executing hardn-grub.sh...\033[0m\n"
+        "$GRUB_SCRIPT" > /var/log/hardn-grub.log 2>&1
         if [ $? -ne 0 ]; then
-            printf "\033[1;31m[-] hardn-grub.sh execution failed. Exiting setup.\033[0m\n"
+            printf "\033[1;31m[-] hardn-grub.sh execution failed. Check /var/log/hardn-grub.log for details. Exiting setup.\033[0m\n"
             exit 1
         fi
     else
