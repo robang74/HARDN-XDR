@@ -113,8 +113,8 @@ update_system_packages() {
 
 install_pkgdeps() {
     printf "\033[1;31m[+] Installing package dependencies...\033[0m\n"
-    apt install -y wget curl git gawk mariadb-common mysql-common policycoreutils \
-        unixodbc-common firejail python3-pyqt6 fonts-liberation
+    apt install -y git gawk mariadb-common policycoreutils \
+        unixodbc-common firejail python3-pyqt6 fonts-liberation libpam-pwquality
 }
 
 
@@ -291,13 +291,20 @@ configure_firejail() {
    
 
 stig_password_policy() {
-    apt install -y libpam-pwquality
-    sed -i 's/^# minlen.*/minlen = 14/' /etc/security/pwquality.conf
-    sed -i 's/^# dcredit.*/dcredit = -1/' /etc/security/pwquality.conf
-    sed -i 's/^# ucredit.*/ucredit = -1/' /etc/security/pwquality.conf
-    sed -i 's/^# ocredit.*/ocredit = -1/' /etc/security/pwquality.conf
-    sed -i 's/^# lcredit.*/lcredit = -1/' /etc/security/pwquality.conf
-    sed -i '/pam_pwquality.so/ s/$/ retry=3 enforce_for_root/' /etc/pam.d/common-password || true
+
+    sed -i 's/^#\? *minlen *=.*/minlen = 14/' /etc/security/pwquality.conf
+    sed -i 's/^#\? *dcredit *=.*/dcredit = -1/' /etc/security/pwquality.conf
+    sed -i 's/^#\? *ucredit *=.*/ucredit = -1/' /etc/security/pwquality.conf
+    sed -i 's/^#\? *ocredit *=.*/ocredit = -1/' /etc/security/pwquality.conf
+    sed -i 's/^#\? *lcredit *=.*/lcredit = -1/' /etc/security/pwquality.conf
+
+
+    if command -v pam-auth-update > /dev/null; then
+        pam-auth-update --package
+        echo "[+] pam_pwquality profile activated via pam-auth-update"
+    else
+        echo "[!] pam-auth-update not found. Install 'libpam-runtime' to manage PAM profiles safely."
+    fi
 }
 
 
