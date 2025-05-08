@@ -13,7 +13,7 @@ print_ascii_banner() {
     CYAN_BOLD="\033[1;36m"
     RESET="\033[0m"
 
-    printf "${CYAN_BOLD}"
+    printf "%s" "${CYAN_BOLD}"
     cat << "EOF"
                               ▄█    █▄       ▄████████    ▄████████ ████████▄  ███▄▄▄▄   
                              ███    ███     ███    ███   ███    ███ ███   ▀███ ███▀▀▀██▄ 
@@ -33,17 +33,12 @@ print_ascii_banner() {
                                        
                                                               
 EOF
-    printf "${RESET}"
+    printf "%s" "${RESET}"
 }
 
 print_ascii_banner
 
 sleep 7
-
-SCRIPT_PATH="$(readlink -f "$0")"
-SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
-PACKAGES_SCRIPT="$SCRIPT_DIR/fips.sh"
-
 
 
 if [ "$(id -u)" -ne 0 ]; then
@@ -60,10 +55,12 @@ fi
 FIX_MODE=false
 
 initialize_log() {
-    echo "========================================" > "$LOG_FILE"
-    echo " HARDN - Packages Validation Log" >> "$LOG_FILE"
-    echo "========================================" >> "$LOG_FILE"
-    echo "[+] Log initialized at $(date)" >> "$LOG_FILE"
+    {
+        echo "========================================"
+        echo " HARDN - Packages Validation Log"
+        echo "========================================"
+        echo "[+] Log initialized at $(date)"
+    } > "$LOG_FILE"
 }
 
 fix_if_needed() {
@@ -79,7 +76,6 @@ fix_if_needed() {
         if $FIX_MODE; then
             echo "[*] Attempting to fix..." | tee -a "$LOG_FILE"
             if eval "$fix_cmd"; then
-                # Re-check after fix
                 if eval "$check_cmd"; then
                     echo "[+] Fixed: $success_msg" | tee -a "$LOG_FILE"
                 else
@@ -103,7 +99,7 @@ ensure_aide_initialized() {
 }
 
 validate_packages() {
-    echo "[+] Validating package configurations..." | tee -a "$LOG_FILE"
+    echo "[INFO] Validating package configurations with enhanced error handling..."
 
     fix_if_needed \
         "! ping -c 1 google.com >/dev/null 2>&1" \
@@ -117,7 +113,7 @@ validate_packages() {
         "sudo ufw status | grep -q 'Status: active'" \
         "sudo apt-get install -y ufw && sudo ufw enable" \
         "UFW is active" \
-        "UFW is not active"
+        "UFW is not active. Attempting to fix..."
 
     echo "[*] Checking UFW status..." | tee -a "$LOG_FILE"
 
@@ -153,7 +149,6 @@ validate_packages() {
 
     echo "[*] Checking chkrootkit installation..." | tee -a "$LOG_FILE"
 
-    # Improved maldet block: checks all locations and installs from GitHub if missing
     fix_if_needed \
         "[ -x /usr/local/maldetect/maldet ] || [ -x /usr/local/bin/maldet ] || command -v maldet >/dev/null" \
         "( [ ! -d /tmp/linux-malware-detect ] && cd /tmp && git clone https://github.com/rfxn/linux-malware-detect.git ) && cd /tmp/linux-malware-detect && sudo ./install.sh && sudo ln -sf /usr/local/maldetect/maldet /usr/local/bin/maldet && ( [ -x /usr/local/maldetect/maldet ] || [ -x /usr/local/bin/maldet ] || command -v maldet >/dev/null )" \
@@ -193,6 +188,10 @@ validate_packages() {
         "AIDE database check failed"
 
     echo "[*] Performing AIDE database check..." | tee -a "$LOG_FILE"
+
+    # Add a summary of changes made during validation
+    echo "[INFO] Summary of changes made during validation:" | tee -a "$LOG_FILE"
+    grep "[+]" "$LOG_FILE" | tee -a "$LOG_FILE"
 }
 
 validate_stig_hardening() {
@@ -250,7 +249,6 @@ validate_stig_hardening() {
 validate_boot_services() {
     echo "[*] Validating boot services..." | tee -a "$LOG_FILE"
 
-    # Set fail2ban to start at boot
     echo "[*] Checking if Fail2Ban is enabled at boot..." | tee -a "$LOG_FILE"
     fix_if_needed \
         "! sudo systemctl is-enabled fail2ban | grep -q 'enabled'" \
@@ -258,7 +256,6 @@ validate_boot_services() {
         "Fail2Ban is enabled at boot" \
         "Fail2Ban is disabled at boot"
 
-    # Set auditd to start at boot
     echo "[*] Checking if auditd is enabled at boot..." | tee -a "$LOG_FILE"
     fix_if_needed \
         "! sudo systemctl is-enabled auditd | grep -q 'enabled'" \
@@ -266,7 +263,6 @@ validate_boot_services() {
         "auditd is enabled at boot" \
         "auditd is disabled at boot"
 
-    # Set apparmor to start at boot
     echo "[*] Checking if AppArmor is enabled at boot..." | tee -a "$LOG_FILE"
     fix_if_needed \
         "! sudo systemctl is-enabled apparmor | grep -q 'enabled'" \
@@ -274,7 +270,6 @@ validate_boot_services() {
         "AppArmor is enabled at boot" \
         "AppArmor is disabled at boot"
 
-    # Set sshd to start at boot
     echo "[*] Checking if sshd is enabled at boot..." | tee -a "$LOG_FILE"
     fix_if_needed \
         "! sudo systemctl is-enabled sshd | grep -q 'enabled'" \
@@ -283,7 +278,7 @@ validate_boot_services() {
         "sshd is disabled at boot"
 }
 
-cron_clean() {
+cron_clean(){
     echo "========================================" | sudo tee -a /etc/crontab
     echo "           CRON SETUP - CLEAN           " | sudo tee -a /etc/crontab
     echo "========================================" | sudo tee -a /etc/crontab
@@ -293,6 +288,8 @@ cron_clean() {
     echo "0 0 */2 * * root /usr/bin/apt-get autoclean -y" | sudo tee -a /etc/crontab
     echo "0 0 */2 * * root /usr/bin/apt-get check" | sudo tee -a /etc/crontab
     echo "0 0 */2 * * root /usr/bin/apt-get clean" | sudo tee -a /etc/crontab
+    echo "0 0 */2 * * root /usr/bin/apt update && apt upgrade -y" | sudo tee -a /etc/crontab
+    echo "0 0 */2 * * root /usr/bin/apt full-upgrade" | sudo tee -a /etc/crontab
 }
 
 cron_packages() {
@@ -310,7 +307,6 @@ cron_packages() {
     echo "0 0 */2 * * root /usr/sbin/auditd -r" | sudo tee -a /etc/crontab
     echo "0 0 * * * root /usr/local/bin/hardn-packages.sh > /var/log/hardn-packages.log 2>&1" | sudo tee -a /etc/crontab
 }
-
 
 cron_alert() {
     local ALERTS_FILE="$HOME/Desktop/HARDN_alerts.txt"
@@ -337,7 +333,6 @@ cron_alert() {
       ufw fail2ban apparmor firejail rkhunter chkrootkit maldet aide auditd lynis
     )
     for svc in "${svcs[@]}"; do
-       
         if ! systemctl list-unit-files "${svc}.service" &>/dev/null; then
             printf " %s: not installed\n" "$svc" >> "$ALERTS_FILE"
             continue
@@ -348,7 +343,6 @@ cron_alert() {
         printf " %s: %s (%s)\n" "$svc" "$st" "$e" >> "$ALERTS_FILE"
     done
     echo "-------------------------" >> "$ALERTS_FILE"
-
 
     echo "[STIG Settings Alerts]" >> "$ALERTS_FILE"
     grep -q '^minlen = 14' /etc/security/pwquality.conf \
@@ -432,6 +426,9 @@ main() {
     validate_packages
     validate_stig_hardening
     validate_boot_services
+
+    # Ensure cron jobs are non-intrusive
+    echo "[INFO] Setting up non-intrusive cron jobs..."
     cron_clean
     cron_packages
     cron_alert
@@ -445,11 +442,9 @@ main() {
         printf "\033[1;32m[+] Validation successful. No errors found.\033[0m\n"
     fi
 
-    
     sleep 3
     print_ascii_banner
     echo -e "\033[1;32m[+] ======== VALIDATION COMPLETE PLEASE REBOOT YOUR SYSTEM=========\033[0m" | tee -a "$LOG_FILE"
-    
 }
 
 main

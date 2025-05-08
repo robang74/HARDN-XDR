@@ -13,14 +13,14 @@ set -euo pipefail
 LOG_FILE="/var/log/compliance-setup.log"
 BACKUP_DIR="/var/backups/compliance"
 
-# Enable logging
+
 exec > >(tee -a "$LOG_FILE") 2>&1
 
 print_ascii_banner() {
     CYAN_BOLD="\033[1;36m"
     RESET="\033[0m"
 
-    printf "${CYAN_BOLD}"
+    printf "%s" "${CYAN_BOLD}"
     cat << "EOF"
                               ▄█    █▄       ▄████████    ▄████████ ████████▄  ███▄▄▄▄   
                              ███    ███     ███    ███   ███    ███ ███   ▀███ ███▀▀▀██▄ 
@@ -36,15 +36,16 @@ print_ascii_banner() {
 
                                                    v 2.1
 EOF
-    printf "${RESET}"
+    printf "%s" "${RESET}"
 }
 
 
 import_dependencies() {
     echo "[INFO] Importing dependencies..."
-    if ! command -v grub-mkpasswd-pbkdf2 &> /dev/null; then
-        echo "[ERROR] grub-mkpasswd-pbkdf2 command not found. Please install GRUB tools."
-        exit 1
+
+    if ! command -v grub-mkconfig &> /dev/null; then
+        echo "[ERROR] grub-mkconfig command not found. Please install GRUB tools."
+        sudo apt-get install -y grub2
     fi
 
     if ! command -v openssl &> /dev/null; then
@@ -57,15 +58,23 @@ import_dependencies() {
         sudo apt-get install -y libssl-dev
     fi
 
+    if ! command -v sysctl &> /dev/null; then
+        echo "[ERROR] sysctl command not found. Please ensure procps is installed."
+        sudo apt-get install -y procps
+    fi
+
     echo "[OK] Dependencies imported successfully."
 }
+
+
+
+
+
 
 update_grub() {
     echo "[INFO] Updating GRUB configuration with enhanced security measures..."
     local grub_cfg="/etc/default/grub"
-    local p1 p2 raw grub_password_hash
 
-    # sanity checks
     if [[ ! -f "$grub_cfg" ]]; then
         echo "[ERROR] GRUB configuration not found at $grub_cfg."
         return 1
@@ -75,82 +84,95 @@ update_grub() {
         return 1
     fi
 
-    # backup
     sudo mkdir -p "$BACKUP_DIR"
     sudo cp "$grub_cfg" "$BACKUP_DIR/grub.bak.$(date +%s)"
 
-    # inject lockdown flags only once
+    if grep -q '^GRUB_CMDLINE_LINUX_DEFAULT' "$grub_cfg"; then
+        sudo sed -i \
+          '/^GRUB_CMDLINE_LINUX_DEFAULT/ s/module.sig_enforce=1//; s/"$/ module.sig_enforce=1"/' \
+          "$grub_cfg"
+    else
+        echo 'GRUB_CMDLINE_LINUX_DEFAULT="quiet module.sig_enforce=1"' \
+            | sudo tee -a "$grub_cfg" >/dev/null
+    fi
+
+    echo "[INFO] Restricting GRUB configuration access..."
+    sudo chmod 600 /etc/default/grub
+    sudo chmod 600 /boot/grub/grub.cfg
+    echo "[OK] GRUB configuration access restricted."
+
+    echo "[INFO] Enabling Module Signature Enforcement..."
+    local module_sig="module.sig_enforce=1"
+    if ! grep -q "$module_sig" "$grub_cfg"; then
+
     if ! grep -q 'module.sig_enforce=1' "$grub_cfg"; then
-        if grep -q '^GRUB_CMDLINE_LINUX_DEFAULT' "$grub_cfg"; then
-            sudo sed -i \
-              's@^GRUB_CMDLINE_LINUX_DEFAULT="\([^"]*\)"@GRUB_CMDLINE_LINUX_DEFAULT="\1 module.sig_enforce=1 lockdown=integrity"@' \
-              "$grub_cfg"
-        else
-            echo 'GRUB_CMDLINE_LINUX_DEFAULT="quiet module.sig_enforce=1 lockdown=integrity"' \
-                | sudo tee -a "$grub_cfg" >/dev/null
-        fi
+        sudo sed -i \
+          '/^GRUB_CMDLINE_LINUX_DEFAULT/ s/"$/ module.sig_enforce=1"/' \
+          "$grub_cfg"
     fi
-
-    # prompt for password
-    YELLOW_BOLD="\033[1;33m"
-    RESET="\033[0m"
-
-    echo -e "${YELLOW_BOLD}"
-    echo "============================================================"
-    echo "                   GRUB PASSWORD SETUP                      "
-    echo "============================================================"
-    echo "        Please enter a password to secure your GRUB         "
-    echo "                  configuration.                            "
-    echo "  Password must be at least 12 characters long and not a    "
-    echo "                  dictionary word.                          "
-    echo "============================================================"
-    echo -e "${RESET}"
-
-    while true; do
-        read -sp "Enter GRUB password: " p1; echo
-        if [[ ${#p1} -lt 12 ]]; then
-            echo "[ERROR] Password must be at least 12 characters long. Please try again."
-            continue
-        fi
-        if grep -q -i -w "$p1" /usr/share/dict/words; then
-            echo "[ERROR] Password must not be a dictionary word. Please try again."
-            continue
-        fi
-        read -sp "Confirm GRUB password: " p2; echo
-        if [[ "$p1" != "$p2" ]]; then
-            echo "[ERROR] Passwords do not match. Please try again."
-            continue
-        fi
-        break
-    done
-
-    
-    if ! command -v grub-mkpasswd-pbkdf2 &>/dev/null; then
-        echo "[ERROR] grub-mkpasswd-pbkdf2 not found; install grub2-common."
-        return 1
-    fi
-
-   
-    raw=$(printf "%s\n%s\n" "$p1" "$p1" | grub-mkpasswd-pbkdf2 2>/dev/null)
-    grub_password_hash=$(awk '{print $NF}' <<<"$raw")
-    if [[ -z "$grub_password_hash" ]]; then
-        echo "[ERROR] Failed to generate GRUB password hash."
-        return 1
-    fi
-    unset p1 p2 raw
-
-  
-    set +x
-    sudo tee -a /etc/grub.d/40_custom >/dev/null <<EOF
-set superusers="admin"
-password_pbkdf2 admin $grub_password_hash
-EOF
-    set -x
-
-    echo "[OK] GRUB password protection configured."
     sudo grub-mkconfig -o /boot/grub/grub.cfg >/dev/null 2>&1
     echo "[OK] GRUB configuration rebuilt with enhanced security."
+
+    echo "[INFO] Ensuring login functionality and GUI compatibility..."
+
+    # Check for user modifications and respect them
+    if grep -q '# GUI_MODIFIED' "$grub_cfg"; then
+        echo "[INFO] GRUB configuration has been modified via GUI. Changes will not be overwritten."
+        return 0
+    fi
+
+    # Ensure user-defined GRUB settings are respected
+    echo "[INFO] Checking for user-defined GRUB settings..."
+    if grep -q '# USER_DEFINED' "$grub_cfg"; then
+        echo "[INFO] User-defined settings detected. Skipping script-managed changes."
+        return 0
+    fi
+
+    # Add a marker to indicate script-managed changes
+    echo "# SCRIPT_MANAGED" | sudo tee -a "$grub_cfg" > /dev/null
+
+    # Add comments to clarify security measures
+    echo "# Enabling kernel lockdown mode for enhanced security" | sudo tee -a "$grub_cfg" > /dev/null
+    echo "# Enforcing module signature verification to prevent unsigned modules" | sudo tee -a "$grub_cfg" > /dev/null
+
+    # Ensure critical boot parameters are not removed
+    echo "[INFO] Preserving critical boot parameters for login and recovery..."
+    local critical_params="single recovery"
+    for param in $critical_params; do
+        if ! grep -q "$param" "$grub_cfg"; then
+            echo "[INFO] Adding $param to GRUB_CMDLINE_LINUX_DEFAULT."
+            sudo sed -i \
+              's@^GRUB_CMDLINE_LINUX_DEFAULT=\"\([^\"]*\)\"@GRUB_CMDLINE_LINUX_DEFAULT=\"\1 $param\"@' \
+              "$grub_cfg"
+        fi
+    done
+
+    # Retain kernel lockdown mode and module signature enforcement
+    echo "[INFO] Ensuring kernel lockdown mode and module signature enforcement..."
+    local lockdown_mode="lockdown=integrity"
+    local module_sig="module.sig_enforce=1"
+    for param in "$lockdown_mode" "$module_sig"; do
+        if ! grep -q "$param" "$grub_cfg"; then
+            echo "[INFO] Adding $param to GRUB_CMDLINE_LINUX_DEFAULT."
+            sudo sed -i \
+              's@^GRUB_CMDLINE_LINUX_DEFAULT=\"\([^\"]*\)\"@GRUB_CMDLINE_LINUX_DEFAULT=\"\1 $param\"@' \
+              "$grub_cfg"
+        fi
+    done
+
+    # Protect GRUB configuration files
+    echo "[INFO] Restricting access to GRUB configuration files..."
+    sudo chmod 600 /etc/default/grub
+    sudo chmod 600 /boot/grub/grub.cfg
+
+    # Rebuild GRUB configuration
+    echo "[INFO] Rebuilding GRUB configuration..."
+    sudo grub-mkconfig -o /boot/grub/grub.cfg >/dev/null 2>&1
+    echo "[OK] GRUB configuration updated securely."
 }
+
+
+
 
 
 
@@ -158,25 +180,28 @@ EOF
 configure_memory() {
     echo "[INFO] Configuring secure kernel, monitored updates, and protecting RAM and CPU from attacks..."
 
-    if ! grep -q "CONFIG_MODULE_SIG=y" /boot/config-$(uname -r); then
+    # Ensure kernel module signing is enabled
+    if ! grep -q "CONFIG_MODULE_SIG=y" "/boot/config-$(uname -r)"; then
         echo "[ERROR] Kernel does not have module signing enabled."
         return 1
     fi
     echo "[OK] Kernel supports module signing."
 
-    echo "[INFO] Configuring secure RAM and CPU settings..."
-    if ! grep -q "CONFIG_HARDENED_USERCOPY=y" /boot/config-$(uname -r); then
+    # Ensure hardened usercopy is enabled
+    if ! grep -q "CONFIG_HARDENED_USERCOPY=y" "/boot/config-$(uname -r)"; then
         echo "[ERROR] Kernel does not have hardened usercopy enabled."
         return 1
     fi
     echo "[OK] Hardened usercopy is enabled."
 
-    if ! grep -q "CONFIG_PAGE_TABLE_ISOLATION=y" /boot/config-$(uname -r); then
+    # Ensure page table isolation is enabled
+    if ! grep -q "CONFIG_PAGE_TABLE_ISOLATION=y" "/boot/config-$(uname -r)"; then
         echo "[ERROR] Kernel does not have page table isolation enabled."
         return 1
     fi
     echo "[OK] Page table isolation is enabled."
 
+    # Configure monitored updates and panic settings
     echo "[INFO] Configuring monitored updates and panic settings..."
     sudo sysctl -w kernel.panic_on_oops=1
     sudo sysctl -w kernel.panic=10
@@ -184,6 +209,7 @@ configure_memory() {
     echo "kernel.panic=10" | sudo tee -a /etc/sysctl.conf
     echo "[OK] Monitored updates and panic settings configured."
 
+    # Update GRUB configuration for secure kernel settings
     local grub_cfg="/etc/default/grub"
     if [ -f "$grub_cfg" ]; then
         sudo cp "$grub_cfg" "$BACKUP_DIR/grub.bak.$(date +%s)"
@@ -199,24 +225,20 @@ configure_memory() {
         return 1
     fi
 
-   
-    local cron_file="/etc/cron.d/grub-update"
-    if [ ! -f "$cron_file" ]; then
-        echo "[INFO] Setting up cron job for GRUB updates..."
-        echo "0 0 * * * root /usr/sbin/grub-mkconfig -o /boot/grub/grub.cfg" | sudo tee "$cron_file" > /dev/null
-        echo "[OK] Cron job for GRUB updates set."
-    else
-        echo "[INFO] Cron job for GRUB updates already exists."
-    fi
 
-    echo "[OK] Secure kernel configuration completed."
-}
+
+
 
 setup_complete() {
     echo "============================================================"
     echo -e "${GREEN_BOLD}[COMPLETED] Compliance setup completed successfully.${RESET}"
     echo "============================================================"
 }
+
+
+
+
+
 
 main() {
     RED_BOLD="\033[1;31m"
