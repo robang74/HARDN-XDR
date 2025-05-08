@@ -116,6 +116,25 @@ call_grub_script() {
     printf "\033[1;31m[+] Proceeding to the next steps in setup...\033[0m\n"
 }
 
+call_packages_script() {
+    printf "\033[1;31m[+] Calling hardn-packages.sh script...\033[0m\n"
+    if [ -f "$PACKAGES_SCRIPT" ]; then
+        printf "\033[1;31m[+] Setting executable permissions for hardn-packages.sh...\033[0m\n"
+        chmod +x "$PACKAGES_SCRIPT"
+        printf "\033[1;31m[+] Executing hardn-packages.sh...\033[0m\n"
+        "$PACKAGES_SCRIPT" > /var/log/hardn-packages.log 2>&1
+        if [ $? -ne 0 ]; then
+            printf "\033[1;31m[-] hardn-packages.sh execution failed. Check /var/log/hardn-packages.log for details. Exiting setup.\033[0m\n"
+            exit 1
+        else
+            printf "\033[1;32m[+] HARDN-PACKAGES Setup Complete!\033[0m\n"
+        fi
+    else
+        printf "\033[1;31m[-] hardn-packages.sh not found at: %s. Exiting setup.\033[0m\n" "$PACKAGES_SCRIPT"
+        exit 1
+    fi
+}
+
 install_security_tools() {
     printf "\033[1;31m[+] Installing required system security tools...\033[0m\n"
     apt install -y ufw fail2ban apparmor apparmor-profiles apparmor-utils firejail tcpd lynis debsums \
@@ -455,6 +474,7 @@ main() {
     printf "\033[1;31m========================================================\033[0m\n"
     install_pkgdeps
     call_grub_script
+    
 
     printf "\033[1;31m========================================================\033[0m\n"
     printf "\033[1;31m            [+] HARDN - Installing Security Tools       \033[0m\n"
@@ -479,7 +499,7 @@ main() {
     printf "\033[1;31m========================================================\033[0m\n"
     sleep 3
     setup_complete
-    printf "\033[1;31m[+] Installing scheduled jobs via cron_packages()\033[0m\n"
+    call_packages_script
 }
 
 main
