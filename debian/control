@@ -12,3 +12,4 @@ Priority: optional
 Architecture: all
 Depends:
 Description: Collection of scripts for security hardening operating systems
+ This package includes tools for ensuring STIG compliance, enhancing GRUB security, and optimizing system performance.

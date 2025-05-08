@@ -1,4 +1,3 @@
-
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/OpenSource-For-Freedom/HARDN?include_prereleases)
 
 
@@ -85,11 +84,21 @@ The purpose of HARDN Endpoint is to empower IT administrators and users with the
   
   #### AIDE will 20-60 minutes to fully establish the "ADVANCED INTRUSION DETECTION SYSTEM" however, this runs in the background. 
   - This script will run syncronously and reboot your system when complete. 
-  - DO-NOT turn your system off: We have established an update routine with reboots using CRON. 
+  - DO-NOT turn your system off unitl complete: We have established an update routine with reboots using CRON. 
   - HARDN in itself once executed, will keep your Debian system secure and up to date. 
 
 6. Follow any additional setup instructions and information provided in the `docs` directory.
 </p>
+
+### Updates in Version 1.1.4
+- Added support for building Debian packages.
+- Enhanced GRUB security to respect GUI changes and user-defined settings.
+- Improved error handling and script optimization.
+- Updated documentation and ensured cron jobs are non-intrusive.
+
+### Installation Notes
+- Ensure you have the latest version of Debian 12 or Ubuntu 24.04.
+- Follow the updated installation steps in the `src/setup` directory.
 
 ### MAINTAINERS
 
