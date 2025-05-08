@@ -34,7 +34,7 @@ print_ascii_banner() {
                                     
                                             C O M P L I A N C E
 
-                                                   v 2.0
+                                                   v 2.1
 EOF
     printf "${RESET}"
 }

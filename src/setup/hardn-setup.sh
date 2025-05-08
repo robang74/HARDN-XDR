@@ -30,7 +30,7 @@ print_ascii_banner() {
                                     
                                                    S E T U P
                                                    
-                                                    v 1.1.2
+                                                    v 1.1.4
 EOF
     printf "${RESET}"
 }
@@ -49,17 +49,16 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-set_generic_hostname() {
-    printf "\033[1;31m[+] Setting a generic hostname...\033[0m\n"
-    hostnamectl set-hostname "MY-PC"
-    echo "127.0.1.1 MY-PC" | tee -a /etc/hosts
-    if [ $? -eq 0 ]; then
-        printf "\033[1;32m[+] Hostname successfully changed to MY-PC.\033[0m\n"
-    else
-        printf "\033[1;31m[-] Failed to change hostname. Ensure you have the necessary permissions.\033[0m\n"
-    fi
-
-}
+#set_generic_hostname() {
+#    printf "\033[1;31m[+] Setting a generic hostname...\033[0m\n"
+#    hostnamectl set-hostname "MY-PC"
+#    echo "127.0.1.1 MY-PC" | tee -a /etc/hosts
+#    if [ $? -eq 0 ]; then
+#        printf "\033[1;32m[+] Hostname successfully changed to MY-PC.\033[0m\n"
+#    else
+#        printf "\033[1;31m[-] Failed to change hostname. Ensure you have the necessary permissions.\033[0m\n"
+#    fi
+#}
 
 
 
@@ -273,14 +272,16 @@ stig_password_policy() {
 
 
 
-
 stig_lock_inactive_accounts() {
     useradd -D -f 35
     for user in $(awk -F: '$3 >= 1000 && $1 != "nobody" {print $1}' /etc/passwd); do
-        chage --inactive 35 "$user"
+        if [ "$user" != "root" ]; then
+            chage --inactive 35 "$user"
+        fi
+        chage --expiredate -1 "$user" || printf "\033[1;31m[-] Failed to reset expiry for $user.\033[0m\n"
+        printf "\033[1;32m[+] Account expiry reset for $user.\033[0m\n"
     done
 }
-
 
 
 
@@ -370,6 +371,7 @@ EOF
 
     
     sysctl --system || printf "\033[1;31m[-] Failed to reload sysctl settings.\033[0m\n"
+    sysctl -w kernel.randomize_va_space=2 || printf "\033[1;31m[-] Failed to set kernel.randomize_va_space.\033[0m\n"
 }
 
 
@@ -450,6 +452,9 @@ stig_configure_firewall() {
     ufw allow out 123/udp # NTP (time synchronization)
     ufw allow out to archive.debian.org port 80 proto tcp
     ufw allow out to security.debian.org port 443 proto tcp
+
+    # Adjust UFW rules to explicitly allow SSH access
+    ufw allow 22/tcp || printf "\033[1;31m[-] Failed to allow SSH through UFW.\033[0m\n"
 
     
     printf "\033[1;31m[+] Enabling and reloading UFW...\033[0m\n"
@@ -547,8 +552,8 @@ main() {
     printf "\033[1;31m[+] Updating system packages...\033[0m\n"
     update_system_packages
 
-    printf "\033[1;31m[+] Setting generic hostname...\033[0m\n"
-    set_generic_hostname
+   # printf "\033[1;31m[+] Setting generic hostname...\033[0m\n"
+    # set_generic_hostname
 
     printf "\033[1;31m========================================================\033[0m\n"
     printf "\033[1;31m             [+] HARDN - Setting Up                     \033[0m\n"
