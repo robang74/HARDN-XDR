@@ -168,9 +168,13 @@ setup_complete() {
     echo "============================================================"
     echo -e "\033[1;32mHARDN-GRUB Setup Complete!\033[0m"
     echo "============================================================"
-    echo "[INFO] Continuing with hardn-setup.sh..."
-    /bin/bash /c:/dev/linux/HARDN/src/setup/hardn-setup.sh
-    return 0
+    echo "[INFO] Returning to hardn-setup.sh"
+   
+    if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+        return 0
+    else
+        exit 0
+    fi
 }
 
 
