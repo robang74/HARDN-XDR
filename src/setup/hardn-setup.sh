@@ -467,6 +467,7 @@ main() {
     printf "\033[1;31m[+] Updating system packages...\033[0m\n"
     detect_os
     update_system_packages
+    call_grub_script
 
     printf "\033[1;31m========================================================\033[0m\n"
     printf "\033[1;31m             [+] HARDN - Setting Up                     \033[0m\n"
