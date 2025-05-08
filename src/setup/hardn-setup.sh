@@ -106,11 +106,14 @@ call_grub_script() {
         if [ $? -ne 0 ]; then
             printf "\033[1;31m[-] hardn-grub.sh execution failed. Check /var/log/hardn-grub.log for details. Exiting setup.\033[0m\n"
             exit 1
+        else
+            printf "\033[1;32m[+] HARDN-GRUB Setup Complete!\033[0m\n"
         fi
     else
         printf "\033[1;31m[-] hardn-grub.sh not found at: %s. Exiting setup.\033[0m\n" "$GRUB_SCRIPT"
         exit 1
     fi
+    printf "\033[1;31m[+] Proceeding to the next steps in setup...\033[0m\n"
 }
 
 install_security_tools() {
