@@ -15,9 +15,8 @@ set -e # Exit on errors
 print_ascii_banner() {
     CYAN_BOLD="\033[1;36m"
     RESET="\033[0m"
-
-    printf "%s" "${CYAN_BOLD}"
-    cat << "EOF"
+    cat <<EOF
+${CYAN_BOLD}
                               ▄█    █▄       ▄████████    ▄████████ ████████▄  ███▄▄▄▄   
                              ███    ███     ███    ███   ███    ███ ███   ▀███ ███▀▀▀██▄ 
                              ███    ███     ███    ███   ███    ███ ███    ███ ███   ███ 
@@ -31,8 +30,8 @@ print_ascii_banner() {
                                                    S E T U P
                                                    
                                                     v 1.1.4
+${RESET}
 EOF
-    printf "%s" "${RESET}"
 }
 
 print_ascii_banner
@@ -115,8 +114,6 @@ call_grub_script() {
     fi
     printf "\033[1;31m[+] Proceeding to the next steps in setup...\033[0m\n"
 
-    # Ensure the script continues to the next step
-    printf "\033[1;31m[+] Transitioning to the next phase of setup...\033[0m\n"
 }
 
 call_packages_script() {
