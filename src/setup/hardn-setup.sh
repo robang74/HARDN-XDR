@@ -41,7 +41,7 @@ sleep 5
 SCRIPT_PATH="$(readlink -f "$0")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 PACKAGES_SCRIPT="$SCRIPT_DIR/hardn-packages.sh"
-GRUB_SCRIPT="$SCRIPT_DIR/hardn-grub.sh"
+
 
 if [ "$(id -u)" -ne 0 ]; then
     echo "This script must be run as root. Use: sudo ./setup.sh"
@@ -95,45 +95,7 @@ install_pkgdeps() {
         unixodbc-common firejail python3-pyqt6 fonts-liberation libpam-pwquality
 }
 
-call_grub_script() {
-    printf "\033[1;31m[+] Calling hardn-grub.sh script...\033[0m\n"
-    if [ -f "$GRUB_SCRIPT" ]; then
-        printf "\033[1;31m[+] Setting executable permissions for hardn-grub.sh...\033[0m\n"
-        chmod +x "$GRUB_SCRIPT"
-        printf "\033[1;31m[+] Executing hardn-grub.sh...\033[0m\n"
-        "$GRUB_SCRIPT" > /var/log/hardn-grub.log 2>&1
-        if [ $? -ne 0 ]; then
-            printf "\033[1;31m[-] hardn-grub.sh execution failed. Check /var/log/hardn-grub.log for details. Exiting setup.\033[0m\n"
-            exit 1
-        else
-            printf "\033[1;32m[+] HARDN-GRUB Setup Complete!\033[0m\n"
-        fi
-    else
-        printf "\033[1;31m[-] hardn-grub.sh not found at: %s. Exiting setup.\033[0m\n" "$GRUB_SCRIPT"
-        exit 1
-    fi
-    printf "\033[1;31m[+] Proceeding to the next steps in setup...\033[0m\n"
 
-}
-
-call_packages_script() {
-    printf "\033[1;31m[+] Calling hardn-packages.sh script...\033[0m\n"
-    if [ -f "$PACKAGES_SCRIPT" ]; then
-        printf "\033[1;31m[+] Setting executable permissions for hardn-packages.sh...\033[0m\n"
-        chmod +x "$PACKAGES_SCRIPT"
-        printf "\033[1;31m[+] Executing hardn-packages.sh...\033[0m\n"
-        "$PACKAGES_SCRIPT" > /var/log/hardn-packages.log 2>&1
-        if [ $? -ne 0 ]; then
-            printf "\033[1;31m[-] hardn-packages.sh execution failed. Check /var/log/hardn-packages.log for details. Exiting setup.\033[0m\n"
-            exit 1
-        else
-            printf "\033[1;32m[+] HARDN-PACKAGES Setup Complete!\033[0m\n"
-        fi
-    else
-        printf "\033[1;31m[-] hardn-packages.sh not found at: %s. Exiting setup.\033[0m\n" "$PACKAGES_SCRIPT"
-        exit 1
-    fi
-}
 
 install_security_tools() {
     printf "\033[1;31m[+] Installing required system security tools...\033[0m\n"
@@ -500,7 +462,7 @@ main() {
     printf "\033[1;31m========================================================\033[0m\n"
     sleep 3
     setup_complete
-    call_packages_script
+
 }
 
 main
