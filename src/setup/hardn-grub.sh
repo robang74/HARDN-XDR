@@ -72,11 +72,11 @@ update_grub() {
 
    
     if [[ ! -f "$grub_cfg" ]]; then
-        echo "[ERROR] GRUB configuration not found at $grub_cfg."
+        echo "[ERROR] GRUB configuration not found at $grub_cfg." >> "$LOG_FILE"
         return 1
     fi
     if [[ ! -w "$grub_cfg" ]]; then
-        echo "[ERROR] $grub_cfg is not writable. Check permissions."
+        echo "[ERROR] $grub_cfg is not writable. Check permissions." >> "$LOG_FILE"
         return 1
     fi
 
@@ -229,6 +229,8 @@ setup_complete() {
     echo "============================================================"
     echo -e "\033[1;32mHARDN-GRUB Setup Complete!\033[0m"
     echo "============================================================"
+    echo "[INFO] Continuing with hardn-setup.sh..."
+    /bin/bash /c:/dev/linux/HARDN/src/setup/hardn-setup.sh
     return 0
 }
 
