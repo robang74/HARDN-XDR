@@ -231,9 +231,9 @@ configure_memory() {
 
 setup_complete() {
     echo "============================================================"
-    echo -e "${GREEN_BOLD}[COMPLETED] Compliance setup completed successfully.${RESET}"
-    echo "============================================================"
     echo -e "\033[1;32mHARDN-GRUB Setup Complete!\033[0m"
+    echo "============================================================"
+    return 0
 }
 
 
@@ -253,7 +253,7 @@ main() {
 
     if [ "$(id -u)" -ne 0 ]; then
         echo "[ERROR] This script must be run as root."
-        exit 1
+        return 1
     fi
 
     echo "------------------------------------------------------------"
