@@ -76,11 +76,11 @@ update_grub() {
     local grub_cfg="/etc/default/grub"
 
     if [[ ! -f "$grub_cfg" ]]; then
-        echo "[ERROR] GRUB configuration not found at $grub_cfg."
+        echo "[ERROR] GRUB configuration not found at $grub_cfg." >> "$LOG_FILE"
         return 1
     fi
     if [[ ! -w "$grub_cfg" ]]; then
-        echo "[ERROR] $grub_cfg is not writable. Check permissions."
+        echo "[ERROR] $grub_cfg is not writable. Check permissions." >> "$LOG_FILE"
         return 1
     fi
 
@@ -93,82 +93,17 @@ update_grub() {
           "$grub_cfg"
     else
         echo 'GRUB_CMDLINE_LINUX_DEFAULT="quiet module.sig_enforce=1"' \
-            | sudo tee -a "$grub_cfg" >/dev/null
+            | sudo tee -a "$grub_cfg" >> "$LOG_FILE"
     fi
 
-    echo "[INFO] Restricting GRUB configuration access..."
+    echo "[INFO] Restricting GRUB configuration access..." >> "$LOG_FILE"
     sudo chmod 600 /etc/default/grub
     sudo chmod 600 /boot/grub/grub.cfg
-    echo "[OK] GRUB configuration access restricted."
+    echo "[OK] GRUB configuration access restricted." >> "$LOG_FILE"
 
-    echo "[INFO] Enabling Module Signature Enforcement..."
-    local module_sig="module.sig_enforce=1"
-    if ! grep -q "$module_sig" "$grub_cfg"; then
-
-    if ! grep -q 'module.sig_enforce=1' "$grub_cfg"; then
-        sudo sed -i \
-          '/^GRUB_CMDLINE_LINUX_DEFAULT/ s/"$/ module.sig_enforce=1"/' \
-          "$grub_cfg"
-    fi
-    sudo grub-mkconfig -o /boot/grub/grub.cfg >/dev/null 2>&1
-    echo "[OK] GRUB configuration rebuilt with enhanced security."
-
-    echo "[INFO] Ensuring login functionality and GUI compatibility..."
-
-    # Check for user modifications and respect them
-    if grep -q '# GUI_MODIFIED' "$grub_cfg"; then
-        echo "[INFO] GRUB configuration has been modified via GUI. Changes will not be overwritten."
-        return 0
-    fi
-
-    # Ensure user-defined GRUB settings are respected
-    echo "[INFO] Checking for user-defined GRUB settings..."
-    if grep -q '# USER_DEFINED' "$grub_cfg"; then
-        echo "[INFO] User-defined settings detected. Skipping script-managed changes."
-        return 0
-    fi
-
-    # Add a marker to indicate script-managed changes
-    echo "# SCRIPT_MANAGED" | sudo tee -a "$grub_cfg" > /dev/null
-
-    # Add comments to clarify security measures
-    echo "# Enabling kernel lockdown mode for enhanced security" | sudo tee -a "$grub_cfg" > /dev/null
-    echo "# Enforcing module signature verification to prevent unsigned modules" | sudo tee -a "$grub_cfg" > /dev/null
-
-    # Ensure critical boot parameters are not removed
-    echo "[INFO] Preserving critical boot parameters for login and recovery..."
-    local critical_params="single recovery"
-    for param in $critical_params; do
-        if ! grep -q "$param" "$grub_cfg"; then
-            echo "[INFO] Adding $param to GRUB_CMDLINE_LINUX_DEFAULT."
-            sudo sed -i \
-              's@^GRUB_CMDLINE_LINUX_DEFAULT=\"\([^\"]*\)\"@GRUB_CMDLINE_LINUX_DEFAULT=\"\1 $param\"@' \
-              "$grub_cfg"
-        fi
-    done
-
-    # Retain kernel lockdown mode and module signature enforcement
-    echo "[INFO] Ensuring kernel lockdown mode and module signature enforcement..."
-    local lockdown_mode="lockdown=integrity"
-    local module_sig="module.sig_enforce=1"
-    for param in "$lockdown_mode" "$module_sig"; do
-        if ! grep -q "$param" "$grub_cfg"; then
-            echo "[INFO] Adding $param to GRUB_CMDLINE_LINUX_DEFAULT."
-            sudo sed -i \
-              's@^GRUB_CMDLINE_LINUX_DEFAULT=\"\([^\"]*\)\"@GRUB_CMDLINE_LINUX_DEFAULT=\"\1 $param\"@' \
-              "$grub_cfg"
-        fi
-    done
-
-    # Protect GRUB configuration files
-    echo "[INFO] Restricting access to GRUB configuration files..."
-    sudo chmod 600 /etc/default/grub
-    sudo chmod 600 /boot/grub/grub.cfg
-
-    # Rebuild GRUB configuration
-    echo "[INFO] Rebuilding GRUB configuration..."
-    sudo grub-mkconfig -o /boot/grub/grub.cfg >/dev/null 2>&1
-    echo "[OK] GRUB configuration updated securely."
+    echo "[INFO] Rebuilding GRUB configuration..." >> "$LOG_FILE"
+    sudo grub-mkconfig -o /boot/grub/grub.cfg >> "$LOG_FILE" 2>&1
+    echo "[OK] GRUB configuration rebuilt with enhanced security." >> "$LOG_FILE"
 }
 
 
@@ -233,6 +168,8 @@ setup_complete() {
     echo "============================================================"
     echo -e "\033[1;32mHARDN-GRUB Setup Complete!\033[0m"
     echo "============================================================"
+    echo "[INFO] Continuing with hardn-setup.sh..."
+    /bin/bash /c:/dev/linux/HARDN/src/setup/hardn-setup.sh
     return 0
 }
 
