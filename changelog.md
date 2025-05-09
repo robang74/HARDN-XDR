@@ -4,7 +4,6 @@
 
 ### Added
 - **Debian Packaging**: Added support for building Debian packages for HARDN.
-- **Enhanced GRUB Security**: Improved GRUB configuration to ensure compatibility with GUI changes and user-defined settings.
 - **Error Handling**: Enhanced error handling in scripts to prevent disruptions to user logins or system functionality.
 
 ### Improved

@@ -1,16 +1,6 @@
 #!/bin/bash
 set -e # Exit on errors
 
-# Authors: 
-# - Chris B. 
-# - Tim B. 
-
-
-                                                 # Author(s):                         
-                                              #- Chris Bingham                    
-                                              #  - Tim Burns                        
-                                  
-                                              #Date: 4/5-12/2025   
 
 print_ascii_banner() {
     CYAN_BOLD="\033[1;36m"
@@ -47,6 +37,7 @@ if [ "$(id -u)" -ne 0 ]; then
     echo "This script must be run as root. Use: sudo ./setup.sh"
     exit 1
 fi
+
 
 detect_os() {
     if [ -f /etc/os-release ] && [ -r /etc/os-release ]; then
@@ -91,10 +82,9 @@ update_system_packages() {
 
 install_pkgdeps() {
     printf "\033[1;31m[+] Installing package dependencies...\033[0m\n"
-    apt install -y git gawk mariadb-common policycoreutils \
+    apt install -y git gawk mariadb-common policycoreutils dpkg-dev \
         unixodbc-common firejail python3-pyqt6 fonts-liberation libpam-pwquality
 }
-
 
 
 install_security_tools() {
@@ -102,6 +92,7 @@ install_security_tools() {
     apt install -y ufw fail2ban apparmor apparmor-profiles apparmor-utils firejail tcpd lynis debsums \
         libpam-pwquality libvirt-daemon-system libvirt-clients qemu-system-x86 openssh-server openssh-client rkhunter 
 }
+
 
 enable_fail2ban() {
     printf "\033[1;31m[+] Installing and enabling Fail2Ban...\033[0m\n"
@@ -143,6 +134,7 @@ enable_apparmor() {
     printf "\033[1;33m[!] Review profile behavior before switching to enforce mode.\033[0m\n"
 }
 
+
 enable_aide() {
     printf "\033[1;31m[+] Installing AIDE and initializing database…\033[0m\n"
     apt install -y aide aide-common || {
@@ -160,6 +152,7 @@ enable_aide() {
 
     printf "\033[1;32m[+] AIDE successfully installed and configured.\033[0m\n"
 }
+
 
 enable_rkhunter(){
     printf "\033[1;31m[+] Installing rkhunter...\033[0m\n"
@@ -181,6 +174,7 @@ enable_rkhunter(){
     rkhunter --propupd
     printf "\033[1;32m[+] rkhunter installed and updated.\033[0m\n"
 }
+
 
 configure_firejail() {
     printf "\033[1;31m[+] Configuring Firejail for Firefox and Chrome...\033[0m\n"
@@ -207,6 +201,7 @@ configure_firejail() {
     printf "\033[1;31m[+] Firejail configuration completed.\033[0m\n"
 }
 
+
 stig_password_policy() {
     sed -i 's/^#\? *minlen *=.*/minlen = 14/' /etc/security/pwquality.conf
     sed -i 's/^#\? *dcredit *=.*/dcredit = -1/' /etc/security/pwquality.conf
@@ -222,12 +217,14 @@ stig_password_policy() {
     fi
 }
 
+
 stig_lock_inactive_accounts() {
     useradd -D -f 35
     awk -F: '$3 >= 1000 && $1 != "nobody" {print $1}' /etc/passwd | while read -r user; do
         chage --inactive 35 "$user"
     done
 }
+
 
 stig_login_banners() {
     echo "You are accessing a fully secured SIG Information System (IS)..." > /etc/issue
@@ -268,6 +265,7 @@ EOF
     auditctl -e 1 || printf "\033[1;31m[-] Failed to enable auditd.\033[0m\n"
 }
 
+
 stig_kernel_setup() {
     printf "\033[1;31m[+] Setting up STIG-compliant kernel parameters (login-safe)...\033[0m\n"
     tee /etc/sysctl.d/stig-kernel-safe.conf > /dev/null <<EOF
@@ -297,6 +295,16 @@ EOF
 
     sysctl --system || printf "\033[1;31m[-] Failed to reload sysctl settings.\033[0m\n"
     sysctl -w kernel.randomize_va_space=2 || printf "\033[1;31m[-] Failed to set kernel.randomize_va_space.\033[0m\n"
+}
+
+grub_security() {
+    cp /boot/grub/grub.cfg /boot/grub/grub.cfg.bak
+    printf "\033[1;31m[+] Configuring GRUB security settings...\033[0m\n"
+    sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT="/GRUB_CMDLINE_LINUX_DEFAULT="quiet splash security=1 /' /etc/default/grub
+    sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=5/' /etc/default/grub || echo "GRUB_TIMEOUT=5" >> /etc/default/grub
+    update-grub || printf "\033[1;31m[-] Failed to update GRUB.\033[0m\n"
+    chmod 600 /boot/grub/grub.cfg
+    chown root:root /boot/grub/grub.cfg
 }
 
 
@@ -342,7 +350,7 @@ stig_configure_firewall() {
     ufw allow out 80/tcp
     ufw allow out 443/tcp
 
-    # Allow Debian updates, app updates, and dependency updates
+    
     printf "\033[1;31m[+] Allowing traffic for Debian updates and app dependencies...\033[0m\n"
     ufw allow out 53/udp  # DNS resolution
     ufw allow out 53/tcp  # DNS resolution
@@ -350,8 +358,6 @@ stig_configure_firewall() {
     ufw allow out to archive.debian.org port 80 proto tcp
     ufw allow out to security.debian.org port 443 proto tcp
 
-    # Adjust UFW rules to explicitly allow SSH access
-    ufw allow 22/tcp || printf "\033[1;31m[-] Failed to allow SSH through UFW.\033[0m\n"
 
     printf "\033[1;31m[+] Enabling and reloading UFW...\033[0m\n"
     echo "y" | ufw enable || { printf "\033[1;31m[-] Failed to enable UFW.\033[0m\n"; return 1; }
@@ -426,10 +432,13 @@ setup_complete() {
 }
 
 main() {
-    printf "\033[1;31m[+] Updating system packages...\033[0m\n"
+    printf "\033[1;31m========================================================\033[0m\n"
+    printf "\033[1;31m             [+] HARDN - Updating and Detecting OS      \033[0m\n"
+    printf "\033[1;31m========================================================\033[0m\n"
     detect_os
     update_system_packages
     install_pkgdeps
+    grub_security
     
     printf "\033[1;31m========================================================\033[0m\n"
     printf "\033[1;31m            [+] HARDN - Installing Security Tools       \033[0m\n"
@@ -456,5 +465,4 @@ main() {
     setup_complete
 
 }
-
 main
