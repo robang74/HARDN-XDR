@@ -20,7 +20,7 @@
 
 
 ### HARDN Endpoint
-- This installation is only for **BARE-METAL installs of Debian 12 and Ubuntu 24.04 Bare Metal and Virtual Machines**
+- This Debian Package is only for **BARE-METAL installs of Debian 12 and Ubuntu 24.04 Bare Metal and Virtual Machines**
 -  Is a robust and secure endpoint management solution designed to simplify and enhance the management of devices in your network. It provides advanced features for monitoring, securing, and maintaining endpoints efficiently.
 - We also bring you with this release `STIG` COMPLIANCE to align with the Security Technical Information Guides provided by the DOD Cyber Exchange.
 
@@ -42,16 +42,24 @@ HARDN/
 ├── .gitignore
 ├── README.md
 ├── changelog.md
-├── docs/*
+├── docs/
+│   ├── deb_grub.md
+│   ├── deb_stig.md
+│   ├── HARDN.md
 │   ├── LICENSE
 │   └── assets/
 │       ├── HARDN(1).png
 │       └── cybersynapse.png
 ├── src/
 │   └── setup/
-|       |__ hardn-grub.sh
 │       ├── hardn-packages.sh
 │       └── hardn-setup.sh
+├── debian/
+│   ├── changelog
+│   ├── control
+│   ├── hardn.install
+│   ├── postinst
+│   └── rules
 ```
 
 </p>
@@ -72,24 +80,22 @@ The purpose of HARDN Endpoint is to empower IT administrators and users with the
   ```bash
   git clone https://github.com/opensource-for-freedom/HARDN.git
   ```
-2. Navigate to the `src` directory:
- ```bash
-  cd HARDN/src/setup
-  sudo chmod +x hardn-setup.sh
-  sudo ./hardn-setup.sh
 
+2. Install the generated Debian package:
+  ```bash
+  sudo dpkg -i ../hardn_<version>.deb
   ```
-  This will kick off the full setup of HARDN with `STIG` principles. 
-  ### NOTE: 
-
-  
-  #### AIDE will 20-60 minutes to fully establish the "ADVANCED INTRUSION DETECTION SYSTEM" however, this runs in the background. 
+#### AIDE will 20-60 minutes to fully establish the "ADVANCED INTRUSION DETECTION SYSTEM" however, this runs in the background. 
   - This script will run syncronously and reboot your system when complete. 
   - DO-NOT turn your system off: We have established an update routine with reboots using CRON. 
   - HARDN in itself once executed, will keep your Debian system secure and up to date. 
 
-6. Follow any additional setup instructions and information provided in the `docs` directory.
-</p>
+3. Run the HARDN setup:
+  ```bash
+  sudo hardn
+  ```
+
+4. Follow any additional setup instructions and information provided in the `docs` directory.
 
 ### MAINTAINERS
 
@@ -101,6 +107,15 @@ debuild -us -uc
 ```bash
 debuild -- clean
 ```
+### Updates in Version 1.1.4
+- Built and tested Debian packaging.
+- Enhanced GRUB security to respect GUI changes and user-defined settings.
+- Improved error handling and script optimization.
+- Updated documentation and ensured cron jobs are non-intrusive.
+
+### Installation Notes
+- Ensure you have the latest version of Debian 12 or Ubuntu 24.04.
+- Follow the updated installation steps in the `docs` directory.
 
 <p align="center">
   <img src="https://img.shields.io/badge/CONTRIBUTION-white?style=for-the-badge&labelColor=black" alt="CONTRIBUTION"><br><br>
