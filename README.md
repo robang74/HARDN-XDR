@@ -107,9 +107,9 @@ debuild -us -uc
 ```bash
 debuild -- clean
 ```
-### Updates in Version 1.1.4
+### Updates in Version 1.1.5
 - Built and tested Debian packaging.
-- Enhanced GRUB security to respect GUI changes and user-defined settings.
+- Enhanced GRUB security to respect GUI changes and user-defined settings in setup.
 - Improved error handling and script optimization.
 - Updated documentation and ensured cron jobs are non-intrusive.
 
