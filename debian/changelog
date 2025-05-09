@@ -1,5 +1,5 @@
 hardn (1.1.4) UNRELEASED; urgency=medium
 
-  * build: added debian packaging HEAD
+  * build: Tested and confirmed Debian package build 
 
- -- Matei Busui <matei@busui.ro>  Sat, 03 May 2025 18:16:28 +0300
+ -- Tim Burns <cyborgcreations01@gmail.com>  Thu, 08 May 2025 23:39:00 +0500
