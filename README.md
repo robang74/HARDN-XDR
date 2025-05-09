@@ -93,9 +93,9 @@ The purpose of HARDN Endpoint is to empower IT administrators and users with the
 6. Follow any additional setup instructions and information provided in the `docs` directory.
 </p>
 
-### Updates in Version 1.1.4
+### Updates in Version 1.1.5
 - Built and tested Debian packaging.
-- Enhanced GRUB security to respect GUI changes and user-defined settings.
+- Enhanced GRUB security to respect GUI changes and user-defined settings in setup.
 - Improved error handling and script optimization.
 - Updated documentation and ensured cron jobs are non-intrusive.
 
