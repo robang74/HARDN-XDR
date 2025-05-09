@@ -77,6 +77,7 @@ detect_os() {
 update_system_packages() {
     printf "\033[1;31m[+] Updating system packages...\033[0m\n"
     apt update -y && apt upgrade -y
+    sudo apt-get install -f
     apt --fix-broken install -y
 }
 
@@ -350,14 +351,12 @@ stig_configure_firewall() {
     ufw allow out 80/tcp
     ufw allow out 443/tcp
 
-    
     printf "\033[1;31m[+] Allowing traffic for Debian updates and app dependencies...\033[0m\n"
     ufw allow out 53/udp  # DNS resolution
     ufw allow out 53/tcp  # DNS resolution
     ufw allow out 123/udp # NTP (time synchronization)
     ufw allow out to archive.debian.org port 80 proto tcp
     ufw allow out to security.debian.org port 443 proto tcp
-
 
     printf "\033[1;31m[+] Enabling and reloading UFW...\033[0m\n"
     echo "y" | ufw enable || { printf "\033[1;31m[-] Failed to enable UFW.\033[0m\n"; return 1; }
