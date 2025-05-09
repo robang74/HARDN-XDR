@@ -1,0 +1,7 @@
+#!/bin/bash
+set -e
+
+chmod +x /usr/bin/HARDN
+
+
+exit 0

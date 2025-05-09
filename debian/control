@@ -10,5 +10,5 @@ Package: hardn
 Section: base
 Priority: optional
 Architecture: all
-Depends:
+Depends: ufw, fail2ban, apparmor, firejail, rkhunter, chkrootkit, aide, fwupd, git, gawk, policycoreutils, python3-pyqt6, libpam-pwquality
 Description: Collection of scripts for security hardening operating systems

@@ -1,5 +1,21 @@
 # Changelog
 
+## Version 1.1.4
+
+### Added
+- **Debian Packaging**: Added support for building Debian packages for HARDN.
+- **Error Handling**: Enhanced error handling in scripts to prevent disruptions to user logins or system functionality.
+
+### Improved
+- **Script Optimization**: Removed redundant steps and consolidated repetitive code blocks in setup scripts.
+- **Documentation**: Updated documentation to reflect the latest changes and features.
+
+### Fixed
+- **Cron Jobs**: Ensured cron jobs are non-intrusive and do not disrupt user workflows.
+- **AIDE Initialization**: Improved AIDE initialization process for better reliability.
+
+---
+
 ## Version 1
 
 ### Added
