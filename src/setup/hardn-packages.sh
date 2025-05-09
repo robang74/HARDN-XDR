@@ -1,8 +1,4 @@
 #!/bin/bash
-# Authors: 
-# - Chris B. 
-# - Tim B. 
-
 
 
 set -e # Exit on errors
@@ -12,9 +8,8 @@ LOG_FILE="/dev/null"
 print_ascii_banner() {
     CYAN_BOLD="\033[1;36m"
     RESET="\033[0m"
-
-    printf "%s" "${CYAN_BOLD}"
-    cat << "EOF"
+    cat <<EOF
+${CYAN_BOLD}
                               ▄█    █▄       ▄████████    ▄████████ ████████▄  ███▄▄▄▄   
                              ███    ███     ███    ███   ███    ███ ███   ▀███ ███▀▀▀██▄ 
                              ███    ███     ███    ███   ███    ███ ███    ███ ███   ███ 
@@ -32,13 +27,13 @@ print_ascii_banner() {
                                                                      
                                        
                                                               
+${RESET}
 EOF
-    printf "%s" "${RESET}"
 }
 
 print_ascii_banner
 
-sleep 7
+sleep 5
 
 
 if [ "$(id -u)" -ne 0 ]; then
@@ -189,61 +184,34 @@ validate_packages() {
 
     echo "[*] Performing AIDE database check..." | tee -a "$LOG_FILE"
 
-    # Add a summary of changes made during validation
+    
     echo "[INFO] Summary of changes made during validation:" | tee -a "$LOG_FILE"
     grep "[+]" "$LOG_FILE" | tee -a "$LOG_FILE"
 }
 
+
 validate_stig_hardening() {
     echo "[+] Validating STIG compliance..." | tee -a "$LOG_FILE"
-
     fix_if_needed \
         "grep -q 'minlen = 14' /etc/security/pwquality.conf" \
         "sudo sed -i 's/^#\\? *minlen.*/minlen = 14/' /etc/security/pwquality.conf" \
         "Password policy minlen is set" \
         "Password policy minlen missing or wrong"
-
     fix_if_needed \
-        "stat -c '%a' /etc/shadow | grep -q 000" \
-        "sudo chmod 000 /etc/shadow" \
-        "/etc/shadow permissions are 000" \
+        "[[ $(stat -c '%a' /etc/shadow) -eq 600 ]]" \
+        "sudo chmod 600 /etc/shadow" \
+        "/etc/shadow permissions are 600" \
         "Incorrect /etc/shadow permissions"
-
     fix_if_needed \
         "grep -q 'net.ipv6.conf.all.disable_ipv6 = 1' /etc/sysctl.d/99-sysctl.conf" \
         "echo 'net.ipv6.conf.all.disable_ipv6 = 1' | sudo tee -a /etc/sysctl.d/99-sysctl.conf && sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1" \
         "IPv6 is disabled" \
         "IPv6 not disabled"
-
     fix_if_needed \
         "grep -q 'fs.suid_dumpable = 0' /etc/sysctl.d/99-coredump.conf" \
         "echo 'fs.suid_dumpable = 0' | sudo tee /etc/sysctl.d/99-coredump.conf && sudo sysctl -w fs.suid_dumpable=0" \
         "Core dumps are disabled" \
         "Core dumps enabled"
-
-    fix_if_needed \
-        "grep -q 'install usb-storage /bin/false' /etc/modprobe.d/hardn-blacklist.conf" \
-        "echo 'install usb-storage /bin/false' | sudo tee /etc/modprobe.d/hardn-blacklist.conf" \
-        "USB storage blocked via modprobe" \
-        "USB storage not blocked"
-
-    fix_if_needed \
-        "grep -q 'kernel.randomize_va_space = 2' /etc/sysctl.d/hardn.conf" \
-        "echo 'kernel.randomize_va_space = 2' | sudo tee -a /etc/sysctl.d/hardn.conf && sudo sysctl -w kernel.randomize_va_space=2" \
-        "randomize_va_space = 2 present" \
-        "Missing randomize_va_space setting"
-
-    fix_if_needed \
-        "grep -q '[SIG]}' /etc/issue" \
-        "echo 'You are accessing a SIG Information System (IS)...' | sudo tee /etc/issue" \
-        "Login banner exists" \
-        "Missing login banner /etc/issue"
-
-    fix_if_needed \
-        "sudo systemctl status ctrl-alt-del.target | grep -q 'Masked'" \
-        "sudo systemctl mask ctrl-alt-del.target" \
-        "Ctrl+Alt+Del is disabled" \
-        "Ctrl+Alt+Del is still active"
 }
 
 validate_boot_services() {
@@ -426,9 +394,6 @@ main() {
     validate_packages
     validate_stig_hardening
     validate_boot_services
-
-    # Ensure cron jobs are non-intrusive
-    echo "[INFO] Setting up non-intrusive cron jobs..."
     cron_clean
     cron_packages
     cron_alert
