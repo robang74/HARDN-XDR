@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e # Exit on errors
 
+# Usage/help message
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    echo "Usage: sudo hardn [options]"
+    echo "Runs the HARDN system hardening setup."
+    exit 0
+fi
 
 print_ascii_banner() {
     CYAN_BOLD="\033[1;36m"
@@ -34,7 +40,7 @@ PACKAGES_SCRIPT="$SCRIPT_DIR/hardn-packages.sh"
 
 
 if [ "$(id -u)" -ne 0 ]; then
-    echo "This script must be run as root. Use: sudo ./setup.sh"
+    echo "This script must be run as root. Use: sudo hardn"
     exit 1
 fi
 
