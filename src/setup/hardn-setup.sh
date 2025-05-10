@@ -308,13 +308,62 @@ EOF
 }
 
 grub_security() {
-    cp /boot/grub/grub.cfg /boot/grub/grub.cfg.bak
-    printf "\033[1;31m[+] Configuring GRUB security settings...\033[0m\n"
+    # Skip if UEFI < VM support
+    if [ -d /sys/firmware/efi ]; then
+        echo "[*] UEFI system detected. Skipping GRUB configuration..."
+        return 0
+    fi
+
+    # Check for Virtual Machine environment
+    if grep -q 'hypervisor' /proc/cpuinfo; then
+        echo "[*] Virtual machine detected. Proceeding with GRUB configuration..."
+    else
+        echo "[+] No virtual machine detected. Proceeding with GRUB configuration..."
+    fi
+
+    # Detect GRUB path < support grub2
+    if [ -f /boot/grub/grub.cfg ]; then
+        GRUB_CFG="/boot/grub/grub.cfg"
+        GRUB_DIR="/boot/grub"
+    elif [ -f /boot/grub2/grub.cfg ]; then
+        GRUB_CFG="/boot/grub2/grub.cfg"
+        GRUB_DIR="/boot/grub2"
+    else
+        echo "[-] GRUB config not found. Please verify GRUB installation."
+        return 1
+    fi
+
+    echo "[+] Configuring GRUB security settings..."
+
+
+    BACKUP_CFG="$GRUB_CFG.bak.$(date +%Y%m%d%H%M%S)"
+    cp "$GRUB_CFG" "$BACKUP_CFG"
+    echo "[+] Backup created at $BACKUP_CFG"
+
+
     sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT="/GRUB_CMDLINE_LINUX_DEFAULT="quiet splash security=1 /' /etc/default/grub
-    sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=5/' /etc/default/grub || echo "GRUB_TIMEOUT=5" >> /etc/default/grub
-    update-grub || printf "\033[1;31m[-] Failed to update GRUB.\033[0m\n"
-    chmod 600 /boot/grub/grub.cfg
-    chown root:root /boot/grub/grub.cfg
+
+
+    if grep -q '^GRUB_TIMEOUT=' /etc/default/grub; then
+        sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=5/' /etc/default/grub
+    else
+        echo "GRUB_TIMEOUT=5" >> /etc/default/grub
+    fi
+
+
+    if command -v update-grub >/dev/null 2>&1; then
+        update-grub || echo "[-] Failed to update GRUB using update-grub."
+    elif command -v grub2-mkconfig >/dev/null 2>&1; then
+        grub2-mkconfig -o "$GRUB_CFG" || echo "[-] Failed to update GRUB using grub2-mkconfig."
+    else
+        echo "[-] Neither update-grub nor grub2-mkconfig found. Please install GRUB tools."
+        return 1
+    fi
+
+
+    chmod 600 "$GRUB_CFG"
+    chown root:root "$GRUB_CFG"
+    echo "[+] GRUB configuration secured: $GRUB_CFG"
 }
 
 
