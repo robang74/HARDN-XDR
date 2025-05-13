@@ -75,24 +75,6 @@ The purpose of HARDN Endpoint is to empower IT administrators and users with the
 </p>
 
 
-1. Clone the repository from GitHub:
-  ```bash
-  git clone https://github.com/opensource-for-freedom/HARDN.git
-  ```
-
-2. Install the generated Debian package:
-  ```bash
-  sudo dpkg -i ../hardn_<version>.deb
-  ```
-
-3. Run the HARDN setup:
-  ```bash
-  sudo hardn
-  ```
-
-6. Follow any additional setup instructions and information provided in the `docs` directory.
-</p>
-
 ### Quick Start: Install and Run HARDN on Debian/Ubuntu
 
 1. **Clone the repository:**
