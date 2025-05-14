@@ -126,7 +126,7 @@ After installation, you can always start the hardening setup by running `sudo ha
 
 <p align="center">
   <img src="https://img.shields.io/badge/LICENSE-white?style=for-the-badge&labelColor=black" alt="LICENSE"><br><br>
-This project is licensed under the GPLicense
+This project is licensed under the MIT License
   
 </p>
 
