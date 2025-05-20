@@ -81,7 +81,7 @@ The purpose of HARDN Endpoint is to empower IT administrators and users with the
 1.  **Download the HARDN script:**
     Open your terminal and run the following command to download the main script:
     ```bash
-    curl -LO https://raw.githubusercontent.com/OpenSource-For-Freedom/HARDN/main-patch/HARDN/src/setup/hardn-main.sh
+    curl -LO https://raw.githubusercontent.com/OpenSource-For-Freedom/HARDN/main/HARDN/src/setup/hardn-main.sh
     ```
 
 2.  **Run the HARDN setup:**
