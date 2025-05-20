@@ -19,9 +19,9 @@
 
 
 ### HARDN Endpoint
-- **Our** Goal: assist the open source community in building a Debian based system **"GOLDEN IMAGE"**
+- **Our** Goal: assist the open source community in building a Debian based **"GOLDEN IMAGE"** System.
 - This Debian Package is only tested for **BARE-METAL installs of Debian based distributions and Virtual Machines**
--  Is a robust and secure endpoint management solution designed to simplify and enhance the management of devices in your network. It provides advanced features for monitoring, securing, and maintaining endpoints efficiently.
+- Is a robust and secure endpoint management solution designed to simplify and enhance the management of devices in your network. It provides advanced features for monitoring, securing, and maintaining endpoints efficiently.
 - We also bring you with this release `STIG` COMPLIANCE to align with the Security Technical Information Guides provided by the DOD Cyber Exchange.
 
 <p align="center">
@@ -67,7 +67,7 @@ HARDN/
   <img src="https://img.shields.io/badge/PURPOSE-white?style=for-the-badge&labelColor=black" alt="PURPOSE"><br><br>
 </p>
 
-The purpose of HARDN Endpoint is to empower IT administrators and users with the tools they need to ensure endpoint security, optimize performance, and maintain compliance across their organization.
+The purpose of HARDN-XDR is to empower IT administrators and users with the tools they need to ensure endpoint security, optimize performance, and maintain compliance across their organization.
 
 <p align="center">
   <img src="https://img.shields.io/badge/INSTALLATION-white?style=for-the-badge&labelColor=black" alt="INSTALLATION"><br><br>
