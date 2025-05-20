@@ -44,7 +44,6 @@ HARDN/
 ├── README.md
 ├── changelog.md
 ├── docs/
-│   ├── deb_grub.md
 │   ├── deb_stig.md
 │   ├── HARDN.md
 │   ├── LICENSE
@@ -53,8 +52,7 @@ HARDN/
 │       └── cybersynapse.png
 ├── src/
 │   └── setup/
-│       ├── hardn-packages.sh
-│       └── hardn-setup.sh
+│       └── hardn-main.sh
 ├── debian/
 │   ├── changelog
 │   ├── control
@@ -109,38 +107,31 @@ debuild -us -uc
 debuild -- clean
 ```
 
-### Quick Start: Install and Run HARDN on Debian/Ubuntu
+## Quick Start: Install and Run HARDN on Debian/Ubuntu
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/OpenSource-For-Freedom/HARDN.git
-   cd HARDN
-   ```
-2. **Build the Debian package:**
-   ```bash
-   sudo dpkg-buildpackage -us -uc
-   ```
-3. **Install the package:**
-   ```bash
-   sudo dpkg -i ../hardn_*.deb
-   ```
-4. **Run the setup:**
-   ```bash
-   sudo hardn
-   ```
+### Installation
 
-After installation, you can always start the hardening setup by running `sudo hardn` from any directory.
+1.  **Download the HARDN script:**
+    Open your terminal and run the following command to download the main script:
+    ```bash
+    curl -LO https://raw.githubusercontent.com/OpenSource-For-Freedom/HARDN/main-patch/HARDN/src/setup/hardn-main.sh
+    ```
 
-> **Note:**
-> - The package installs system-wide and is available as the `hardn` command.
-> - All dependencies are handled by the package.
-> - For help, run: `hardn --help`
+2.  **Run the HARDN setup:**
+    Launch the script with superuser privileges to begin the hardening process:
+    ```bash
+    sudo sh ./hardn-main.sh
+    ```
+    This will start the HARDN setup menu. Follow the on-screen prompts to configure and apply security hardening to your system. 
 
-### Updates in Version 1.1.5
+
+### Updates in Version 1.1.8
 - Built and tested Debian packaging.
 - Enhanced GRUB security to respect GUI changes and user-defined settings in setup.
 - Improved error handling and script optimization.
+- Interactive Setup
 - Updated documentation and ensured cron jobs are non-intrusive.
+
 
 ### Installation Notes
 - Ensure you have the latest version of Debian 12 or Ubuntu 24.04.

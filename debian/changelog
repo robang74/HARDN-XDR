@@ -1,5 +1,11 @@
-hardn (1.1.5) UNRELEASED; urgency=medium
+hardn (1.1.8) unstable; urgency=medium
 
-  * build: Tested and confirmed Debian package build 
+  * Initial release of the HARDN package.
+  * Added the following files:
+    - /usr/bin/hardn-main.sh
+    - /etc/hardn/progs.csv
+  * Removed unnecessary dependencies and fixed build issues.
+  * Updated UFW configuration and fixed syntax errors.
+  * Removed color formatting from whiptail outputs for better compatibility.
 
- -- Tim Burns <cyborgcreations01@gmail.com>  Thu, 08 May 2025 23:39:00 +0500
+ -- Tim Burns <cyborgcreations01@gmail.com>  Mon, 19 May 2025 18:00:00 +0000
