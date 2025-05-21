@@ -81,7 +81,7 @@ The purpose of HARDN-XDR is to empower IT administrators and users with the tool
 1.  **Download the HARDN script:**
     Open your terminal and run the following command to download the main script:
     ```bash
-    curl -LO https://raw.githubusercontent.com/OpenSource-For-Freedom/HARDN-XDR/main/HARDN-XDR/src/setup/hardn-main.sh
+    curl -LO https://raw.githubusercontent.com/OpenSource-For-Freedom/HARDN-XDR/main/src/setup/hardn-main.sh
     ```
 
 2.  **Run the HARDN setup:**
