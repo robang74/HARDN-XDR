@@ -1,4 +1,6 @@
 # tag,program,comment
+a,git, github
+a,dpkg-dev, packaging 
 a,ufw,Firewall configuration tool
 a,fail2ban,Intrusion prevention software
 a,apparmor,Mandatory access control framework
