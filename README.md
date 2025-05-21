@@ -18,7 +18,7 @@
 </p>
 
 
-### HARDN Endpoint
+### HARDN-XDR
 - **Our** Goal: assist the open source community in building a Debian based **"GOLDEN IMAGE"** System.
 - This Debian Package is only tested for **BARE-METAL installs of Debian based distributions and Virtual Machines**
 - Is a robust and secure endpoint management solution designed to simplify and enhance the management of devices in your network. It provides advanced features for monitoring, securing, and maintaining endpoints efficiently.
