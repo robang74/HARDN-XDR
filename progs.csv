@@ -1,6 +1,6 @@
 # tag,program,comment
-a,git, github
-a,dpkg-dev, packaging 
+a,git,Git version control
+a,dpkg-dev,Packaging tools
 a,ufw,Firewall configuration tool
 a,fail2ban,Intrusion prevention software
 a,apparmor,Mandatory access control framework
@@ -20,5 +20,5 @@ a,chkrootkit,Rootkit scanner
 a,yara,Pattern matching tool 
 a,libpam-tmpdirs,Temporary directory for PAM
 a,apt-listbugs,Report bugs in Debian packages
-a,git-buildpackage,debian package builder
-b,debhelper-compat,Debhelper compatibility level package
+a,git-buildpackage,Debian packaging helper tools
+a,debhelper,Debian package helper
