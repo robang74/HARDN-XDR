@@ -1501,10 +1501,13 @@ run_hardn_pipeline() {
     preinstallmsg || error "User exited."
     print_ascii_banner
     update_system_packages
-    install_core_build_tools # Replaced install_package_dependencies with this essential step
-    installationloop
+    gitdpkgbuild
    
-    build_hardn_package # Corrected typo from build_hardn_packages
+    install_build_tools 
+    installationloop
+    aptinstall
+
+    build_hardn_package 
     install_additional_tools
 
     configure_firejail
