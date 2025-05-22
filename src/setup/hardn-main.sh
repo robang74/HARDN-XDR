@@ -925,7 +925,10 @@ grub_security() {
         sleep 0.2
 
         if grep -q 'hypervisor' /proc/cpuinfo; then
-            echo "[*] Virtual machine detected. Proceeding with GRUB configuration..."
+            echo "[*] Virtual machine detected. Skipping GRUB configuration..."
+            echo 100
+            sleep 0.2
+            return 0
         else
             echo "[+] No virtual machine detected. Proceeding with GRUB configuration..."
         fi
@@ -937,7 +940,6 @@ grub_security() {
         echo 40
         sleep 0.2
 
-       
         if [ -f /boot/grub/grub.cfg ]; then
             GRUB_CFG="/boot/grub/grub.cfg"
             GRUB_DIR="/boot/grub"
@@ -970,7 +972,6 @@ grub_security() {
         echo 70
         sleep 0.2
 
-      
         if command -v update-grub >/dev/null 2>&1; then
             update-grub || echo "[-] Failed to update GRUB using update-grub."
         elif command -v grub2-mkconfig >/dev/null 2>&1; then
