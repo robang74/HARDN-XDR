@@ -162,6 +162,14 @@ gitdpkgbuild() {
 
 build_hardn_package() {
     set -e  
+    build_deps="debhelper-compat devscripts git-buildpackage"
+    whiptail --infobox "Installing build dependencies: $build_deps" 7 60
+    for pkg in $build_deps; do
+        if ! dpkg -s "$pkg" >/dev/null 2>&1; then
+        echo "[+] Installing missing dependencies: $pkg" 
+            apt-get install -y "$pkg" >/dev/null 2>&1
+        fi
+    done 
 
     whiptail --infobox "Building HARDN Debian package..." 7 60
 
