@@ -224,7 +224,7 @@ putgitrepo() {
         sudo -u "$name" cp -rfT "$dir" "$2"
 }
 
-config_selinux() {
+enable_selinux() {
         printf "\033[1;31m[+] Installing and configuring SELinux...\033[0m\n"
 
         # Configure SELinux to enforcing mode
@@ -840,129 +840,26 @@ stig_password_policy() {
 
 enable_aide() {
     printf "\033[1;31m[+] Installing and configuring AIDE...\033[0m\n"
-    {
-        echo 10
-        sleep 0.2
+    if ! dpkg -l | grep -qw aide; then
+        apt-get update
+        apt-get install -y aide aide-common
+    fi
 
-        if ! dpkg -l | grep -qw aide; then
-            DEBIAN_FRONTEND=noninteractive apt-get -y install aide aide-common || {
-                printf "\033[1;31m[-] Failed to install AIDE.\033[0m\n"
-                echo 100
-                sleep 0.2
-                return 1
-            }
+    # Initialize AIDE database if not already present
+    if [ ! -f /var/lib/aide/aide.db ]; then
+        if command -v aideinit >/dev/null 2>&1; then
+            aideinit
+        else
+            aide --init
         fi
-
-        echo 30
-        sleep 0.2
-
-        mkdir -p /etc/aide
-        chmod 750 /etc/aide
-        chown root:root /etc/aide
-
-        # Use SHA512 for checksums, and ensure config is valid
-        cat > /etc/aide/aide.conf << 'EOF'
-database=file:/var/lib/aide/aide.db
-database_out=file:/var/lib/aide/aide.db.new
-
-# Use SHA512 for checksums (FINT-4402)
-Checksums = sha512
-
-# Basic rules
-NORMAL = p+i+n+u+g+s+b+m+c+sha512
-HARD = p+i+n+u+g+s+b+m+c+sha512
-
-# Monitor only important system dirs, skip volatile/user data
-/etc    HARD
-/bin    NORMAL
-/sbin   NORMAL
-/usr    NORMAL
-/lib    NORMAL
-/boot   NORMAL
-/var    NORMAL
-/root   NORMAL
-/tmp    NORMAL
-/dev    NORMAL
-/etc/ssh    NORMAL
-
-!/proc
-!/sys
-!/dev
-!/run
-!/run/user         
-!/mnt
-!/media
-!/home
-!/home/user*/.cache
-EOF
-
-        chmod 640 /etc/aide/aide.conf
-        chown root:root /etc/aide/aide.conf
-
-        # Validate AIDE config (FINT-4315)
-        if ! aide --config-check --config=/etc/aide/aide.conf >/dev/null 2>&1; then
-            printf "\033[1;31m[-] AIDE configuration file contains errors. Please review /etc/aide/aide.conf\033[0m\n"
-            echo 100
-            sleep 0.2
-            return 1
-        fi
-
-        echo 50
-        sleep 0.2
-
-        if [ ! -f /var/lib/aide/aide.db ]; then
-            aide --init --config=/etc/aide/aide.conf || {
-                printf "\033[1;31m[-] Failed to initialize AIDE database.\033[0m\n"
-                echo 100
-                sleep 0.2
-                return 1
-            }
+        if [ -f /var/lib/aide/aide.db.new ]; then
             mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db
-            chmod 600 /var/lib/aide/aide.db
+        elif [ -f /var/lib/aide/aide.db.new.gz ]; then
+            mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz
         fi
+    fi
 
-        # Validate AIDE database (FINT-4316)
-        if ! aide --check --config=/etc/aide/aide.conf >/dev/null 2>&1; then
-            printf "\033[1;31m[-] AIDE database check failed. Please review the database and configuration.\033[0m\n"
-            echo 100
-            sleep 0.2
-            return 1
-        fi
-
-        echo 70
-        sleep 0.2
-
-        cat > /etc/systemd/system/aide-check.service << 'EOF'
-[Unit]
-Description=AIDE Check Service
-After=local-fs.target
-
-[Service]
-Type=simple
-ExecStart=/usr/bin/aide --check -c /etc/aide/aide.conf
-EOF
-
-        cat > /etc/systemd/system/aide-check.timer << 'EOF'
-[Unit]
-Description=Daily AIDE Check Timer
-
-[Timer]
-OnCalendar=daily
-Persistent=true
-
-[Install]
-WantedBy=timers.target
-EOF
-
-        chmod 644 /etc/systemd/system/aide-check.*
-        systemctl daemon-reload
-        systemctl enable --now aide-check.timer
-
-        echo 100
-        sleep 0.2
-    } | whiptail --gauge "Installing and configuring AIDE..." 8 60 0
-
-    printf "\033[1;32m[+] AIDE installed, enabled, and basic config applied.\033[0m\n"
+    printf "\033[1;32m[+] AIDE installed and initialized.\033[0m\n"
 }
 
 
@@ -1591,50 +1488,54 @@ enable_process_accounting_and_sysstat() {
 
 
 
+run_hardn_pipeline() {
+    welcomemsg || error "User exited."
+    preinstallmsg || error "User exited."
+    print_ascii_banner
+    update_system_packages
+    install_core_build_tools # Replaced install_package_dependencies with this essential step
+    installationloop
+   
+    build_hardn_package # Corrected typo from build_hardn_packages
+    install_additional_tools
+
+    configure_firejail
+    enable_selinux
+    enhance_fail2ban
+    restrict_compilers
+    enable_aide
+    check_security_tools
+    configure_ufw
+    enable_services
+    enable_yara
+    reload_apparmor
+    enable_suricata
+    grub_security
+
+    stig_harden_ssh
+    stig_file_permissions
+    stig_enable_auditd
+    stig_disable_ipv6
+    stig_password_policy
+    stig_hardn_services
+    stig_lock_inactive_accounts
+    stig_kernel_setup
+    stig_set_randomize_va_space
+    stig_disable_core_dumps
+    configure_cron
+    disable_usb_storage
+    disable_binfmt_misc
+    disable_firewire_drivers
+    update_sys_pkgs
+    enable_nameservers
+    enable_process_accounting_and_sysstat
+    purge_old_packages
+    finalize
+}
+
 main() {
-        welcomemsg || error "User exited."
-        preinstallmsg || error "User exited."
-        print_ascii_banner
-        # pre-build
-        update_system_packages
-        install_package_dependencies    
-        installationloop
-        # build
-        build_hardn_packages
-        install_additional_tools
-        configure_firejail
-        config_selinux
-        enhance_fail2ban
-        restrict_compilers
-        enable_aide
-        check_security_tools
-        configure_ufw
-        enable_services
-        enable_yara
-        reload_apparmor
-        enable_suricata
-        grub_security
-        stig_harden_ssh
-        stig_file_permissions
-        stig_enable_auditd
-        stig_disable_ipv6
-        stig_password_policy
-        stig_hardn_services
-        stig_lock_inactive_accounts
-        stig_kernel_setup
-        stig_set_randomize_va_space
-        stig_disable_core_dumps
-        configure_cron
-        disable_usb_storage
-        disable_binfmt_misc
-        disable_firewire_drivers
-        update_sys_pkgs
-        enable_nameservers
-        enable_process_accounting_and_sysstat
-        purge_old_packages
-        finalize
+    run_hardn_pipeline
 }
 
 
 main
-
