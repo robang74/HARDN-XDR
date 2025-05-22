@@ -1595,10 +1595,13 @@ main() {
         welcomemsg || error "User exited."
         preinstallmsg || error "User exited."
         print_ascii_banner
+        # pre-build
         update_system_packages
-        install_additional_tools
+        install_package_dependencies    
         installationloop
+        # build
         build_hardn_packages
+        install_additional_tools
         configure_firejail
         config_selinux
         enhance_fail2ban
