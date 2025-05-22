@@ -22,3 +22,4 @@ a,libpam-tmpdirs,Temporary directory for PAM
 a,apt-listbugs,Report bugs in Debian packages
 a,git-buildpackage,Debian packaging helper tools
 a,debhelper,Debian package helper
+a,devscripts,Scripts to assist Debian packaging
