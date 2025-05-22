@@ -250,8 +250,7 @@ enable_selinux() {
         whiptail --infobox "SELinux installation and configuration completed" 7 60
 }
 
-# Install system security tools
-# Check if packages are already installed before installing
+
 check_security_tools() {
   printf "\033[1;31m[+] Checking for security packages are installed...\033[0m\n"
         for pkg in ufw fail2ban apparmor apparmor-profiles apparmor-utils firejail tcpd lynis debsums rkhunter libpam-pwquality libvirt-daemon-system libvirt-clients qemu-kvm docker.io docker-compose openssh-server ; do
@@ -1502,9 +1501,9 @@ run_hardn_pipeline() {
     preinstallmsg || error "User exited."
     print_ascii_banner
     update_system_packages
+    install_build_tools 
     gitdpkgbuild
     putgitrepo
-    install_build_tools 
     installationloop
     aptinstall
     build_hardn_package 
