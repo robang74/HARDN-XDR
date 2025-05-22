@@ -1597,8 +1597,8 @@ main() {
         print_ascii_banner
         update_system_packages
         install_additional_tools
-        build_hardn_package
         installationloop
+        build_hardn_packages
         configure_firejail
         config_selinux
         enhance_fail2ban
