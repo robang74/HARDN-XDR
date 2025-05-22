@@ -1596,6 +1596,7 @@ main() {
         preinstallmsg || error "User exited."
         print_ascii_banner
         update_system_packages
+        install_additional_tools
         build_hardn_package
         installationloop
         configure_firejail
@@ -1606,7 +1607,6 @@ main() {
         check_security_tools
         configure_ufw
         enable_services
-        install_additional_tools
         enable_yara
         reload_apparmor
         enable_suricata
