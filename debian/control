@@ -9,7 +9,7 @@ Rules-Requires-Root: no
 
 Package: hardn
 Architecture: all
-Depends: ufw, fail2ban, apparmor, firejail, rkhunter, chkrootkit, aide, fwupd, git, gawk, policycoreutils, python3-pyqt6, yara, libpam-pwquality, dpkg-dev, mysql-common, fonts-liberation, mariadb-common, unixodbc-common, ${misc:Depends}
+Depends: ufw, fail2ban, apparmor, firejail, rkhunter, chkrootkit, aide, fwupd, git, gawk, policycoreutils, python3-pyqt6, yara, libpam-pwquality, dpkg-dev, git-buildpackage, devscripts, debhelper-compat (=13), fonts-liberation, mariadb-common, unixodbc-common, ${misc:Depends}
 Description: Collection of scripts for security hardening operating systems
  This package includes tools for ensuring STIG compliance, enhancing GRUB security,
  and optimizing system performance through automation and secure configurations.
