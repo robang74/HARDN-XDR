@@ -268,20 +268,20 @@ enable_suricata() {
     {
         echo 10
         sleep 0.2
-        printf "\033[1;31m[+] Enabling Suricata...\033[0m\n" >&2
+        printf "\033[1;31m[+] Enabling Suricata...\033[0m\n"
         if ! dpkg -s suricata >/dev/null 2>&1; then
             echo 30
             sleep 0.2
-            printf "\033[1;31m[+] Installing Suricata...\033[0m\n" >&2
-            apt install -y suricata
+            printf "\033[1;31m[+] Installing Suricata...\033[0m\n"
+            apt install -y suricata >/dev/null 2>&1
         else
             echo 30
             sleep 0.2
-            printf "\033[1;31m[+] Suricata is already installed.\033[0m\n" >&2
+            printf "\033[1;31m[+] Suricata is already installed.\033[0m\n"
         fi
         echo 70
         sleep 0.2
-        systemctl enable --now suricata
+        systemctl enable --now suricata >/dev/null 2>&1
         echo 100
         sleep 0.2
     } | whiptail --gauge "Installing and enabling Suricata..." 8 60 0
@@ -1503,14 +1503,12 @@ run_hardn_pipeline() {
     print_ascii_banner
     update_system_packages
     gitdpkgbuild
-   
+    putgitrepo
     install_build_tools 
     installationloop
     aptinstall
-
     build_hardn_package 
     install_additional_tools
-
     configure_firejail
     enable_selinux
     enhance_fail2ban
@@ -1523,7 +1521,6 @@ run_hardn_pipeline() {
     reload_apparmor
     enable_suricata
     grub_security
-
     stig_harden_ssh
     stig_file_permissions
     stig_enable_auditd
