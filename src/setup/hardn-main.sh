@@ -42,7 +42,7 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 installpkg() {
-       apt install git
+      
        dpkg -s "$1" >/dev/null 2>&1 || sudo apt install -y "$1" >/dev/null 2>&1
 }
 
