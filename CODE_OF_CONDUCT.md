@@ -8,7 +8,12 @@ This isn’t an exhaustive list of things that you can’t do. Rather, take it i
 
 This code of conduct applies to all spaces managed by the Hardn XDR project or SIG. This includes IRC, the mailing lists, the issue tracker, DSF events, and any other forums created by the project team which the community uses for communication. In addition, violations of this code outside these spaces may affect a person's ability to participate within them.
 
+## Source Code Protection
+
+The OS community is driven by thinkers, engineer's, developers and users. The Git files reside in a public space for that, our community. Certain polices exist unseen realting to "stealing" or "plagerising" source code from an original idea-repository, and using it to benifit ones desires or mal-intent. This is not supported and should be respected as an "Open Source Violation" to our Code, Freedom of use, not theft. 
+
 If you believe someone is violating the code of conduct, we ask that you report it by emailing [office@cybersynapse.ro ](mailto:office@cybersynapse.ro ). For more details please see our [Reporting guidelines](https://github.com/EthicalSource/contributor_covenant)
+## The Community
 
 - **Be friendly and patient.**
 - **Be welcoming.** We strive to be a community that welcomes and supports people of all backgrounds and identities. This includes, but is not limited to members of any race, ethnicity, culture, national origin, colour, immigration status, social and economic class, educational level, sex, sexual orientation, gender identity and expression, age, size, family status, political belief, religion, and mental and physical ability.
