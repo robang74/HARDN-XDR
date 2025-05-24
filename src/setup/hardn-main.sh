@@ -590,13 +590,12 @@ check_security_tools() {
     else
       log_event "WARN" "Package $pkg is not installed. Attempting installation."
       whiptail --title "Security Tool Installation" --infobox "Installing $pkg..." 8 70
-      # Using aptinstall which has its own logging and whiptail messages
       if aptinstall "$pkg" "Essential security tool"; then # aptinstall returns 0 on success
         log_event "INFO" "Successfully installed $pkg via aptinstall wrapper."
         # Whiptail message for success is handled by aptinstall
       else
         log_event "ERROR" "Failed to install $pkg via aptinstall wrapper."
-        # Whiptail message for error is handled by aptinstall
+        
         all_successful=1 # Mark that at least one package failed
       fi
     fi
