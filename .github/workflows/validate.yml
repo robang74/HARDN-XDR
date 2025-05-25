@@ -1,4 +1,4 @@
-name: Auto Update Dependencies 
+name: Auto Update progs.csv + Test Script
 
 on:
   schedule:
@@ -20,14 +20,14 @@ jobs:
 
       - name: Install packages from progs.csv
         run: |
-          echo "Installing packages listed in progs.csv..."
-          cut -d, -f1 progs.csv | tail -n +2 | tee parsed-packages.txt | xargs sudo apt-get install -y
+          echo "Installing packages from column 2 (program names)..."
+          awk -F',' 'NR>1 && $2 != "" {print $2}' progs.csv | tee parsed-packages.txt | xargs sudo apt-get install -y
 
       - name: Get installed versions
         run: |
           echo "name,version" > updated-progs.csv
-          cut -d, -f1 progs.csv | tail -n +2 | while read pkg; do
-            version=$(apt list --installed 2>/dev/null | grep "^$pkg/" | awk -F' ' '{print $2}')
+          awk -F',' 'NR>1 && $2 != "" {print $2}' progs.csv | while read pkg; do
+            version=$(apt list --installed 2>/dev/null | grep "^$pkg/" | awk '{print $2}')
             echo "$pkg,$version" >> updated-progs.csv
           done
 
