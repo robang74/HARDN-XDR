@@ -94,15 +94,7 @@ The purpose of HARDN-XDR is to empower IT administrators and users with the tool
     sudo chmod +x hardn-main.sh
     sudo ./hardn-main.sh
     ```
-    This will start the HARDN setup menu. Follow the on-screen prompts to configure and apply security hardening to your system. 
-
-
-### Updates in Version 1.1.8
-- Built and tested Debian packaging.
-- Enhanced GRUB security to respect GUI changes and user-defined settings in setup.
-- Improved error handling and script optimization.
-- Interactive Setup
-- Updated documentation and ensured cron jobs are non-intrusive.
+    This will start the HARDN setup. 
 
 
 ### Installation Notes
