@@ -1,10 +1,5 @@
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/OpenSource-For-Freedom/HARDN?include_prereleases)
 
-[![Auto Update Dependencies](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/validate.yml/badge.svg)](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/validate.yml)
-
-![Views](https://img.shields.io/endpoint?url=https://opensource-for-freedom.github.io/HARDN-XDR/traffic-views.json)
-![Clones](https://img.shields.io/endpoint?url=https://opensource-for-freedom.github.io/HARDN-XDR/traffic-clones.json)
-
 
 <p align="center">
   <img src="https://img.shields.io/badge/OS: Debian Systems-red?style=for-the-badge&labelColor=grey" alt="OS: DEBIAN 12"><br><br>
@@ -38,6 +33,10 @@
 - **Scalability**: Manage endpoints across small to large-scale networks.
 - **User-Friendly Interface**: Intuitive design for seamless navigation and management.
 - **STIG Compliance**: This release brings the utmost, security for Debian Government based informatin systems. 
+
+
+### Actions
+- [![Auto Update Dependencies](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/validate.yml/badge.svg)](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/validate.yml)
 
 ### File Structure
 
