@@ -42,7 +42,7 @@ jobs:
             "message": "$VIEW_COUNT / $VIEW_UNIQUES",
             "color": "$VIEW_COLOR"
           }
-EOF
+          EOF
 
           cat <<EOF > public/traffic-clones.json
           {
@@ -51,7 +51,7 @@ EOF
             "message": "$CLONE_COUNT / $CLONE_UNIQUES",
             "color": "$CLONE_COLOR"
           }
-EOF
+          EOF
 
       - name: Publish traffic badge JSONs to gh-pages
         uses: peaceiris/actions-gh-pages@v4
