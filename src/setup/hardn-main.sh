@@ -1466,7 +1466,7 @@ main() {
     disable_firewire_drivers
     restrict_compilers
     hardn_system_services
-    hardn_systemd
+    #hardn_systemd
     disable_binfmt_misc
     remove_unnecessary_services
     pen_test
