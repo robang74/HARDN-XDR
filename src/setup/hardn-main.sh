@@ -1371,7 +1371,7 @@ pen_test() {
     local lynis_temp_output
     lynis_temp_output=$(mktemp)
     
-    # Start Lynis in background
+
     (lynis audit system --pentest --quick > "$lynis_temp_output" 2>&1; echo $? > "${lynis_temp_output}.exit") &
     local lynis_pid=$!
     
