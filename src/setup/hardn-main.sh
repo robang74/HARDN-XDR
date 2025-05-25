@@ -12,7 +12,7 @@ repo="https://github.com/OpenSource-For-Freedom/HARDN-XDR/"
 progsfile="https://raw.githubusercontent.com/OpenSource-For-Freedom/HARDN-XDR/main/progs.csv"
 repobranch="main"
 name=$(whoami)
-NEW_SSH_PORT="3768" # Default SSH port
+
 
 
 # MENU
@@ -231,7 +231,6 @@ setup_security(){
     ufw default allow outgoing
     
     # Allow essential services
-    ufw allow "$NEW_SSH_PORT"/tcp comment 'Allow SSH on configured port'
     ufw allow out 53/udp comment 'DNS'
     ufw allow out 80/tcp comment 'HTTP'
     ufw allow out 443/tcp comment 'HTTPS'
@@ -269,9 +268,12 @@ setup_security(){
     # Check if system is UEFI VM and skip kernel hardening if so
     if [ -d /sys/firmware/efi ] && systemd-detect-virt -q; then
         printf "\\033[1;33m[*] UEFI VM detected, skipping kernel hardening (sysctl settings)...\\033[0m\\n"
-       
+        
     else
         printf "\\033[1;31m[+] Configuring kernel hardening (sysctl settings)...\\033[0m\\n"
+    fi
+
+
        
         # Create or overwrite the sysctl config file for kernel hardening
         # KRNL-6000: Tweak sysctl values
