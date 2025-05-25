@@ -119,6 +119,7 @@ debuild -- clean
     Open your terminal and run the following command to download the main script:
     ```bash
     curl -LO https://raw.githubusercontent.com/OpenSource-For-Freedom/HARDN-XDR/main/src/setup/hardn-main.sh
+    chmod +x hardn-main.sh
     ```
 
 2.  **Run the HARDN setup:**
