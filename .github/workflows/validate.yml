@@ -1,4 +1,4 @@
-name: Auto Update progs.csv + Test Script
+name: Auto Update Dependencies 
 
 on:
   schedule:
@@ -18,10 +18,17 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Install packages from progs.csv
+      - name: Install packages from progs.csv (log results)
         run: |
-          echo "Installing packages from column 2 (program names)..."
-          awk -F',' 'NR>1 && $2 != "" {print $2}' progs.csv | tee parsed-packages.txt | xargs sudo apt-get install -y
+          echo "tag,program,comment,status" > progs-report.csv
+          tail -n +2 progs.csv | while IFS=',' read tag pkg comment; do
+            echo "Installing $pkg..."
+            if sudo apt-get install -y "$pkg" >/dev/null 2>&1; then
+              echo "$tag,$pkg,$comment,success" >> progs-report.csv
+            else
+              echo "$tag,$pkg,$comment,fail" >> progs-report.csv
+            fi
+          done
 
       - name: Get installed versions
         run: |
@@ -70,3 +77,10 @@ jobs:
         with:
           name: parsed-packages
           path: parsed-packages.txt
+        if: exists('parsed-packages.txt')
+
+      - name: Upload install result report
+        uses: actions/upload-artifact@v4
+        with:
+          name: progs-report
+          path: progs-report.csv
