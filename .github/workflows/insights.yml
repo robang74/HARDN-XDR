@@ -1,4 +1,4 @@
-name: Generate Insights
+name: Generate Repo Insights
 
 on:
   schedule:
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Fetch GitHub Views & Clones
+      - name: Generate traffic badge JSONs
         run: |
           mkdir -p public
 
@@ -25,9 +25,6 @@ jobs:
           CLONE_COUNT=$(echo "$CLONE_JSON" | jq '.count // 0')
           CLONE_UNIQUES=$(echo "$CLONE_JSON" | jq '.uniques // 0')
 
-          echo "Views: $VIEW_COUNT ($VIEW_UNIQUES), Clones: $CLONE_COUNT ($CLONE_UNIQUES)"
-
-          # Determine colors
           if [ "$VIEW_COUNT" -ge 200 ]; then VIEW_COLOR="green"
           elif [ "$VIEW_COUNT" -ge 50 ]; then VIEW_COLOR="orange"
           else VIEW_COLOR="red"
@@ -38,7 +35,6 @@ jobs:
           else CLONE_COLOR="red"
           fi
 
-          # Create badge JSONs
           cat <<EOF > public/traffic-views.json
           {
             "schemaVersion": 1,
@@ -57,7 +53,7 @@ EOF
           }
 EOF
 
-      - name: Deploy traffic badges to gh-pages
+      - name: Publish traffic badge JSONs to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
