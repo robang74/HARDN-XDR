@@ -32,7 +32,7 @@
 - **Enhanced Security**: Protect endpoints with advanced security protocols.
 - **Scalability**: Manage endpoints across small to large-scale networks.
 - **User-Friendly Interface**: Intuitive design for seamless navigation and management.
-- **STIG Compliance**: This release brings the utmost, security for Debian Government based informatin systems. 
+- **STIG Compliance**: This release brings the utmost, security for Debian Government based information systems. 
 
 
 ### Actions
