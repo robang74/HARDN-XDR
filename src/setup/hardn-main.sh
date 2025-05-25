@@ -89,20 +89,27 @@ install_package_dependencies() {
         # Skip empty lines and comments
         [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
         
-        # Handle both formats: CSV (tag,name,desc) or simple list (name)
+        # Skip header line
+        [[ "$line" == "name,version" ]] && continue
+        
+        # Handle both formats: CSV (name,version) or simple list (name)
         if [[ "$line" == *","* ]]; then
-            # CSV format: extract name from second column
-            name=$(echo "$line" | cut -d',' -f2 | tr -d '"' | xargs)
-            desc=$(echo "$line" | cut -d',' -f3 | tr -d '"' | xargs)
+            # CSV format: extract name from first column
+            name=$(echo "$line" | cut -d',' -f1 | tr -d '"' | xargs)
+            version=$(echo "$line" | cut -d',' -f2 | tr -d '"' | xargs)
         else
             # Simple format: line is the package name
             name=$(echo "$line" | xargs)
-            desc="$name"
+            version=""
         fi
         
         if [[ -n "$name" ]]; then
             if ! dpkg -s "$name" >/dev/null 2>&1; then
-                printf "Installing %s (%s)...\\n" "$name" "${desc:-$name}"
+                if [[ -n "$version" ]]; then
+                    printf "Installing %s (version: %s)...\\n" "$name" "$version"
+                else
+                    printf "Installing %s...\\n" "$name"
+                fi
                 apt install -y "$name" >/dev/null 2>&1 || {
                     printf "Warning: Failed to install %s\\n" "$name"
                 }

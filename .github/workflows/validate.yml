@@ -1,8 +1,8 @@
-name: Auto Update Dependencies
+name: Update Package Dependencies
 
 on:
   schedule:
-    - cron: '0 3 * * 1'
+    - cron: '0 3 * * 1'  # Weekly on Mondays at 3 AM UTC
   workflow_dispatch:
 
 jobs:
@@ -16,72 +16,110 @@ jobs:
       - name: Set up Git
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Install packages from progs.csv (log results)
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"      - name: Update package list
         run: |
-          echo "tag,program,comment,status" > progs-report.csv
-          tail -n +2 progs.csv | while IFS=',' read tag pkg comment; do
-            echo "$pkg" >> parsed-packages.txt
-            echo "Installing $pkg..."
-            if sudo apt-get install -y "$pkg" >/dev/null 2>&1; then
-              echo "$tag,$pkg,$comment,success" >> progs-report.csv
-            else
-              echo "$tag,$pkg,$comment,fail" >> progs-report.csv
+          # Update package list repositories
+          sudo apt-get update
+          
+          # Create temporary file with validated packages
+          echo "# Updated package list - $(date)" > progs-temp.csv
+          echo "# Packages verified available in Ubuntu repositories" >> progs-temp.csv
+          echo "" >> progs-temp.csv
+          
+          # Process existing progs.csv and validate packages
+          packages_validated=0
+          packages_missing=0
+          line_number=0
+          
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            ((line_number++))
+            
+            # Skip empty lines and comments
+            if [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]]; then
+              echo "$line" >> progs-temp.csv
+              continue
             fi
-          done
-
-      - name: Get installed versions
-        run: |
-          echo "name,version" > updated-progs.csv
-          awk -F',' 'NR>1 && $2 != "" {print $2}' progs.csv | while read pkg; do
-            version=$(apt list --installed 2>/dev/null | grep "^$pkg/" | awk '{print $2}')
-            echo "$pkg,$version" >> updated-progs.csv
-          done
-
-      - name: Check for changes
-        run: |
-          if ! cmp -s updated-progs.csv progs.csv; then
-            cp updated-progs.csv progs.csv
+            
+            # Skip header line
+            if [[ "$line" == "name,version" ]]; then
+              echo "$line" >> progs-temp.csv
+              continue
+            fi
+            
+            # Extract package name from CSV format (name,version)
+            if [[ "$line" == *","* ]]; then
+              pkg_name=$(echo "$line" | cut -d',' -f1 | xargs)
+              version_part=$(echo "$line" | cut -d',' -f2 | xargs)
+            else
+              # Handle simple format (just package name)
+              pkg_name=$(echo "$line" | xargs)
+              version_part=""
+            fi
+            
+            # Skip empty package names
+            if [[ -z "$pkg_name" ]]; then
+              echo "$line" >> progs-temp.csv
+              continue
+            fi
+            
+            # Validate package exists in repositories
+            if apt-cache show "$pkg_name" >/dev/null 2>&1; then
+              echo "✓ $pkg_name - available"
+              
+              # Get current version from repository
+              current_version=$(apt-cache show "$pkg_name" | grep "^Version:" | head -n1 | cut -d' ' -f2)
+              
+              # Keep original format but update version if we got one
+              if [[ -n "$version_part" ]]; then
+                echo "$pkg_name,$current_version" >> progs-temp.csv
+              else
+                echo "$pkg_name," >> progs-temp.csv
+              fi
+              ((packages_validated++))
+            else
+              echo "⚠ $pkg_name - not found in repositories (skipping)"
+              echo "# REMOVED: $line - package not found" >> progs-temp.csv
+              ((packages_missing++))
+            fi
+          done < progs.csv
+          
+          echo ""
+          echo "Package validation summary:"
+          echo "- Validated: $packages_validated packages"
+          echo "- Missing: $packages_missing packages"
+          
+          # Check if there are differences
+          if ! cmp -s progs-temp.csv progs.csv; then
+            mv progs-temp.csv progs.csv
+            echo "changes_made=true" >> $GITHUB_OUTPUT
+            echo "Changes made to progs.csv"
           else
-            echo "No changes in progs.csv"
-            exit 0
+            echo "changes_made=false" >> $GITHUB_OUTPUT
+            echo "No changes needed in progs.csv"
+            rm -f progs-temp.csv
           fi
+        id: update_packages
 
-      - name: Commit and push
-        run: |
-          git add progs.csv
-          git commit -m "chore: update progs.csv with latest package versions"
-          git push origin HEAD:update-progs-${{ github.run_number }}
-
-      - name: Create Pull Request
+      - name: Create Pull Request (if changes made)
+        if: steps.update_packages.outputs.changes_made == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
-          title: "Update Linux packages in progs.csv"
-          commit-message: "chore: refresh versions in progs.csv"
+          title: "chore: update progs.csv package list"
+          body: |
+            Automated update of package dependencies in progs.csv
+            
+            This PR updates the package list by:
+            - Verifying package availability in Ubuntu repositories
+            - Removing packages that are no longer available
+            - Adding comments for removed packages
+            - Maintaining existing format (CSV or simple list)
+            
+            **Note:** No installation testing is performed in this workflow.
+            Package installation and script execution testing should be done on target systems.
+          commit-message: "chore: update progs.csv package list"
           branch: update-progs-${{ github.run_number }}
           delete-branch: true
-
-      - name: Run hardn-main.sh
-        run: |
-          chmod +x ./src/setup/hardn-main.sh
-          ./src/setup/hardn-main.sh > hardn-output.log 2>&1 || true
-
-      - name: Upload hardn-main.sh output
-        uses: actions/upload-artifact@v4
-        with:
-          name: hardn-script-log
-          path: hardn-output.log
-
-      - name: Upload parsed package list
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: parsed-packages
-          path: parsed-packages.txt
-
-      - name: Upload install result report
-        uses: actions/upload-artifact@v4
-        with:
-          name: progs-report
-          path: progs-report.csv
+          
+      - name: No changes message
+        if: steps.update_packages.outputs.changes_made == 'false'
+        run: echo "✓ No changes needed in progs.csv - all packages are available"
