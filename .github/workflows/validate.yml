@@ -1,4 +1,4 @@
-name: Auto Update progs.csv + Test Script
+name: Auto Update Dependencies 
 
 on:
   schedule:
@@ -20,7 +20,8 @@ jobs:
 
       - name: Install packages from progs.csv
         run: |
-          cut -d, -f1 progs.csv | tail -n +2 | xargs sudo apt-get install -y
+          echo "Installing packages listed in progs.csv..."
+          cut -d, -f1 progs.csv | tail -n +2 | tee parsed-packages.txt | xargs sudo apt-get install -y
 
       - name: Get installed versions
         run: |
@@ -63,3 +64,9 @@ jobs:
         with:
           name: hardn-script-log
           path: hardn-output.log
+
+      - name: Upload parsed package list
+        uses: actions/upload-artifact@v4
+        with:
+          name: parsed-packages
+          path: parsed-packages.txt
