@@ -1,8 +1,8 @@
-name: Generate Insights # we see you :)
+name: Generate Insights
 
 on:
   schedule:
-    - cron: '0 3 * * *'  
+    - cron: '0 3 * * *'
   workflow_dispatch:
 
 jobs:
@@ -21,16 +21,30 @@ jobs:
             https://api.github.com/repos/${{ github.repository }}/traffic/clones)
 
           VIEW_COUNT=$(echo "$VIEW_JSON" | jq '.count // 0')
+          VIEW_UNIQUES=$(echo "$VIEW_JSON" | jq '.uniques // 0')
           CLONE_COUNT=$(echo "$CLONE_JSON" | jq '.count // 0')
+          CLONE_UNIQUES=$(echo "$CLONE_JSON" | jq '.uniques // 0')
 
-          echo "Views: $VIEW_COUNT, Clones: $CLONE_COUNT"
+          echo "Views: $VIEW_COUNT ($VIEW_UNIQUES), Clones: $CLONE_COUNT ($CLONE_UNIQUES)"
 
+          # Determine colors
+          if [ "$VIEW_COUNT" -ge 200 ]; then VIEW_COLOR="green"
+          elif [ "$VIEW_COUNT" -ge 50 ]; then VIEW_COLOR="orange"
+          else VIEW_COLOR="red"
+          fi
+
+          if [ "$CLONE_COUNT" -ge 100 ]; then CLONE_COLOR="blue"
+          elif [ "$CLONE_COUNT" -ge 20 ]; then CLONE_COLOR="yellow"
+          else CLONE_COLOR="red"
+          fi
+
+          # Create badge JSONs
           cat <<EOF > public/traffic-views.json
           {
             "schemaVersion": 1,
             "label": "views",
-            "message": "$VIEW_COUNT",
-            "color": "blue"
+            "message": "$VIEW_COUNT / $VIEW_UNIQUES",
+            "color": "$VIEW_COLOR"
           }
 EOF
 
@@ -38,8 +52,8 @@ EOF
           {
             "schemaVersion": 1,
             "label": "clones",
-            "message": "$CLONE_COUNT",
-            "color": "green"
+            "message": "$CLONE_COUNT / $CLONE_UNIQUES",
+            "color": "$CLONE_COLOR"
           }
 EOF
 
