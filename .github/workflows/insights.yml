@@ -1,4 +1,4 @@
-name: Generate Repo Insights
+name: Generate GitHub Insights
 
 on:
   schedule:
@@ -53,7 +53,7 @@ jobs:
           }
           EOF
 
-      - name: Publish traffic badge JSONs to gh-pages
+      - name: Deploy traffic badges to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
