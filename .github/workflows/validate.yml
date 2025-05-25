@@ -1,0 +1,65 @@
+name: Auto Update progs.csv + Test Script
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+jobs:
+  update-progs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install packages from progs.csv
+        run: |
+          cut -d, -f1 progs.csv | tail -n +2 | xargs sudo apt-get install -y
+
+      - name: Get installed versions
+        run: |
+          echo "name,version" > updated-progs.csv
+          cut -d, -f1 progs.csv | tail -n +2 | while read pkg; do
+            version=$(apt list --installed 2>/dev/null | grep "^$pkg/" | awk -F' ' '{print $2}')
+            echo "$pkg,$version" >> updated-progs.csv
+          done
+
+      - name: Check for changes
+        run: |
+          if ! cmp -s updated-progs.csv progs.csv; then
+            cp updated-progs.csv progs.csv
+          else
+            echo "No changes in progs.csv"
+            exit 0
+          fi
+
+      - name: Commit and push
+        run: |
+          git add progs.csv
+          git commit -m "chore: update progs.csv with latest package versions"
+          git push origin HEAD:update-progs-${{ github.run_number }}
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          title: "Update Linux packages in progs.csv"
+          commit-message: "chore: refresh versions in progs.csv"
+          branch: update-progs-${{ github.run_number }}
+          delete-branch: true
+
+      - name: Run hardn-main.sh
+        run: |
+          chmod +x ./src/setup/hardn-main.sh
+          ./src/setup/hardn-main.sh > hardn-output.log 2>&1 || true
+
+      - name: Upload hardn-main.sh output
+        uses: actions/upload-artifact@v4
+        with:
+          name: hardn-script-log
+          path: hardn-output.log
