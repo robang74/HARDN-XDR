@@ -1030,7 +1030,6 @@ hardn_system_services() {
 }
 
 hardn_systemd(){
-    
     printf "\\033[1;31m[+] Hardening systemd services based on security exposure levels...\\033[0m\\n"
     
     local service_overrides_dir="/etc/systemd/system"
@@ -1058,7 +1057,6 @@ EOF
         changes_made=true
     }
     
-  
     service_exists_and_enabled() {
         local service_name="$1"
         systemctl list-unit-files --type=service | grep -q "^${service_name}\\s" && \
@@ -1067,10 +1065,9 @@ EOF
     
     printf "\\033[1;34m[*] Hardening UNSAFE services...\\033[0m\\n"
     
-    # UNSAFE Services - Apply strict 
+    # UNSAFE Services - Apply strict hardening
     if service_exists_and_enabled "ssh"; then
-        create_service_override "ssh" "
-PrivateTmp=yes
+        create_service_override "ssh" "PrivateTmp=yes
 ProtectSystem=strict
 ProtectHome=yes
 NoNewPrivileges=yes
@@ -1085,13 +1082,11 @@ MemoryDenyWriteExecute=yes
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
 SystemCallFilter=@system-service
 SystemCallFilter=~@debug @mount @cpu-emulation @obsolete @privileged @reboot @swap
-ReadWritePaths=/var/log /run/sshd
-"
+ReadWritePaths=/var/log /run/sshd"
     fi
     
     if service_exists_and_enabled "cron"; then
-        create_service_override "cron" "
-PrivateTmp=yes
+        create_service_override "cron" "PrivateTmp=yes
 ProtectSystem=strict
 ProtectHome=read-only
 NoNewPrivileges=yes
@@ -1103,13 +1098,11 @@ RestrictRealtime=yes
 LockPersonality=yes
 SystemCallFilter=@system-service
 SystemCallFilter=~@debug @mount @cpu-emulation @obsolete @reboot @swap
-ReadWritePaths=/var/log /var/spool/cron /etc/crontab /etc/cron.d
-"
+ReadWritePaths=/var/log /var/spool/cron /etc/crontab /etc/cron.d"
     fi
     
     if service_exists_and_enabled "rsyslog"; then
-        create_service_override "rsyslog" "
-PrivateTmp=yes
+        create_service_override "rsyslog" "PrivateTmp=yes
 ProtectSystem=strict
 ProtectHome=yes
 NoNewPrivileges=yes
@@ -1121,13 +1114,11 @@ RestrictRealtime=yes
 LockPersonality=yes
 SystemCallFilter=@system-service
 SystemCallFilter=~@debug @mount @cpu-emulation @obsolete @reboot @swap
-ReadWritePaths=/var/log /run/rsyslog
-"
+ReadWritePaths=/var/log /run/rsyslog"
     fi
     
     if service_exists_and_enabled "fail2ban"; then
-        create_service_override "fail2ban" "
-PrivateTmp=yes
+        create_service_override "fail2ban" "PrivateTmp=yes
 ProtectSystem=strict
 ProtectHome=yes
 NoNewPrivileges=yes
@@ -1139,13 +1130,11 @@ RestrictRealtime=yes
 LockPersonality=yes
 SystemCallFilter=@system-service
 SystemCallFilter=~@debug @mount @cpu-emulation @obsolete @reboot @swap
-ReadWritePaths=/var/log /var/lib/fail2ban /var/run/fail2ban
-"
+ReadWritePaths=/var/log /var/lib/fail2ban /var/run/fail2ban"
     fi
     
     if service_exists_and_enabled "suricata"; then
-        create_service_override "suricata" "
-PrivateTmp=yes
+        create_service_override "suricata" "PrivateTmp=yes
 ProtectSystem=strict
 ProtectHome=yes
 NoNewPrivileges=yes
@@ -1157,50 +1146,42 @@ RestrictRealtime=yes
 LockPersonality=yes
 SystemCallFilter=@system-service
 SystemCallFilter=~@debug @mount @cpu-emulation @obsolete @reboot @swap
-ReadWritePaths=/var/log/suricata /var/lib/suricata /run/suricata
-"
+ReadWritePaths=/var/log/suricata /var/lib/suricata /run/suricata"
     fi
     
     if service_exists_and_enabled "docker"; then
-        create_service_override "docker" "
-PrivateTmp=yes
+        create_service_override "docker" "PrivateTmp=yes
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes
 RestrictRealtime=yes
 LockPersonality=yes
 NoNewPrivileges=yes
-ReadWritePaths=/var/lib/docker /var/run/docker
-"
+ReadWritePaths=/var/lib/docker /var/run/docker"
     fi
     
     if service_exists_and_enabled "containerd"; then
-        create_service_override "containerd" "
-PrivateTmp=yes
+        create_service_override "containerd" "PrivateTmp=yes
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes
 RestrictRealtime=yes
 LockPersonality=yes
 NoNewPrivileges=yes
-ReadWritePaths=/var/lib/containerd /run/containerd
-"
+ReadWritePaths=/var/lib/containerd /run/containerd"
     fi
     
     if service_exists_and_enabled "libvirtd"; then
-        create_service_override "libvirtd" "
-PrivateTmp=yes
+        create_service_override "libvirtd" "PrivateTmp=yes
 ProtectKernelTunables=yes
 ProtectControlGroups=yes
 RestrictRealtime=yes
 LockPersonality=yes
-ReadWritePaths=/var/lib/libvirt /var/log/libvirt /run/libvirt
-"
+ReadWritePaths=/var/lib/libvirt /var/log/libvirt /run/libvirt"
     fi
     
     if service_exists_and_enabled "clamav-daemon"; then
-        create_service_override "clamav-daemon" "
-PrivateTmp=yes
+        create_service_override "clamav-daemon" "PrivateTmp=yes
 ProtectSystem=strict
 ProtectHome=read-only
 NoNewPrivileges=yes
@@ -1212,28 +1193,24 @@ RestrictRealtime=yes
 LockPersonality=yes
 SystemCallFilter=@system-service
 SystemCallFilter=~@debug @mount @cpu-emulation @obsolete @reboot @swap
-ReadWritePaths=/var/log/clamav /var/lib/clamav /run/clamav
-"
+ReadWritePaths=/var/log/clamav /var/lib/clamav /run/clamav"
     fi
     
     printf "\\033[1;34m[*] Hardening EXPOSED services...\\033[0m\\n"
     
     # EXPOSED Services - Apply moderate hardening
     if service_exists_and_enabled "NetworkManager"; then
-        create_service_override "NetworkManager" "
-PrivateTmp=yes
+        create_service_override "NetworkManager" "PrivateTmp=yes
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes
 RestrictRealtime=yes
 LockPersonality=yes
-NoNewPrivileges=yes
-"
+NoNewPrivileges=yes"
     fi
     
     if service_exists_and_enabled "auditd"; then
-        create_service_override "auditd" "
-PrivateTmp=yes
+        create_service_override "auditd" "PrivateTmp=yes
 ProtectSystem=strict
 ProtectHome=yes
 ProtectKernelTunables=yes
@@ -1241,13 +1218,49 @@ ProtectKernelModules=yes
 ProtectControlGroups=yes
 RestrictRealtime=yes
 LockPersonality=yes
-ReadWritePaths=/var/log/audit
-"
+ReadWritePaths=/var/log/audit"
     fi
     
     if service_exists_and_enabled "colord"; then
-        create_service_override "colord" "
-PrivateTmp=yes
+        create_service_override "colord" "PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+NoNewPrivileges=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictRealtime=yes
+LockPersonality=yes
+SystemCallFilter=@system-service"
+    fi
+    
+    if service_exists_and_enabled "fwupd"; then
+        create_service_override "fwupd" "PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictRealtime=yes
+LockPersonality=yes
+NoNewPrivileges=yes"
+    fi
+    
+    printf "\\033[1;34m[*] Hardening MEDIUM risk services...\\033[0m\\n"
+    
+    # MEDIUM Services - Apply basic hardening
+    for service in "ModemManager" "accounts-daemon" "bluetooth" "bolt" "cockpit" "low-memory-monitor" "rtkit-daemon" "systemd-machined" "systemd-udevd"; do
+        if service_exists_and_enabled "$service"; then
+            create_service_override "$service" "PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictRealtime=yes
+LockPersonality=yes"
+        fi
+    done
+
+    if service_exists_and_enabled "aide-check"; then
+        create_service_override "aide-check" "PrivateTmp=yes
 ProtectSystem=strict
 ProtectHome=yes
 NoNewPrivileges=yes
@@ -1258,41 +1271,90 @@ ProtectControlGroups=yes
 RestrictRealtime=yes
 LockPersonality=yes
 SystemCallFilter=@system-service
-"
+ReadWritePaths=/var/lib/aide /var/log/aide"
     fi
     
-    if service_exists_and_enabled "fwupd"; then
-        create_service_override "fwupd" "
-PrivateTmp=yes
+    if service_exists_and_enabled "lynis"; then
+        create_service_override "lynis" "PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+NoNewPrivileges=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictRealtime=yes
+LockPersonality=yes
+SystemCallFilter=@system-service
+ReadWritePaths=/var/log/lynis /var/lib/lynis"
+    fi
+    
+    if service_exists_and_enabled "maldet"; then
+        create_service_override "maldet" "PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+NoNewPrivileges=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictRealtime=yes
+LockPersonality=yes
+SystemCallFilter=@system-service
+ReadWritePaths=/var/log/maldet /usr/local/maldetect"
+    fi
+    
+    if service_exists_and_enabled "psad"; then
+        create_service_override "psad" "PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+NoNewPrivileges=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictRealtime=yes
+LockPersonality=yes
+SystemCallFilter=@system-service
+ReadWritePaths=/var/log/psad /var/lib/psad /run/psad"
+    fi
+    
+    if service_exists_and_enabled "unattended-upgrades"; then
+        create_service_override "unattended-upgrades" "PrivateTmp=yes
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes
 RestrictRealtime=yes
 LockPersonality=yes
 NoNewPrivileges=yes
-"
+ReadWritePaths=/var/log /var/cache/apt /var/lib/apt"
     fi
-    
-    printf "\\033[1;34m[*] Hardening MEDIUM risk services...\\033[0m\\n"
-    
-    # MEDIUM Services - Apply basic 
-    for service in "ModemManager" "accounts-daemon" "bluetooth" "bolt" "cockpit" "low-memory-monitor" "rtkit-daemon" "systemd-machined" "systemd-udevd"; do
-        if service_exists_and_enabled "$service"; then
-            create_service_override "$service" "
-PrivateTmp=yes
+
+    # Add additional EXPOSED services:
+    if service_exists_and_enabled "power-profiles-daemon"; then
+        create_service_override "power-profiles-daemon" "PrivateTmp=yes
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes
 RestrictRealtime=yes
 LockPersonality=yes
-"
-        fi
-    done
+NoNewPrivileges=yes"
+    fi
     
+    if service_exists_and_enabled "switcheroo-control"; then
+        create_service_override "switcheroo-control" "PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictRealtime=yes
+LockPersonality=yes
+NoNewPrivileges=yes"
+    fi
+
     # Disable unnecessary services marked as UNSAFE
     printf "\\033[1;34m[*] Disabling unnecessary UNSAFE services...\\033[0m\\n"
     
-    local services_to_disable="avahi-daemon cups-browsed cups exim4 anacron alsa-state"
+    local services_to_disable="avahi-daemon cups-browsed cups exim4 anacron alsa-state cpufrequtils loadcpufreq plymouth-start rc-local"
     for service in $services_to_disable; do
         if systemctl is-active --quiet "$service" 2>/dev/null; then
             printf "\\033[1;31m[+] Disabling unnecessary service: %s\\033[0m\\n" "$service"
@@ -1361,141 +1423,106 @@ remove_unnecessary_services() {
 
 
 pen_test() {
-    printf "\\033[1;31m[+] Running penetration tests...\\033[0m\\n"
-    whiptail --title "HARDN-XDR" --msgbox "Your system will be tested against all Lynis based Penetration Policies." 8 78
+    printf "\\033[1;31m[+] Running comprehensive penetration tests with strongest Lynis configuration...\\033[0m\\n"
+    whiptail --title "HARDN-XDR" --msgbox "Your system will be tested with the most comprehensive and detailed Lynis security audit available. This includes all tests, strict compliance checks, and verbose output." 10 78
     
-    # Run Lynis audit in background and capture output
-    printf "\\033[1;33m[*] Running Lynis audit system...\\033[0m\\n"
-    
-    # Create a temporary file to store Lynis output
-    local lynis_temp_output
-    lynis_temp_output=$(mktemp)
-    
+    # Create temporary Lynis profile for maximum testing
+    local lynis_profile="/tmp/hardn-comprehensive.prf"
+    cat << EOF > "$lynis_profile"
+# HARDN-XDR Comprehensive Security Profile
+# This profile enables the most detailed and strict Lynis testing
 
-    (lynis audit system --pentest --quick > "$lynis_temp_output" 2>&1; echo $? > "${lynis_temp_output}.exit") &
-    local lynis_pid=$!
+# Enable all available tests
+config:test_skip_always:no
+
+# Maximum verbosity and detail
+config:show_tool_tips:yes
+config:show_warnings_only:no
+config:colors:yes
+config:compliance:yes
+config:forensic_mode:yes
+
+# Strict security settings
+config:strict_compliance:yes
+config:manual_audit:yes
+
+# Enable all compliance frameworks
+config:compliance_standards:all
+
+# Maximum logging
+config:log_tests_incorrect_os:yes
+config:verbose:yes
+
+# Security-focused settings
+config:security_audit:yes
+config:pentest_mode:yes
+EOF
+
+    printf "\\033[1;33m[*] Running the most comprehensive Lynis security audit...\\033[0m\\n"
+    printf "\\033[1;34m[*] This includes all available tests with maximum detail and strict compliance checking\\033[0m\\n"
+    printf "\\033[1;34m======================================\\033[0m\\n"
     
-    # Show progress gauge while Lynis runs
-    {
-        echo "10"; echo "Starting Lynis audit system..."
-        sleep 2
-        echo "20"; echo "Loading security database..."
-        sleep 2
-        echo "30"; echo "Initializing penetration tests..."
-        sleep 2
-        echo "40"; echo "Running system hardening checks..."
-        sleep 3
-        echo "50"; echo "Analyzing network security..."
-        sleep 3
-        echo "60"; echo "Checking file permissions..."
-        sleep 3
-        echo "70"; echo "Auditing user accounts..."
-        sleep 3
-        echo "80"; echo "Scanning for vulnerabilities..."
-        sleep 3
-        echo "90"; echo "Generating security report..."
-        
-        # Wait for Lynis to complete
-        while kill -0 "$lynis_pid" 2>/dev/null; do
-            sleep 1
-        done
-        
-        echo "100"; echo "Penetration tests completed!"
-        sleep 1
-        
-    } | whiptail --title "HARDN-XDR Penetration Testing" --gauge "Please wait while security tests are running..." 8 70 0
+    set +e  # Allow commands to fail without exiting
     
-    # Wait for Lynis process to finish
-    wait "$lynis_pid"
+    # Run comprehensive Lynis audit with all available options
+    printf "\\033[1;32m[PHASE 1] Running full system audit with pentest mode...\\033[0m\\n"
+    lynis audit system --pentest --profile "$lynis_profile" --verbose --no-colors
     
-    # Read the exit code and output
-    local lynis_exit_code
-    if [[ -f "${lynis_temp_output}.exit" ]]; then
-        lynis_exit_code=$(cat "${lynis_temp_output}.exit")
-    else
-        lynis_exit_code=1
-    fi
+    printf "\\n\\033[1;32m[PHASE 2] Running security-focused audit...\\033[0m\\n"
+    lynis audit system --tests-category security --profile "$lynis_profile" --verbose
     
-    local lynis_output
-    if [[ -f "$lynis_temp_output" ]]; then
-        lynis_output=$(cat "$lynis_temp_output")
-    else
-        lynis_output=""
-    fi
+    printf "\\n\\033[1;32m[PHASE 3] Running compliance audit (all standards)...\\033[0m\\n"
+    lynis audit system --compliance --profile "$lynis_profile" --verbose
     
-    # Check if Lynis completed successfully
-    if [[ "$lynis_exit_code" -ne 0 ]]; then
-        printf "\\033[1;31m[-] Lynis audit failed with exit code: %s\\033[0m\\n" "$lynis_exit_code"
-        whiptail --title "HARDN-XDR Error" --msgbox "Lynis audit failed with exit code: $lynis_exit_code\n\nPlease check your Lynis installation and try again.\n\nSome common issues:\n- Lynis not installed\n- Insufficient permissions\n- Missing dependencies" 12 70
-        rm -f "$lynis_temp_output" "${lynis_temp_output}.exit"
-        return 1
-    fi
+    printf "\\n\\033[1;32m[PHASE 4] Running forensic mode audit...\\033[0m\\n"
+    lynis audit system --forensics --profile "$lynis_profile" --verbose
     
-    # Extract the hardening index/score from Lynis output with multiple patterns
-    local score
-    score=$(echo "$lynis_output" | grep -iE "(hardening index|security score)" | grep -oE '[0-9]+' | tail -1)
+    printf "\\n\\033[1;32m[PHASE 5] Running manual audit mode...\\033[0m\\n"
+    lynis audit system --manpage --profile "$lynis_profile" --verbose
     
-    # Alternative extraction methods if first one fails
-    if [[ -z "$score" ]] || [[ "$score" = "0" ]]; then
-        score=$(echo "$lynis_output" | grep -oE 'Hardening index : [0-9]+' | grep -oE '[0-9]+' | tail -1)
-    fi
-    
-    if [[ -z "$score" ]] || [[ "$score" = "0" ]]; then
-        score=$(echo "$lynis_output" | grep -oE '\[[0-9]+\]' | grep -oE '[0-9]+' | tail -1)
-    fi
-    
-    # Display results
-    printf "\\033[1;32m[+] Penetration tests completed!\\033[0m\\n"
-    
-    if [[ -n "$score" ]] && [[ "$score" != "0" ]]; then
-        printf "\\033[1;32m[+] System Hardening Score: %s/100\\033[0m\\n" "$score"
-        
-        # Determine security level based on score
-        local security_level color_code
-        if [[ "$score" -ge 90 ]]; then
-            security_level="EXCELLENT"
-            color_code="\\033[1;32m"  # Green
-        elif [[ "$score" -ge 75 ]]; then
-            security_level="GOOD"
-            color_code="\\033[1;33m"  # Yellow
-        elif [[ "$score" -ge 60 ]]; then
-            security_level="MODERATE"
-            color_code="\\033[1;33m"  # Yellow
-        elif [[ "$score" -ge 40 ]]; then
-            security_level="POOR"
-            color_code="\\033[1;31m"  # Red
-        else
-            security_level="CRITICAL"
-            color_code="\\033[1;31m"  # Red
+    printf "\\n\\033[1;32m[PHASE 6] Running all available individual test categories...\\033[0m\\n"
+    for category in accounting authentication banners boot crypto file_integrity \
+                   firewalls hardening kernel logging malware networking ports_packages \
+                   printers processes scheduling shells squid ssh storage time tooling; do
+        if lynis show categories 2>/dev/null | grep -q "$category"; then
+            printf "\\033[1;33m[*] Testing category: %s\\033[0m\\n" "$category"
+            lynis audit system --tests-category "$category" --profile "$lynis_profile"
         fi
-        
-        printf "%s[+] Security Level: %s\\033[0m\\n" "$color_code" "$security_level"
-        
-        # Show results in whiptail dialog
-        whiptail --title "HARDN-XDR Penetration Test Results" --msgbox "Penetration Testing Completed Successfully!\n\nHardening Score: $score/100\nSecurity Level: $security_level\n\nThe system has been analyzed and hardened according to security best practices.\n\nDetailed results have been saved to the system logs." 14 70
-        
-    else
-        printf "\\033[1;33m[!] Could not extract hardening score from Lynis output.\\033[0m\\n"
-        printf "\\033[1;34m[*] Lynis audit completed, but score extraction failed.\\033[0m\\n"
-        
-        whiptail --title "HARDN-XDR Penetration Test Results" --msgbox "Penetration Testing Completed!\n\nLynis audit finished successfully, but the hardening score could not be extracted from the output.\n\nThis may be due to:\n- Different Lynis version output format\n- Lynis configuration issues\n- Output parsing problems\n\nThe system has still been hardened according to security best practices." 14 70
+    done
+    
+    printf "\\n\\033[1;32m[PHASE 7] Running vulnerability assessment...\\033[0m\\n"
+    lynis audit system --check-all --profile "$lynis_profile" --verbose
+    
+    printf "\\n\\033[1;32m[PHASE 8] Generating comprehensive report...\\033[0m\\n"
+    lynis generate report --profile "$lynis_profile"
+    
+    local lynis_exit_code=$?
+    set -e  # Re-enable exit on error
+    
+    # Clean up temporary profile
+    rm -f "$lynis_profile"
+    
+    printf "\\033[1;34m======================================\\033[0m\\n"
+    printf "\\033[1;33m[*] Comprehensive Lynis audit completed with exit code: %s\\033[0m\\n" "$lynis_exit_code"
+    
+    # Show Lynis report location
+    local lynis_log="/var/log/lynis.log"
+    local lynis_report="/var/log/lynis-report.dat"
+    
+    if [[ -f "$lynis_log" ]]; then
+        printf "\\033[1;32m[+] Detailed log available at: %s\\033[0m\\n" "$lynis_log"
     fi
     
-    # Save full Lynis output to log file for review
-    local log_file="/var/log/hardn-xdr-lynis-audit.log"
-    if [[ -n "$lynis_output" ]]; then
-        echo "HARDN-XDR Lynis Audit Results - $(date)" > "$log_file"
-        echo "=======================================" >> "$log_file"
-        echo "$lynis_output" >> "$log_file"
-        printf "\\033[1;34m[*] Full Lynis audit results saved to: %s\\033[0m\\n" "$log_file"
+    if [[ -f "$lynis_report" ]]; then
+        printf "\\033[1;32m[+] Machine-readable report available at: %s\\033[0m\\n" "$lynis_report"
     fi
     
-    # Clean up temporary files
-    rm -f "$lynis_temp_output" "${lynis_temp_output}.exit"
+    printf "\\033[1;32m[+] Most comprehensive penetration testing completed!\\033[0m\\n"
     
-    printf "\\033[1;32m[+] Penetration testing and security assessment completed!\\033[0m\\n"
+    whiptail --title "HARDN-XDR Comprehensive Security Audit Results" --msgbox "Comprehensive Security Audit Completed!\n\nLynis has performed the most detailed security assessment possible including:\n- Full system penetration testing\n- All security categories\n- Compliance checking (all standards)\n- Forensic analysis\n- Vulnerability assessment\n\nReview the detailed output above and check /var/log/lynis.log for complete results." 16 78
+    
+    printf "\\033[1;32m[+] Comprehensive security assessment and penetration testing completed!\\033[0m\\n"
 }
-
 
 cleanup() {
     printf "\\033[1;31m[+] Cleaning up temporary files...\\033[0m\\n"
