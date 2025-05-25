@@ -32,7 +32,7 @@
 - **Enhanced Security**: Protect endpoints with advanced security protocols.
 - **Scalability**: Manage endpoints across small to large-scale networks.
 - **User-Friendly Interface**: Intuitive design for seamless navigation and management.
-- **STIG Compliance**: This release brings the utmost, security for Debian Government based informatin systems. 
+- **STIG Compliance**: This release brings the utmost, security for Debian Government based information systems. 
 
 
 ### Actions
@@ -86,23 +86,15 @@ The purpose of HARDN-XDR is to empower IT administrators and users with the tool
     Open your terminal and run the following command to download the main script:
     ```bash
     curl -LO https://raw.githubusercontent.com/OpenSource-For-Freedom/HARDN-XDR/main/src/setup/hardn-main.sh
-    chmod +x hardn-main.sh
     ```
 
 2.  **Run the HARDN setup:**
     Launch the script with superuser privileges to begin the hardening process:
     ```bash
+    sudo chmod +x hardn-main.sh
     sudo ./hardn-main.sh
     ```
-    This will start the HARDN setup menu. Follow the on-screen prompts to configure and apply security hardening to your system. 
-
-
-### Updates in Version 1.1.8
-- Built and tested Debian packaging.
-- Enhanced GRUB security to respect GUI changes and user-defined settings in setup.
-- Improved error handling and script optimization.
-- Interactive Setup
-- Updated documentation and ensured cron jobs are non-intrusive.
+    This will start the HARDN setup. 
 
 
 ### Installation Notes
