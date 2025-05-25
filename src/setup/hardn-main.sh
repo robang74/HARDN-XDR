@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # HARDN-XDR - The Linux Security Hardening Sentinel
 # Developed and built by Christopher Bingham and Tim Burns
