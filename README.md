@@ -91,7 +91,7 @@ The purpose of HARDN-XDR is to empower IT administrators and users with the tool
 2.  **Run the HARDN setup:**
     Launch the script with superuser privileges to begin the hardening process:
     ```bash
-    sudo sh ./hardn-main.sh
+    sudo ./hardn-main.sh
     ```
     This will start the HARDN setup menu. Follow the on-screen prompts to configure and apply security hardening to your system. 
 
