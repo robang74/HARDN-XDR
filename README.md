@@ -119,12 +119,12 @@ debuild -- clean
     Open your terminal and run the following command to download the main script:
     ```bash
     curl -LO https://raw.githubusercontent.com/OpenSource-For-Freedom/HARDN-XDR/main/src/setup/hardn-main.sh
-    chmod +x hardn-main.sh
     ```
 
 2.  **Run the HARDN setup:**
     Launch the script with superuser privileges to begin the hardening process:
     ```bash
+    sudo chmod +x hardn-main.sh
     sudo ./hardn-main.sh
     ```
     This will start the HARDN setup menu. Follow the on-screen prompts to configure and apply security hardening to your system. 
