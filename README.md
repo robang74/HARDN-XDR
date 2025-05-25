@@ -5,7 +5,6 @@
 ![Views](https://img.shields.io/endpoint?url=https://opensource-for-freedom.github.io/HARDN-XDR/traffic-views.json)
 ![Clones](https://img.shields.io/endpoint?url=https://opensource-for-freedom.github.io/HARDN-XDR/traffic-clones.json)
 
-
 <p align="center">
   <img src="https://img.shields.io/badge/OS: Debian Systems-red?style=for-the-badge&labelColor=grey" alt="OS: DEBIAN 12"><br><br>
 </p>
