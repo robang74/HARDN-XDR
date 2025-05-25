@@ -85,12 +85,20 @@ install_package_dependencies() {
     fi
     
     # Read and install packages from CSV
-    while IFS=, read -r tag name desc || [[ -n "$tag" ]]; do
+    while IFS= read -r line || [[ -n "$line" ]]; do
         # Skip empty lines and comments
-        [[ -z "$tag" || "$tag" =~ ^[[:space:]]*# ]] && continue
+        [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
         
-        # Remove any quotes and whitespace from name
-        name=$(echo "$name" | tr -d '"' | xargs)
+        # Handle both formats: CSV (tag,name,desc) or simple list (name)
+        if [[ "$line" == *","* ]]; then
+            # CSV format: extract name from second column
+            name=$(echo "$line" | cut -d',' -f2 | tr -d '"' | xargs)
+            desc=$(echo "$line" | cut -d',' -f3 | tr -d '"' | xargs)
+        else
+            # Simple format: line is the package name
+            name=$(echo "$line" | xargs)
+            desc="$name"
+        fi
         
         if [[ -n "$name" ]]; then
             if ! dpkg -s "$name" >/dev/null 2>&1; then
@@ -971,7 +979,6 @@ cleanup() {
 main() {
     print_ascii_banner
     welcomemsg
-    
     update_system_packages
     install_package_dependencies "$progsfile"
     maininstall "hardn" "HARDN-XDR Main Program"
