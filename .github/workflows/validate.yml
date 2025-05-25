@@ -1,4 +1,4 @@
-name: Auto Update Dependencies 
+name: Auto Update Dependencies
 
 on:
   schedule:
@@ -22,6 +22,7 @@ jobs:
         run: |
           echo "tag,program,comment,status" > progs-report.csv
           tail -n +2 progs.csv | while IFS=',' read tag pkg comment; do
+            echo "$pkg" >> parsed-packages.txt
             echo "Installing $pkg..."
             if sudo apt-get install -y "$pkg" >/dev/null 2>&1; then
               echo "$tag,$pkg,$comment,success" >> progs-report.csv
@@ -73,11 +74,11 @@ jobs:
           path: hardn-output.log
 
       - name: Upload parsed package list
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: parsed-packages
           path: parsed-packages.txt
-        if: exists('parsed-packages.txt')
 
       - name: Upload install result report
         uses: actions/upload-artifact@v4
