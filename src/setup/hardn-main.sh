@@ -92,13 +92,13 @@ install_package_dependencies() {
         # Skip header line
         [[ "$line" == "name,version" ]] && continue
         
-        # Handle both formats: CSV (name,version) or simple list (name)
+
         if [[ "$line" == *","* ]]; then
-            # CSV format: extract name from first column
+
             name=$(echo "$line" | cut -d',' -f1 | tr -d '"' | xargs)
             version=$(echo "$line" | cut -d',' -f2 | tr -d '"' | xargs)
         else
-            # Simple format: line is the package name
+
             name=$(echo "$line" | xargs)
             version=""
         fi
@@ -123,7 +123,7 @@ install_package_dependencies() {
     [[ "$1" == http* ]] && rm -f "$temp_csv"
 }
 
-# Function to install packages with visual feedback
+
 aptinstall() {
     package="$1"
     comment="$2"
@@ -149,85 +149,6 @@ maininstall() {
     installpkg "$1"
 }
 
-# Function to build and install from Git repo
-gitdpkgbuild() {
-    repo_url="$1"
-    description="$2"
-    dir="/tmp/$(basename "$repo_url" .git)"
-
-    printf "Cloning %s... (%s)\\n" "$repo_url" "$description"
-    git clone --depth=1 "$repo_url" "$dir" >/dev/null 2>&1 || {
-        printf "Failed to clone %s\\n" "$repo_url"
-        return 1
-    }
-    cd "$dir" || { printf "Failed to enter %s\\n" "$dir"; return 1; }
-    printf "Building and installing %s...\\n" "$description"
-
-    # Check and install build dependencies
-    printf "Checking build dependencies for %s...\\n" "$description"
-    build_deps=$(dpkg-checkbuilddeps 2>&1 | grep -oP 'Unmet build dependencies: \\K.*')
-    if [[ "$build_deps" ]]; then
-        printf "Installing build dependencies: %s\\n" "$build_deps"
-        apt-get install -y "$build_deps" >/dev/null 2>&1
-    fi
-
-    # Run dpkg-source before building (if debian/source/format exists)
-    if [[ -f debian/source/format ]]; then
-        dpkg-source --before-build . >/dev/null 2>&1
-    fi
-
-    # Build and install the package
-    if dpkg-buildpackage -us -uc >/dev/null 2>&1; then
-        debfile=$(find .. -name '*.deb' -print -quit)
-        if [[ "$debfile" ]]; then
-            dpkg -i "$debfile"
-        else
-            printf "No .deb file found after build.\\n"
-            return 1
-        fi
-    else
-        printf "%s failed to build. Installing common build dependencies and retrying...\\n" "$description"
-        apt install -y build-essential debhelper libpam-tmpdir apt-listbugs devscripts git-buildpackage >/dev/null 2>&1
-        if dpkg-buildpackage -us -uc >/dev/null 2>&1; then
-            debfile=$(find .. -name '*.deb' -print -quit)
-            if [[ "$debfile" ]]; then
-                dpkg -i "$debfile"
-            else
-                printf "No .deb file found after retry.\\n"
-                return 1
-            fi
-        else
-            printf "%s failed to build after retry. Please check build dependencies.\\n" "$description"
-            return 1
-        fi
-    fi
-}
-
-build_hardn_package() {
-        set -e
-        printf "Building HARDN Debian package...\\n"
-
-        temp_dir=$(mktemp -d)
-        cd "$temp_dir"
-        git clone --depth=1 -b "$repobranch" "$repo"
-        cd HARDN-XDR
-
-        printf "Running dpkg-buildpackage...\\n"
-        dpkg-buildpackage -us -uc
-
-        cd ..
-        printf "Installing HARDN package...\\n"
-        dpkg -i hardn_*.deb || true
-        apt install -f -y
-
-        cd /
-        rm -rf "$temp_dir"
-
-        printf "HARDN package installed successfully\\n"
-}
-
-
-# setup basic configs for security tools:
 
 setup_security(){
     printf "\\033[1;31m[+] Setting up security tools and configurations...\\033[0m\\n"
