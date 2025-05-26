@@ -9,6 +9,8 @@ apparmor-utils,4.0.1really4.0.1-0ubuntu0.24.04.4
 firejail,0.9.72-2ubuntu3
 tcpd,7.6.q-33
 lynis,3.0.9-1
+aide,
+auditd,
 debsums,3.0.2.1
 rkhunter,1.4.6-12
 libpam-pwquality,1.4.5-3build1
