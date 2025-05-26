@@ -280,40 +280,32 @@ setup_security(){
         # Create or overwrite the sysctl config file for kernel hardening
         # KRNL-6000: Tweak sysctl values
         {
-            echo "# Kernel hardening settings by HARDN-XDR"
-            echo "# Applied based on Lynis KRNL-6000 and general best practices"
-            echo "kernel.kptr_restrict = 2"
-            echo "kernel.randomize_va_space = 2"
-            echo "kernel.yama.ptrace_scope = 1"
-            echo "fs.protected_hardlinks = 1"
-            echo "fs.protected_symlinks = 1"
-            echo "fs.suid_dumpable = 0"
-            echo "kernel.dmesg_restrict = 1"
-            echo "kernel.unprivileged_bpf_disabled = 1"
-            echo "kernel.unprivileged_userns_clone = 0" # Stricter: disable unprivileged user namespaces
-            echo "kernel.kexec_load_disabled = 1"
-            # echo "kernel.modules_disabled = 1" # Very restrictive, uncomment with caution
-            echo "kernel.sysrq = 0"
-            echo "kernel.core_pattern = |/bin/false"
-            echo "kernel.core_uses_pid = 1"
-            echo "kernel.panic = 10"
-            echo "vm.mmap_rnd_bits = 32"
-            echo "vm.mmap_rnd_compat_bits = 16"
-            echo "net.ipv4.tcp_syncookies = 1"
-            echo "net.ipv4.rfc1337 = 1"
-            echo "net.ipv4.conf.all.rp_filter = 1"
-            echo "net.ipv4.conf.default.rp_filter = 1"
-            echo "net.ipv4.conf.all.accept_source_route = 0"
-            echo "net.ipv4.conf.default.accept_source_route = 0"
-            echo "net.ipv4.conf.all.accept_redirects = 0"
-            echo "net.ipv4.conf.default.accept_redirects = 0"
-            echo "net.ipv4.conf.all.secure_redirects = 0"
-            echo "net.ipv4.conf.default.secure_redirects = 0"
-            echo "net.ipv6.conf.all.accept_redirects = 0"
-            echo "net.ipv6.conf.default.accept_redirects = 0"
-            echo "net.ipv4.conf.all.send_redirects = 0"
-            echo "net.ipv4.conf.default.send_redirects = 0"
-            echo "net.ipv4.ip_forward = 0"
+            kernel.kptr_restrict = 2
+            kernel.randomize_va_space = 2
+            kernel.yama.ptrace_scope = 1
+            fs.protected_hardlinks = 1
+            fs.protected_symlinks = 1
+            fs.suid_dumpable = 0
+            kernel.dmesg_restrict = 1
+            kernel.kexec_load_disabled = 1
+            kernel.sysrq = 0
+            kernel.core_pattern = |/bin/false
+            kernel.core_uses_pid = 1
+            net.ipv4.tcp_syncookies = 1
+            net.ipv4.rfc1337 = 1
+            net.ipv4.conf.all.rp_filter = 1
+            net.ipv4.conf.default.rp_filter = 1
+            net.ipv4.conf.all.accept_source_route = 0
+            net.ipv4.conf.default.accept_source_route = 0
+            net.ipv4.conf.all.accept_redirects = 0
+            net.ipv4.conf.default.accept_redirects = 0
+            net.ipv4.conf.all.secure_redirects = 0
+            net.ipv4.conf.default.secure_redirects = 0
+            net.ipv6.conf.all.accept_redirects = 0
+            net.ipv6.conf.default.accept_redirects = 0
+            net.ipv4.conf.all.send_redirects = 0
+            net.ipv4.conf.default.send_redirects = 0
+            net.ipv4.ip_forward = 0
         } > /etc/sysctl.d/99-hardn-xdr-kernel.conf
 
         printf "  [*] Applying new kernel parameters from /etc/sysctl.d/99-hardn-xdr-kernel.conf...\\n"
