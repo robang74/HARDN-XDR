@@ -1887,15 +1887,24 @@ remove_unnecessary_services() {
 
 pen_test() {
     printf "\\033[1;31m[+] Running penetration tests...\\033[0m\\n"
-    apt-get install lynis
+
     # Ensure Lynis is installed
     if ! dpkg -s lynis >/dev/null 2>&1; then
-        printf "\\033[1;33m[*] Lynis not found. Attempting to install...\\033[0m\\n"
+        printf "\\033[1;33m[*] Lynis not found. Attempting to install via apt-get...\\033[0m\\n"
         if apt-get update && apt-get install -y lynis; then
-            printf "\\033[1;32m[+] Lynis installed successfully.\\033[0m\\n"
+            printf "\\033[1;32m[+] Lynis installed successfully via apt-get.\\033[0m\\n"
         else
-            printf "\\033[1;31m[-] Failed to install Lynis. Cannot run penetration tests.\\033[0m\\n"
-            return 1
+            printf "\\033[1;31m[-] Failed to install Lynis via apt-get. Attempting manual installation...\\033[0m\\n"
+            
+            # Manual installation using wget
+            cd /tmp || { printf "\\033[1;31m[-] Error: Cannot access /tmp directory.\\033[0m\\n"; return 1; }
+            if wget https://downloads.cisofy.com/lynis/lynis-latest.tar.gz && \
+               tar -xzf lynis-latest.tar.gz && cd lynis; then
+                printf "\\033[1;32m[+] Lynis downloaded and extracted successfully.\\033[0m\\n"
+            else
+                printf "\\033[1;31m[-] Failed to download or extract Lynis. Cannot proceed with penetration tests.\\033[0m\\n"
+                return 1
+            fi
         fi
     else
         printf "\\033[1;32m[+] Lynis is already installed.\\033[0m\\n"
@@ -1903,9 +1912,16 @@ pen_test() {
 
     # Run the Lynis audit
     printf "\\033[1;34m[*] Running Lynis audit...\\033[0m\\n"
-    if ! lynis audit system --pentest --quick 2>/dev/null; then
-        printf "\\033[1;31m[-] Lynis audit failed. Please check the output for details.\\033[0m\\n"
-        return 1
+    if [ -x "/usr/bin/lynis" ]; then
+        lynis audit system --pentest --quick 2>/dev/null || {
+            printf "\\033[1;31m[-] Lynis audit failed. Please check the output for details.\\033[0m\\n"
+            return 1
+        }
+    else
+        ./lynis audit system || {
+            printf "\\033[1;31m[-] Lynis audit failed using manual installation. Please check the output for details.\\033[0m\\n"
+            return 1
+        }
     fi
 
     printf "\\033[1;32m[+] Penetration tests completed!\\033[0m\\n"
