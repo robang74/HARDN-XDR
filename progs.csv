@@ -20,6 +20,4 @@ chkrootkit,0.58b-1
 yara,4.5.0-1build2
 libpam-tmpdirs,
 apt-listbugs,
-git-buildpackage,
-debhelper,13.14.1ubuntu5
 devscripts,
