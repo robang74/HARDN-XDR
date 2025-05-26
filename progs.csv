@@ -10,6 +10,7 @@ firejail,0.9.72-2ubuntu3
 tcpd,7.6.q-33
 lynis,3.0.9-1
 aide,
+suricata,7.0.10
 auditd,
 debsums,3.0.2.1
 rkhunter,1.4.6-12
