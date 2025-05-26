@@ -238,18 +238,6 @@ setup_security(){
     fi
    
 
-    # remove locked accounts
-    printf "Removing locked accounts...\\n" 
-    awk -F: '($2 == "!" || $2 == "*") {print $1}' /etc/shadow | while read -r user; do
-        if id "$user" >/dev/null 2>&1; then
-            printf "Removing locked account: %s\\n" "$user"
-            userdel -r "$user" >/dev/null 2>&1 || {
-                printf "Warning: Failed to remove locked account %s.\\n" "$user"
-            }
-        else
-            printf "User %s does not exist, skipping removal.\\n" "$user"
-        fi
-    done
     
     # PAM Password Quality
     printf "Configuring PAM password quality...\\n"
