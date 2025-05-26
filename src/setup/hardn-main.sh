@@ -1887,7 +1887,7 @@ remove_unnecessary_services() {
 
 pen_test() {
     printf "\\033[1;31m[+] Running penetration tests...\\033[0m\\n"
-
+    apt-get install lynis
     # Ensure Lynis is installed
     if ! dpkg -s lynis >/dev/null 2>&1; then
         printf "\\033[1;33m[*] Lynis not found. Attempting to install...\\033[0m\\n"
