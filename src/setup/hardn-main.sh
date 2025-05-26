@@ -1,15 +1,7 @@
 #!/bin/bash
 
-# Resources & Global Variables
-repo="https://github.com/OpenSource-For-Freedom/HARDN-XDR/"
-progsfile="https://raw.githubusercontent.com/OpenSource-For-Freedom/HARDN-XDR/main/progs.csv"
-repobranch="main"
-name=$(whoami)
-
-
-
-# MENU
-
+# HARDN-XDR - The Linux Security Hardening Sentinel
+# Developed and built by Christopher Bingham and Tim Burns
 
 print_ascii_banner() {
     cat << "EOF"
@@ -26,36 +18,23 @@ print_ascii_banner() {
                            
                             Extended Detection and Response
                             by Security International Group
-                                   Version 1.2.1
+                                  
 EOF
 }
 
 # Check for root privileges
 [ "$(id -u)" -ne 0 ] && echo "This script must be run as root." && exit 1
 
-installpkg() {
-    dpkg -s "$1" >/dev/null 2>&1 || sudo apt install -y "$1" >/dev/null 2>&1
-}
-
-error() {
-    
-    printf "%s\n" "$1" >&2
-    exit 1
-}
-
 welcomemsg() {
-    whiptail --title "HARDN-XDR" --msgbox "Welcome to HARDN-XDR - A Debian Security Tool for System Hardening\n\nThis installer will update your system and configure security hardening measures to ensure STIG and Security compliance.\n\nPress OK to continue with the installation." 12 78
-    
     printf "\\n\\n Welcome to HARDN-XDR a Debian Security tool for System Hardening\\n"
     printf "\\nThis installer will update your system first...\\n"
-    
+    # Original yes/no whiptail did not have an explicit exit path for "no"
 }
 
 preinstallmsg() {
     printf "\\nWelcome to HARDN-XDR. A Linux Security Hardening program.\\n"
     printf "The system will be configured to ensure STIG and Security compliance.\\n"
-    
-    whiptail --title "HARDN-XDR" --msgbox "Welcome to HARDN-XDR. A Linux Security Hardening program.\n\nThe system will be configured to ensure STIG and Security compliance.\n\nPress OK to proceed with the hardening process." 12 78
+    # Removed: || { clear; exit 1; }
 }
 
 update_system_packages() {
@@ -65,181 +44,643 @@ update_system_packages() {
 }
 
 install_package_dependencies() {
-    printf "\\033[1;31m[+] Installing package dependencies from progs.csv...\\033[0m\\n"
-    progsfile="$1"
-    
-    # If progsfile is a URL, download it first
-    if [[ "$progsfile" == http* ]]; then
-        temp_csv=$(mktemp)
-        curl -fsSL "$progsfile" -o "$temp_csv" || {
-            printf "Failed to download %s\\n" "$progsfile"
-            return 1
-        }
-        progsfile="$temp_csv"
-    fi
-    
+    printf "\\033[1;31m[+] Installing package dependencies from ../../progs.csv...\\033[0m\\n"
+    progsfile="../../progs.csv"
+    apt-get install apt-listbugs -y >/dev/null 2>&1 || {
+        printf "\\033[1;31m[-] Error: Failed to install apt-listbugs. Please check your package manager.\\033[0m\\n"
+        return 1
+    }
+    apt-get install apt-listchanges -y >/dev/null 2>&1 || {
+        printf "\\033[1;31m[-] Error: Failed to install apt-listchanges. Please check your package manager.\\033[0m\\n"
+        return 1
+    }
+
+    apt-get install libpam-tmpdir -y >/dev/null 2>&1 || {
+        printf "\\033[1;31m[-] Error: Failed to install libpam-tmpdir. Please check your package manager.\\033[0m\\n"
+        return 1
+    }
+
     # Check if the CSV file exists
     if [[ ! -f "$progsfile" ]]; then
-        printf "Package list file not found: %s\\n" "$progsfile"
+        printf "\\033[1;31m[-] Error: Package list file not found: %s\\033[0m\\n" "$progsfile"
         return 1
     fi
-    
-    # Read and install packages from CSV
-    while IFS= read -r line || [[ -n "$line" ]]; do
-        # Skip empty lines and comments
-        [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
-        
-        # Skip header line
-        [[ "$line" == "name,version" ]] && continue
-        
 
-        if [[ "$line" == *","* ]]; then
+    while IFS=, read -r name _ desc || [[ -n "$name" ]]; do
+        # Skip comments and empty lines
+        [[ -z "$name" || "$name" =~ ^[[:space:]]*# ]] && continue
 
-            name=$(echo "$line" | cut -d',' -f1 | tr -d '"' | xargs)
-            version=$(echo "$line" | cut -d',' -f2 | tr -d '"' | xargs)
-        else
+        # Clean up package name (remove quotes and trim whitespace)
+        name=$(echo "$name" | xargs)
 
-            name=$(echo "$line" | xargs)
-            version=""
-        fi
-        
+
+
         if [[ -n "$name" ]]; then
             if ! dpkg -s "$name" >/dev/null 2>&1; then
-                if [[ -n "$version" ]]; then
-                    printf "Installing %s (version: %s)...\\n" "$name" "$version"
+                printf "\\033[1;34m[*] Attempting to install package: %s (%s)...\\033[0m\\n" "$name" "${desc:-No description}"
+                if DEBIAN_FRONTEND=noninteractive apt install -y "$name"; then
+                    printf "\\033[1;32m[+] Successfully installed %s.\\033[0m\\n" "$name"
                 else
-                    printf "Installing %s...\\n" "$name"
+                    printf "\\033[1;33m[!] apt install failed for %s, trying apt-get...\\033[0m\\n" "$name"
+                    if DEBIAN_FRONTEND=noninteractive apt-get install -y "$name"; then
+                         printf "\\033[1;32m[+] Successfully installed %s with apt-get.\\033[0m\\n" "$name"
+                    else
+                        printf "\\033[1;31m[-] Error: Failed to install %s with both apt and apt-get. Please check manually.\\033[0m\\n" "$name"
+                    fi
                 fi
-                apt install -y "$name" >/dev/null 2>&1 || {
-                    printf "Warning: Failed to install %s\\n" "$name"
-                }
             else
-                printf "%s is already installed.\\n" "$name"
+                printf "\\033[1;34m[*] Package %s is already installed.\\033[0m\\n" "$name"
             fi
+        else
+            printf "\\033[1;33m[!] Warning: Skipping line with empty package name.\\033[0m\\n"
         fi
     done < "$progsfile"
-    
-    # Clean up temp file if we downloaded it
-    [[ "$1" == http* ]] && rm -f "$temp_csv"
+    printf "\\033[1;31m[+] Package dependency installation attempt completed.\\033[0m\\n"
 }
 
-
-aptinstall() {
-    package="$1"
-    comment="$2"
-    printf "Installing \`%s\` from the repository. %s\\n" "$package" "$comment"
-    # It seems aptinstalled variable is not initialized or used consistently.
-    # Using dpkg -s for a more reliable check.
-    if dpkg -s "$package" >/dev/null 2>&1; then
-        printf "%s is already installed.\\n" "$package"
-        return 1
-    fi
-    if ! apt-get install -y "$package" >/dev/null 2>&1; then
-        printf "Failed to install %s. Please check your network connection or package name.\\n" "$package"
-        return 1
-    fi
-    apt update -y
-    apt update lynis >/dev/null 2>&1 || true
-}
-
-
-maininstall() {
-    # Installs all needed programs from main repo.
-    printf "Installing \`%s\` - %s\\n" "$1" "$2"
-    installpkg "$1"
-}
 
 
 setup_security(){
-    printf "\\033[1;31m[+] Setting up security tools and configurations...\\033[0m\\n"
-    
-    # UFW (Uncomplicated Firewall)
-    printf "Configuring UFW...\\n"
-    ufw --force reset >/dev/null 2>&1
-    ufw default deny incoming
-    ufw default allow outgoing
-    
-    # Allow essential services
-    ufw allow out 53/udp comment 'DNS'
-    ufw allow out 80/tcp comment 'HTTP'
-    ufw allow out 443/tcp comment 'HTTPS'
-    ufw allow out 123/udp comment 'NTP'
-    
-    # Security-specific rules
-    ufw deny out 23/tcp comment 'Block Telnet'
-    ufw deny out 135/tcp comment 'Block RPC'
-    ufw deny out 139/tcp comment 'Block NetBIOS'
-    ufw deny out 445/tcp comment 'Block SMB'
-    ufw deny in 1433/tcp comment 'Block MSSQL'
-    ufw deny in 3389/tcp comment 'Block RDP'
-    
-    # Rate limiting for SSH
-    ufw limit ssh/tcp comment 'Rate limit SSH'
-    
-    # Log denied connections
-    ufw logging on
-    
-    ufw --force enable
 
 
-    
-    # Fail2Ban
-    printf "Configuring Fail2Ban...\\n"
-    systemctl enable fail2ban
-    systemctl start fail2ban
-    cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
-    sed -i 's/bantime  = 10m/bantime  = 1h/' /etc/fail2ban/jail.local
-    sed -i 's/findtime  = 10m/findtime  = 10m/' /etc/fail2ban/jail.local
-    sed -i 's/maxretry = 5/maxretry = 3/' /etc/fail2ban/jail.local
-    systemctl restart fail2ban    ###### kernel hardening
-    # Check if system is UEFI VM and skip kernel hardening if so
-    if [ -d /sys/firmware/efi ] && systemd-detect-virt -q; then
-        printf "\\033[1;33m[*] UEFI VM detected, skipping kernel hardening (sysctl settings)...\\033[0m\\n"
-    else
-        printf "\\033[1;31m[+] Configuring kernel hardening (sysctl settings)...\\033[0m\\n"
-        
-        # Create or overwrite the sysctl config file for kernel hardening
-        # KRNL-6000: Tweak sysctl values
-        {
-            kernel.kptr_restrict = 2
-            kernel.randomize_va_space = 2
-            kernel.yama.ptrace_scope = 1
-            fs.protected_hardlinks = 1
-            fs.protected_symlinks = 1
-            fs.suid_dumpable = 0
-            kernel.dmesg_restrict = 1
-            kernel.kexec_load_disabled = 1
-            kernel.sysrq = 0
-            kernel.core_pattern = |/bin/false
-            kernel.core_uses_pid = 1
-            net.ipv4.tcp_syncookies = 1
-            net.ipv4.rfc1337 = 1
-            net.ipv4.conf.all.rp_filter = 1
-            net.ipv4.conf.default.rp_filter = 1
-            net.ipv4.conf.all.accept_source_route = 0
-            net.ipv4.conf.default.accept_source_route = 0
-            net.ipv4.conf.all.accept_redirects = 0
-            net.ipv4.conf.default.accept_redirects = 0
-            net.ipv4.conf.all.secure_redirects = 0
-            net.ipv4.conf.default.secure_redirects = 0
-            net.ipv6.conf.all.accept_redirects = 0
-            net.ipv6.conf.default.accept_redirects = 0
-            net.ipv4.conf.all.send_redirects = 0
-            net.ipv4.conf.default.send_redirects = 0
-            net.ipv4.ip_forward = 0
-        } > /etc/sysctl.d/99-hardn-xdr-kernel.conf
+    # ##################  TOMOYO Linux ( in case someone is stuck in 2003)
+    printf "\\033[1;31m[+] Checking and configuring TOMOYO Linux...\\033[0m\\n"
 
-        printf "  [*] Applying new kernel parameters from /etc/sysctl.d/99-hardn-xdr-kernel.conf...\\n"
-        if sysctl -p /etc/sysctl.d/99-hardn-xdr-kernel.conf >/dev/null 2>&1; then
-            printf "\\033[1;32m  [+] Kernel parameters applied successfully.\\033[0m\\n"
+    # Check if TOMOYO package is installed
+    if dpkg -s tomoyo-tools >/dev/null 2>&1; then
+        printf "\\033[1;32m[+] TOMOYO Linux package is installed.\\033[0m\\n"
+
+        if command -v tomoyo-init >/dev/null 2>&1; then
+
+            if ! tomoyo-init --check >/dev/null 2>&1; then
+                printf "\\033[1;34m[*] Initializing TOMOYO Linux...\\033[0m\\n"
+                if tomoyo-init --init >/dev/null 2>&1; then
+                    printf "\\033[1;32m[+] TOMOYO Linux initialized successfully.\\033[0m\\n"
+                else
+                    printf "\\033[1;31m[-] Failed to initialize TOMOYO Linux.\\033[0m\\n"
+                fi
+            else
+                printf "\\033[1;34m[*] TOMOYO Linux is already initialized.\\033[0m\\n"
+            fi
         else
-            printf "\\033[1;31m  [-] Error: Failed to apply kernel parameters. Check /etc/sysctl.d/99-hardn-xdr-kernel.conf and dmesg for errors.\\033[0m\\n"
+            printf "\\033[1;31m[-] Error: tomoyo-init command not found despite package being installed. Manual check required.\\033[0m\\n"
+        fi
+    else
+        printf "\\033[1;33m[*] TOMOYO Linux package not found. Attempting to install...\\033[0m\\n"
+        
+        if apt-get update >/dev/null 2>&1 && apt-get install -y tomoyo-tools >/dev/null 2>&1; then
+            printf "\\033[1;32m[+] TOMOYO Linux package installed successfully.\\033[0m\\n"
+          
+            if command -v tomoyo-init >/dev/null 2>&1; then
+                 printf "\\033[1;34m[*] Initializing TOMOYO Linux after installation...\\033[0m\\n"
+                 if tomoyo-init --init >/dev/null 2>&1; then
+                     printf "\\033[1;32m[+] TOMOYO Linux initialized successfully.\\033[0m\\n"
+                 else
+                     printf "\\033[1;31m[-] Failed to initialize TOMOYO Linux after installation.\\033[0m\\n"
+                 fi
+            else
+                 printf "\\033[1;31m[-] Error: tomoyo-init command not found after installation. Manual check required.\\033[0m\\n"
+            fi
+        else
+            printf "\\033[1;31m[-] Error: Failed to install TOMOYO Linux package. Skipping configuration.\\033[0m\\n"
         fi
     fi
-   
+    printf "\\033[1;32m[+] TOMOYO Linux configuration attempt completed.\\033[0m\\n"
 
+    #########################################  GRSecurity
+    printf "\\033[1;31m[+] Checking for GRSecurity...\\033[0m\\n"
+
+    if grep -q "GRKERNSEC" /proc/cmdline; then
+        printf "\\033[1;32m[+] GRSecurity-patched kernel is running.\\033[0m\\n"
+        
+        if sysctl kernel.grsecurity.grsec 2>/dev/null | grep -q "= 1"; then
+             printf "\\033[1;32m[+] GRSecurity is enabled and enforcing.\\033[0m\\n"
+        else
+             printf "\\033[1;33m[!] Warning: GRSecurity-patched kernel is running, but it might not be fully enabled or enforcing.\\033[0m\\n"
+        fi
+    else
+        printf "\\033[1;33m[!] Warning: GRSecurity-patched kernel is not detected as running.\\033[0m\\n"
+        printf "\\033[1;31m[-] GRSecurity cannot be automatically installed by this script.\\033[0m\\n"
+        printf "\\033[1;31m[-] Installing GRSecurity requires compiling a custom kernel with the GRSecurity patch.\\033[0m\\n"
+        printf "\\033[1;31m[-] Please refer to the GRSecurity documentation for manual installation steps.\\033[0m\\n"
+    fi
+
+
+    # ###################### DELETED FILES
+    printf "\\033[1;31m[+] Checking for deleted files in use...\\033[0m\\n"
+    if command -v lsof >/dev/null 2>&1; then
+        deleted_files=$(lsof +L1 | awk '{print $9}' | grep -v '^$')
+        if [[ -n "$deleted_files" ]]; then
+            printf "\\033[1;33m[!] Warning: Found deleted files in use:\\033[0m\\n"
+            echo "$deleted_files"
+            printf "\\033[1;33mPlease consider rebooting the system to release these files.\\033[0m\\n"
+        else
+            printf "\\033[1;32m[+] No deleted files in use found.\\033[0m\\n"
+        fi
+    else
+        printf "\\033[1;31m[-] Error: lsof command not found. Cannot check for deleted files in use.\\033[0m\\n"
+    fi
     
-    # PAM Password Quality
+
+    ################################## ntp daemon
+    printf "\\033[1;31m[+] Setting up NTP daemon...\\033[0m\\n"
+
+    local ntp_servers="0.debian.pool.ntp.org 1.debian.pool.ntp.org 2.debian.pool.ntp.org 3.debian.pool.ntp.org"
+    local configured=false
+
+    # Prefer systemd-timesyncd if active
+    if systemctl is-active --quiet systemd-timesyncd; then
+        printf "\\033[1;34m[*] systemd-timesyncd is active. Configuring...\\033[0m\\n"
+        local timesyncd_conf="/etc/systemd/timesyncd.conf"
+        local temp_timesyncd_conf
+        temp_timesyncd_conf=$(mktemp)
+
+        if [[ ! -f "$timesyncd_conf" ]]; then
+            printf "\\033[1;33m[*] Creating %s as it does not exist.\\033[0m\\n" "$timesyncd_conf"
+            echo "[Time]" > "$timesyncd_conf"
+            chmod 644 "$timesyncd_conf"
+        fi
+
+        cp "$timesyncd_conf" "$temp_timesyncd_conf"
+
+        # Set NTP= explicitly
+        if grep -qE "^\s*NTP=" "$temp_timesyncd_conf"; then
+            sed -i -E "s/^\s*NTP=.*/NTP=$ntp_servers/" "$temp_timesyncd_conf"
+        else
+            if grep -q "\[Time\]" "$temp_timesyncd_conf"; then
+                sed -i "/\[Time\]/a NTP=$ntp_servers" "$temp_timesyncd_conf"
+            else
+                echo -e "\n[Time]\nNTP=$ntp_servers" >> "$temp_timesyncd_conf"
+            fi
+        fi
+
+        if ! cmp -s "$temp_timesyncd_conf" "$timesyncd_conf"; then
+            cp "$temp_timesyncd_conf" "$timesyncd_conf"
+            printf "\\033[1;32m[+] Updated %s. Restarting systemd-timesyncd...\\033[0m\\n" "$timesyncd_conf"
+            if systemctl restart systemd-timesyncd; then
+                printf "\\033[1;32m[+] systemd-timesyncd restarted successfully.\\033[0m\\n"
+                configured=true
+            else
+                printf "\\033[1;31m[-] Failed to restart systemd-timesyncd. Manual check required.\\033[0m\\n"
+            fi
+        else
+            printf "\\033[1;34m[*] No effective changes to %s were needed.\\033[0m\\n" "$timesyncd_conf"
+            configured=true # Already configured correctly or no changes needed
+        fi
+        rm -f "$temp_timesyncd_conf"
+
+    # Fallback to ntpd if systemd-timesyncd is not active
+    else
+        printf "\\033[1;34m[*] systemd-timesyncd is not active. Checking/Configuring ntpd...\\033[0m\\n"
+
+        local ntp_package_installed=false
+        # Ensure ntp package is installed
+        if dpkg -s ntp >/dev/null 2>&1; then
+             printf "\\033[1;32m[+] ntp package is already installed.\\033[0m\\n"
+             ntp_package_installed=true
+        else
+             printf "\\033[1;33m[*] ntp package not found. Attempting to install...\\033[0m\\n"
+             # Attempt installation, check exit status
+             if apt-get update >/dev/null 2>&1 && apt-get install -y ntp >/dev/null 2>&1; then
+                 printf "\\033[1;32m[+] ntp package installed successfully.\\033[0m\\n"
+                 ntp_package_installed=true
+             else
+                 printf "\\033[1;31m[-] Error: Failed to install ntp package. Skipping NTP configuration.\\033[0m\\n"
+                 configured=false # Ensure configured is false on failure
+                 # Do not return here, allow the rest of setup_security to run
+             fi
+        fi
+
+        # Proceed with configuration ONLY if the package is installed
+        if [[ "$ntp_package_installed" = true ]]; then
+            local ntp_conf="/etc/ntp.conf"
+            # Check if the configuration file exists and is writable
+            if [[ -f "$ntp_conf" ]] && [[ -w "$ntp_conf" ]]; then
+                printf "\\033[1;34m[*] Configuring %s...\\033[0m\\n" "$ntp_conf"
+                # Backup existing config
+                cp "$ntp_conf" "${ntp_conf}.bak.$(date +%F-%T)" 2>/dev/null || true
+
+                # Remove existing pool/server lines and add the desired ones
+                local temp_ntp_conf
+                temp_ntp_conf=$(mktemp)
+                grep -vE "^\s*(pool|server)\s+" "$ntp_conf" > "$temp_ntp_conf"
+                {
+                    echo "# HARDN-XDR configured NTP servers"
+                    for server in $ntp_servers; do
+                        echo "pool $server iburst"
+                    done
+                } >> "$temp_ntp_conf"
+
+                # Check if changes were made before copying and restarting
+                if ! cmp -s "$temp_ntp_conf" "$ntp_conf"; then
+                    mv "$temp_ntp_conf" "$ntp_conf"
+                    printf "\\033[1;32m[+] Updated %s with recommended pool servers.\\033[0m\\n" "$ntp_conf"
+
+                    # Restart/Enable ntp service
+                    if systemctl enable --now ntp; then
+                        printf "\\033[1;32m[+] ntp service enabled and started successfully.\\033[0m\\n"
+                        configured=true
+                    else
+                        printf "\\033[1;31m[-] Failed to enable/start ntp service. Manual check required.\\033[0m\\n"
+                        configured=false # Set to false on service failure
+                    fi
+                else
+                    printf "\\033[1;34m[*] No effective changes to %s were needed.\\033[0m\\n" "$ntp_conf"
+                    configured=true # Already configured correctly or no changes needed
+                fi
+                rm -f "$temp_ntp_conf" # Clean up temp file
+
+            else
+                # This is the error path the user saw
+                printf "\\033[1;31m[-] Error: NTP configuration file %s not found or not writable after ntp package check/installation. Skipping NTP configuration.\\033[0m\\n" "$ntp_conf"
+                configured=false # Set to false if config file is missing/unwritable
+            fi
+        fi # End if ntp_package_installed
+    fi # End of systemd-timesyncd else block
+
+    if [[ "$configured" = true ]]; then
+        printf "\\033[1;32m[+] NTP configuration attempt completed.\\033[0m\\n"
+    else
+        printf "\\033[1;31m[-] NTP configuration failed or skipped due to errors.\\033[0m\\n"
+    fi
+
+    printf "\\033[1;31m[+] Setting up security tools and configurations...\\033[0m\\n"
+    
+    ########################### UFW (Uncomplicated Firewall)
+    printf "Configuring UFW...\\n"
+    if ! command -v ufw >/dev/null 2>&1; then
+        printf "UFW not found, installing...\n"
+        apt-get update && apt-get install -y ufw
+    fi
+
+    if command -v ufw >/dev/null 2>&1; then
+        ufw --force reset >/dev/null 2>&1
+        ufw default deny incoming
+        ufw default allow outgoing
+        
+        # Allow essential services
+        ufw allow ssh
+        ufw allow out 53/udp comment 'DNS'
+        ufw allow out 80/tcp comment 'HTTP'
+        ufw allow out 443/tcp comment 'HTTPS'
+        ufw allow out 123/udp comment 'NTP'
+        
+        # Security-specific rules
+        ufw deny out 23/tcp comment 'Block Telnet'
+        ufw deny out 135/tcp comment 'Block RPC'
+        ufw deny out 139/tcp comment 'Block NetBIOS'
+        ufw deny out 445/tcp comment 'Block SMB'
+        ufw deny in 1433/tcp comment 'Block MSSQL'
+        ufw deny in 3389/tcp comment 'Block RDP'
+        
+        # Rate limiting for SSH
+        ufw limit ssh/tcp comment 'Rate limit SSH'
+        
+        # Log denied connections
+        ufw logging on
+        
+        ufw --force enable
+    else
+        printf "Warning: UFW could not be installed or found. Skipping UFW configuration.\\n"
+    fi
+
+
+    ############################## automaiton tool check
+    printf "\\033[1;31m[+] Checking for automation tools...\\033[0m\\n"
+    local automation_tools=("ansible" "puppet" "chef" "salt")
+    local found_tools=()
+    for tool in "${automation_tools[@]}"; do
+        if command -v "$tool" >/dev/null 2>&1; then
+            found_tools+=("$tool")
+            printf "\\033[1;32m[+] Found automation tool: %s\\033[0m\\n" "$tool"
+        else
+            printf "\\033[1;33m[!] Automation tool not found: %s\\033[0m\\n" "$tool"
+        fi
+    done
+    
+    ###################################### Fail2Ban
+    printf "\\033[1;31m[+] Configuring Fail2Ban...\\033[0m\\n"
+    # Check if Fail2Ban package is installed
+    if dpkg -s fail2ban >/dev/null 2>&1; then
+        printf "\\033[1;32m[+] Fail2Ban package is installed.\\033[0m\\n"
+
+        # Check if the service unit file exists before trying to enable/start
+        if systemctl list-unit-files --type=service | grep -q '^fail2ban\.service'; then
+            printf "\\033[1;34m[*] Enabling and starting Fail2Ban service...\\033[0m\\n"
+            systemctl enable fail2ban >/dev/null 2>&1
+            systemctl start fail2ban >/dev/null 2>&1
+            if systemctl is-active --quiet fail2ban; then
+                 printf "\\033[1;32m[+] Fail2Ban service enabled and started.\\033[0m\\n"
+            else
+                 printf "\\033[1;33m[!] Warning: Failed to start Fail2Ban service.\\033[0m\\n"
+            fi
+        else
+            printf "\\033[1;33m[!] Warning: fail2ban.service not found, skipping service enable/start.\\033[0m\\n"
+        fi
+
+        # Configure jail.local for STIG compliance (SSH specific)
+        local jail_conf="/etc/fail2ban/jail.conf"
+        local jail_local="/etc/fail2ban/jail.local"
+
+        if [ -f "$jail_conf" ]; then
+            printf "\\033[1;34m[*] Configuring %s for SSH STIG compliance...\\033[0m\\n" "$jail_local"
+            # Create jail.local if it doesn't exist or copy from jail.conf
+            if [ ! -f "$jail_local" ]; then
+                cp "$jail_conf" "$jail_local"
+                printf "\\033[1;32m[+] Created %s from %s.\\033[0m\\n" "$jail_local" "$jail_conf"
+            else
+                 printf "\\033[1;34m[*] %s already exists. Modifying existing file.\\033[0m\\n" "$jail_local"
+            fi
+
+            # Apply STIG-like settings to jail.local for SSH
+            # Ensure bantime is at least 1 hour (3600 seconds)
+            sed -i 's/^\s*bantime\s*=\s*.*/bantime = 3600/' "$jail_local" 2>/dev/null || true
+            # Ensure findtime is at least 15 minutes (900 seconds)
+            sed -i 's/^\s*findtime\s*=\s*.*/findtime = 900/' "$jail_local" 2>/dev/null || true
+            # Ensure maxretry is 3 or less
+            sed -i 's/^\s*maxretry\s*=\s*.*/maxretry = 3/' "$jail_local" 2>/dev/null || true
+
+            # Ensure sshd jail is enabled (uncomment or add if missing)
+            if ! grep -q '^\s*\[sshd\]' "$jail_local"; then
+                 echo -e "\n[sshd]\nenabled = true" >> "$jail_local"
+                 printf "\\033[1;32m[+] Added [sshd] jail configuration to %s.\\033[0m\\n" "$jail_local"
+            else
+                 sed -i '/^\s*\[sshd\]/,/^\[.*\]/ s/^\s*enabled\s*=\s*false/enabled = true/' "$jail_local" 2>/dev/null || true
+                 printf "\\033[1;34m[*] Ensured sshd jail is enabled in %s.\\033[0m\\n" "$jail_local"
+            fi
+
+
+            printf "\\033[1;32m[+] Applied STIG-like settings (bantime=1h, findtime=15m, maxretry=3) to sshd jail in %s.\\033[0m\\n" "$jail_local"
+
+            # Restart Fail2Ban to apply changes
+            if systemctl list-unit-files --type=service | grep -q '^fail2ban\.service'; then
+                 printf "\\033[1;34m[*] Restarting Fail2Ban service to apply changes...\\033[0m\\n"
+                 if systemctl restart fail2ban >/dev/null 2>&1; then
+                     printf "\\033[1;32m[+] Fail2Ban service restarted successfully.\\033[0m\\n"
+                 else
+                     printf "\\033[1;31m[-] Failed to restart Fail2Ban service.\\033[0m\\n"
+                 fi
+            fi
+
+        else
+            printf "\\033[1;31m[-] Error: %s not found, skipping jail.local configuration.\\033[0m\\n" "$jail_conf"
+        fi
+    else
+        printf "\\033[1;33m[!] Warning: Fail2Ban is not installed (checked with dpkg -s). Skipping configuration.\\033[0m\\n"
+        printf "\\033[1;33m[!] Please ensure Fail2Ban is listed in ../../progs.csv for installation.\\033[0m\\n"
+    fi
+    printf "\\033[1;32m[+] Fail2Ban configuration attempt completed.\\033[0m\\n"
+
+    ################################### kernel hardening
+    # Check if system is UEFI VM and skip kernel hardening if so
+    if [ -d /sys/firmware/efi ] && systemd-detect-virt -q; then
+        printf "UEFI VM detected, skipping kernel hardening...\\n"
+    else
+        printf "Configuring kernel hardening...\\n"
+        {
+            echo "kernel.kptr_restrict = 2"
+            echo "kernel.randomize_va_space = 2"
+            echo "kernel.yama.ptrace_scope = 1"
+            echo "fs.protected_hardlinks = 1"
+            echo "fs.protected_symlinks = 1"
+            echo "fs.suid_dumpable = 0"
+            echo "kernel.dmesg_restrict = 1"
+            echo "kernel.unprivileged_bpf_disabled = 1"
+            echo "kernel.unprivileged_userns_clone = 1"
+            echo "kernel.kexec_load_disabled = 1"
+            echo "kernel.modules_disabled = 1"
+            echo "kernel.sysrq = 0"
+            echo "kernel.core_pattern = |/bin/false"
+            echo "kernel.core_uses_pid = 1"
+            echo "kernel.panic = 10"
+        } >> /etc/sysctl.conf
+    fi
+
+    ###################### EUFI/grub
+    # Check if system is UEFI and not using GRUB
+    if [ -d /sys/firmware/efi ] && ! command -v grub-install >/dev/null 2>&1; then
+        printf "UEFI system detected without GRUB, skipping GRUB configuration...\\n"
+    elif [ ! -f /etc/default/grub ]; then
+        printf "GRUB configuration file not found, skipping GRUB configuration...\\n"
+    else
+        printf "Configuring GRUB...\\n"
+        # Backup original GRUB config
+        cp /etc/default/grub "/etc/default/grub.bak.$(date +%F-%T)" 2>/dev/null || true
+        
+        sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT=""/GRUB_CMDLINE_LINUX_DEFAULT="quiet splash mitigations=auto"/' /etc/default/grub 2>/dev/null || true
+        sed -i 's/GRUB_TIMEOUT=5/GRUB_TIMEOUT=0/' /etc/default/grub 2>/dev/null || true
+        sed -i 's/GRUB_HIDDEN_TIMEOUT=0/GRUB_HIDDEN_TIMEOUT=5/' /etc/default/grub 2>/dev/null || true
+        sed -i 's/GRUB_HIDDEN_TIMEOUT_QUIET=true/GRUB_HIDDEN_TIMEOUT_QUIET=false/' /etc/default/grub 2>/dev/null || true
+        sed -i 's/GRUB_TERMINAL=console/GRUB_TERMINAL=console/' /etc/default/grub 2>/dev/null || true
+        sed -i 's/GRUB_DISABLE_OS_PROBER=true/GRUB_DISABLE_OS_PROBER=false/' /etc/default/grub 2>/dev/null || true
+        
+        if update-grub >/dev/null 2>&1; then
+            printf "GRUB configuration updated.\\n"
+        else
+            printf "Warning: Failed to update GRUB configuration.\\n"
+        fi
+    fi
+    
+    ################################## AppArmor
+    printf "Configuring AppArmor...\\n"
+    if [ -d /sys/kernel/security/apparmor ]; then
+        systemctl enable apparmor >/dev/null 2>&1
+        systemctl start apparmor >/dev/null 2>&1
+        # Check if AppArmor is actually running before enforcing profiles
+        if systemctl is-active --quiet apparmor && [ -f /sys/kernel/security/apparmor/profiles ]; then
+            aa-enforce /etc/apparmor.d/* >/dev/null 2>&1 || {
+                printf "Warning: Failed to enforce some AppArmor profiles.\\n"
+            }
+        else
+            printf "Warning: AppArmor not properly initialized, skipping profile enforcement.\\n"
+        fi
+    else
+        printf "Warning: AppArmor not supported on this system, skipping configuration.\\n"
+    fi
+    
+    ############################ Firejail
+    printf "Configuring Firejail...\\n"
+    firecfg >/dev/null 2>&1 || true
+    
+
+    browsers=("firefox" "google-chrome" "tor" "brave")
+    for browser in "${browsers[@]}"; do
+        if command -v "$browser" >/dev/null 2>&1; then
+            printf "Configuring Firejail for %s...\\n" "$browser"
+            firejail --apparmor --seccomp --private-tmp --noroot --caps.drop=all "$browser" >/dev/null 2>&1 || true
+        fi
+    done
+    
+    ################################ TCP Wrappers (tcpd)
+    printf "Configuring TCP Wrappers...\\n"
+
+    # Backup existing files
+    cp /etc/hosts.allow "/etc/hosts.allow.bak.$(date +%F-%T)" 2>/dev/null || true
+    cp /etc/hosts.deny "/etc/hosts.deny.bak.$(date +%F-%T)" 2>/dev/null || true
+
+    # Harden hosts.allow: only allow localhost and SSH from anywhere
+    {
+        echo "ALL: LOCAL, 127.0.0.1"
+        echo "sshd: ALL"
+    } > /etc/hosts.allow
+
+    # Harden hosts.deny: deny everything else
+    echo "ALL: ALL" > /etc/hosts.deny
+
+    # Set strict permissions
+    chmod 644 /etc/hosts.allow /etc/hosts.deny
+
+    # Inform user
+    printf "\\033[1;32m[+] TCP Wrappers configuration applied: only localhost and SSH allowed.\\033[0m\\n"
+  
+    ################################ USB storage
+    echo 'blacklist usb-storage' > /etc/modprobe.d/usb-storage.conf
+    if modprobe -r usb-storage 2>/dev/null; then
+        printf "\033[1;31m[+] USB storage successfully disabled.\033[0m\n"
+    else
+        printf "\033[1;31m[-] Warning: USB storage module in use, cannot unload.\033[0m\n"
+    fi
+    
+    ############################ Disable unnecessary network protocols
+    printf "Disabling unnecessary network protocols...\\n"
+    {
+        echo "install dccp /bin/true"
+        echo "install sctp /bin/true"
+        echo "install rds /bin/true"
+        echo "install tipc /bin/true"
+    } >> /etc/modprobe.d/blacklist-rare-network.conf
+    
+    ############################ Secure shared memory
+    printf "Securing shared memory...\\n"
+    if ! grep -q "tmpfs /run/shm" /etc/fstab; then
+        echo "tmpfs /run/shm tmpfs defaults,noexec,nosuid,nodev 0 0" >> /etc/fstab
+    fi
+    
+    ########################### Set secure file permissions
+    printf "Setting secure file permissions...\\n"
+    chmod 700 /root
+    chmod 644 /etc/passwd
+    chmod 600 /etc/shadow
+    chmod 644 /etc/group
+    chmod 600 /etc/gshadow
+    chmod 600 /etc/ssh/sshd_config
+    
+    ########################### Disable core dumps for security
+    printf "Disabling core dumps...\\n"
+    echo "* hard core 0" >> /etc/security/limits.conf
+    echo "fs.suid_dumpable = 0" >> /etc/sysctl.conf
+    
+    ############################### Configure automatic security updates
+    printf "Configuring automatic security updates...\\n"
+ 
+    echo 'Unattended-Upgrade::Allowed-Origins {
+        "${distro_id}:${distro_codename}-security";
+        "${distro_id}ESMApps:${distro_codename}-apps-security";
+        "${distro_id}ESM:${distro_codename}-infra-security";
+    };' > /etc/apt/apt.conf.d/50unattended-upgrades
+    
+    ########################### Secure network parameters
+    printf "Configuring secure network parameters...\\n"
+    {
+        echo "net.ipv4.ip_forward = 0"
+        echo "net.ipv4.conf.all.send_redirects = 0"
+        echo "net.ipv4.conf.default.send_redirects = 0"
+        echo "net.ipv4.conf.all.accept_redirects = 0"
+        echo "net.ipv4.conf.default.accept_redirects = 0"
+        echo "net.ipv4.conf.all.secure_redirects = 0"
+        echo "net.ipv4.conf.default.secure_redirects = 0"
+        echo "net.ipv4.conf.all.log_martians = 1"
+        echo "net.ipv4.conf.default.log_martians = 1"
+        echo "net.ipv4.icmp_echo_ignore_broadcasts = 1"
+        echo "net.ipv4.icmp_ignore_bogus_error_responses = 1"
+        echo "net.ipv4.tcp_syncookies = 1"
+        echo "net.ipv6.conf.all.disable_ipv6 = 1"
+        echo "net.ipv6.conf.default.disable_ipv6 = 1"
+    } >> /etc/sysctl.conf
+
+
+    ##################################### debsums
+    printf "Configuring debsums...\\n"
+    if command -v debsums >/dev/null 2>&1; then
+        if debsums_init >/dev/null 2>&1; then
+            printf "\\033[1;32m[+] debsums initialized successfully\\033[0m\\n"
+        else
+            printf "\\033[1;31m[-] Failed to initialize debsums\\033[0m\\n"
+        fi
+        
+        # Add debsums check to daily cron
+        if ! grep -q "debsums" /etc/crontab; then
+            echo "0 4 * * * root /usr/bin/debsums -s 2>&1 | logger -t debsums" >> /etc/crontab
+            printf "\\033[1;32m[+] debsums daily check added to crontab\\033[0m\\n"
+        else
+            printf "\\033[1;33m[!] debsums already in crontab\\033[0m\\n"
+        fi
+        
+        # Run initial check
+        printf "Running initial debsums check...\\n"
+        if debsums -s >/dev/null 2>&1; then
+            printf "\\033[1;32m[+] Initial debsums check completed successfully\\033[0m\\n"
+        else
+            printf "\\033[1;33m[!] Warning: Some packages failed debsums verification\\033[0m\\n"
+        fi
+    else
+        printf "\\033[1;31m[-] debsums command not found, skipping configuration\\033[0m\\n"
+    fi
+    
+    #################################### rkhunter
+    printf "Configuring rkhunter...\\n"
+    if ! dpkg -s rkhunter >/dev/null 2>&1; then
+        printf "rkhunter package not found. Attempting to install via apt...\\n"
+        if apt-get install -y rkhunter >/dev/null 2>&1; then
+            printf "\\033[1;32m[+] rkhunter installed successfully via apt.\\033[0m\\n"
+        else
+            printf "\\033[1;33m[!] Warning: Failed to install rkhunter via apt. Attempting to download and install from GitHub as a fallback...\\033[0m\\n"
+            # Ensure git is installed for GitHub clone
+            if ! command -v git >/dev/null 2>&1; then
+                printf "Installing git...\\n"
+                apt-get install -y git >/dev/null 2>&1 || {
+                    printf "\\033[1;31m[-] Error: Failed to install git. Cannot proceed with GitHub install.\\033[0m\\n"
+                    # Skip GitHub install if git fails
+                    return
+                }
+            fi
+
+            cd /tmp || { printf "\\033[1;31m[-] Error: Cannot change directory to /tmp.\\033[0m\\n"; return; }
+            printf "Cloning rkhunter from GitHub...\\n"
+            if git clone https://github.com/rootkitHunter/rkhunter.git rkhunter_github_clone >/dev/null 2>&1; then
+                cd rkhunter_github_clone || { printf "\\033[1;31m[-] Error: Cannot change directory to rkhunter_github_clone.\\033[0m\\n"; return; }
+                printf "Running rkhunter installer...\\n"
+                if ./installer.sh --install >/dev/null 2>&1; then
+                    printf "\\033[1;32m[+] rkhunter installed successfully from GitHub.\\033[0m\\n"
+                else
+                    printf "\\033[1;31m[-] Error: rkhunter installer failed.\\033[0m\\n"
+                fi
+                cd .. && rm -rf rkhunter_github_clone
+            else
+                printf "\\033[1;31m[-] Error: Failed to clone rkhunter from GitHub.\\033[0m\\n"
+            fi
+        fi
+    else
+        printf "\\033[1;32m[+] rkhunter package is already installed.\\033[0m\\n"
+    fi
+
+    if command -v rkhunter >/dev/null 2>&1; then
+        # Configure rkhunter first
+        sed -i 's/#CRON_DAILY_RUN=""/CRON_DAILY_RUN="true"/' /etc/default/rkhunter 2>/dev/null || true
+        
+        # Update the configuration and database
+        rkhunter --configcheck >/dev/null 2>&1 || true
+        rkhunter --update --nocolors >/dev/null 2>&1 || {
+            printf "Warning: Failed to update rkhunter database.\\n"
+        }
+        rkhunter --propupd --nocolors >/dev/null 2>&1 || {
+            printf "Warning: Failed to update rkhunter properties.\\n"
+        }
+    else
+        printf "Warning: rkhunter not found, skipping configuration.\\n"
+    fi
+    
+    ######################## STIG-PAM Password Quality
     printf "Configuring PAM password quality...\\n"
     if [ -f /etc/pam.d/common-password ]; then
         if ! grep -q "pam_pwquality.so" /etc/pam.d/common-password; then
@@ -248,103 +689,476 @@ setup_security(){
     else
         printf "Warning: /etc/pam.d/common-password not found, skipping PAM configuration...\\n"
     fi
-
-    # umask for users
-    printf "Setting umask for users...\\n"
-    if [ -f /etc/profile ]; then
-        if ! grep -q "umask 027" /etc/profile; then
-            echo "umask 027" >> /etc/profile
-        fi
-    else
-        printf "Warning: /etc/profile not found, skipping umask configuration...\\n"
-    fi
-
-    # Set password expiration policies for users [AUTH-9282]
-    printf "\\n\\033[1;31m[+] Setting password expiration policies (AUTH-9282)...\\033[0m\\n"
     
-    local MAX_DAYS=90
-    local MIN_DAYS=7
-    local WARN_DAYS=14
-
-    # Iterate over users with UID >= 1000 and a valid login shell
-    # Excludes system accounts and accounts with nologin/false shells
-    getent passwd | awk -F: '$3 >= 1000 && $7 !~ /(\/nologin|\/false)$/ {print $1}' | while IFS= read -r username; do
-        if id "$username" >/dev/null 2>&1; then # Check if user actually exists
-            printf "  [*] Configuring password expiration for user: %s\\n" "$username"
-            
-            # Set Max/Min password age and Warning period
-            if chage -M "$MAX_DAYS" -m "$MIN_DAYS" -W "$WARN_DAYS" "$username"; then
-                printf "    [+] Password expiration policies (Max:%s, Min:%s, Warn:%s days) set for user %s.\\n" "$MAX_DAYS" "$MIN_DAYS" "$WARN_DAYS" "$username"
-            else
-                printf "    \\033[1;31m[-] Failed to set password expiration policies for user %s. Check chage output for details.\\033[0m\\n" "$username"
-            fi
-        else
-            printf "  [!] User %s (from getent passwd) not found by id command. Skipping.\\n" "$username"
-        fi
-    done
-    printf "\\033[1;32m[+] Password expiration policy configuration attempt completed for relevant users.\\033[0m\\n"
-    
-    # libvirt and KVM
+    #############################   libvirt and KVM
     printf "Configuring libvirt...\\n"
     systemctl enable libvirtd
     systemctl start libvirtd
     usermod -a -G libvirt "$name" >/dev/null 2>&1 || true
     
-    # chkrootkit
-    printf "Configuring chkrootkit...\\n"
-    if ! grep -q "chkrootkit" /etc/crontab; then
-        echo "0 3 * * * root /usr/sbin/chkrootkit" >> /etc/crontab
-    fi
+    ################################### OpenSSH Server
+    printf "Configuring OpenSSH...\\n"
+    sed -i 's/#PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
+    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
+    sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+    sed -i 's/#Protocol 2/Protocol 2/' /etc/ssh/sshd_config
+    sed -i 's/#MaxAuthTries 6/MaxAuthTries 3/' /etc/ssh/sshd_config
+    systemctl restart ssh || systemctl restart sshd
     
-    # auditd
-    printf "Configuring auditd...\\n"
-    if dpkg -s auditd >/dev/null 2>&1; then
-        if systemctl enable auditd >/dev/null 2>&1; then
-            printf "\\033[1;32m[+] auditd service enabled successfully\\033[0m\\n"
-        else
-            printf "\\033[1;31m[-] Failed to enable auditd service\\033[0m\\n"
-        fi
-        
-        if systemctl start auditd >/dev/null 2>&1; then
-            printf "\\033[1;32m[+] auditd service started successfully\\033[0m\\n"
-        else
-            printf "\\033[1;31m[-] Failed to start auditd service\\033[0m\\n"
-        fi
-        
-        if command -v auditctl >/dev/null 2>&1; then
-            if auditctl -e 1 >/dev/null 2>&1; then
-                printf "\\033[1;32m[+] auditd enabled successfully\\033[0m\\n"
+    ####################################### chkrootkit
+    printf "Configuring chkrootkit...\\n"
+    if ! command -v chkrootkit >/dev/null 2>&1; then
+        printf "\\033[1;33m[*] chkrootkit package not found. Attempting to download and install from chkrootkit.org...\\033[0m\\n"
+        local download_url="https://www.chkrootkit.org/dl/chkrootkit.tar.gz"
+        local download_dir="/tmp/chkrootkit_install"
+        local tar_file="$download_dir/chkrootkit.tar.gz"
+
+        mkdir -p "$download_dir"
+        cd "$download_dir" || { printf "\\033[1;31m[-] Error: Cannot change directory to %s.\\033[0m\\n" "$download_dir"; return 1; }
+
+        printf "Downloading %s...\\n" "$download_url"
+        if wget -q "$download_url" -O "$tar_file"; then
+            printf "\\033[1;32m[+] Download successful.\\033[0m\\n"
+            printf "Extracting...\\n"
+            if tar -xzf "$tar_file" -C "$download_dir"; then
+                printf "\\033[1;32m[+] Extraction successful.\\033[0m\\n"
+                local extracted_dir
+                extracted_dir=$(tar -tf "$tar_file" | head -1 | cut -f1 -d/)
+                
+                if [[ -d "$download_dir/$extracted_dir" ]]; then
+                    cd "$download_dir/$extracted_dir" || { printf "\\033[1;31m[-] Error: Cannot change directory to extracted folder.\\033[0m\\n"; return 1; }
+                    printf "Running chkrootkit installer...\\n"
+                    # The installer script might not exist or be named differently,
+                    # or installation might just involve copying files.
+                    # A common approach is to just copy the main script and man page.
+                    if [[ -f "chkrootkit" ]]; then
+                        cp chkrootkit /usr/local/sbin/
+                        chmod +x /usr/local/sbin/chkrootkit
+                        if [[ -f "chkrootkit.8" ]]; then
+                            cp chkrootkit.8 /usr/local/share/man/man8/
+                            mandb >/dev/null 2>&1 || true
+                        fi
+                        printf "\\033[1;32m[+] chkrootkit installed to /usr/local/sbin.\\033[0m\\n"
+                    else
+                         printf "\\033[1;31m[-] Error: chkrootkit script not found in extracted directory.\\033[0m\\n"
+                    fi
+                else
+                    printf "\\033[1;31m[-] Error: Extracted directory not found.\\033[0m\\n"
+                fi
             else
-                printf "\\033[1;31m[-] Failed to enable auditd\\033[0m\\n"
+                printf "\\033[1;31m[-] Error: Failed to extract %s.\\033[0m\\n" "$tar_file"
             fi
         else
-            printf "\\033[1;33m[!] Warning: auditctl command not found\\033[0m\\n"
+            printf "\\033[1;31m[-] Error: Failed to download %s.\\033[0m\\n" "$download_url"
+        fi
+
+        # Clean up temporary files
+        cd /tmp || true # Move out of the download directory before removing
+        rm -rf "$download_dir"
+    else
+        printf "\\033[1;32m[+] chkrootkit package is already installed.\\033[0m\\n"
+    fi
+
+    # Add chkrootkit check to daily cron if the command exists
+    if command -v chkrootkit >/dev/null 2>&1; then
+        # Ensure the path in crontab matches the installation path
+        if ! grep -q "/usr/local/sbin/chkrootkit" /etc/crontab; then
+            echo "0 3 * * * root /usr/local/sbin/chkrootkit 2>&1 | logger -t chkrootkit" >> /etc/crontab
+            printf "\\033[1;32m[+] chkrootkit daily check added to crontab.\\033[0m\\n"
+        else
+            printf "\\033[1;34m[*] chkrootkit already in crontab.\\033[0m\\n"
         fi
     else
-        printf "\\033[1;33m[!] Warning: auditd not installed, skipping configuration...\\033[0m\\n"
+        printf "\\033[1;31m[-] chkrootkit command not found after installation attempt, skipping cron configuration.\\033[0m\\n"
     fi
     
-    # Suricata
-    printf "Configuring Suricata...\\n"
-    if systemctl enable suricata; then
-        printf "\\033[1;32m[+] Suricata service enabled successfully\\033[0m\\n"
+    ###################################### auditd
+    printf "Configuring auditd...\\n"
+    # Check if auditd package is installed
+    if dpkg -s auditd >/dev/null 2>&1; then
+        printf "\\033[1;32m[+] auditd package is installed.\\033[0m\\n"
+
+        # Check if the service unit file exists before trying to enable/start
+        if systemctl list-unit-files --type=service | grep -q '^auditd\.service'; then
+            printf "\\033[1;34m[*] Enabling and starting auditd service...\\033[0m\\n"
+            systemctl enable auditd >/dev/null 2>&1
+            systemctl start auditd >/dev/null 2>&1
+            if systemctl is-active --quiet auditd; then
+                 printf "\\033[1;32m[+] auditd service enabled and started.\\033[0m\\n"
+            else
+                 printf "\\033[1;33m[!] Warning: Failed to start auditd service.\\033[0m\\n"
+            fi
+        else
+            printf "\\033[1;33m[!] Warning: auditd.service not found, skipping service enable/start.\\033[0m\\n"
+        fi
+
+        # Enable auditing via auditctl (if command exists)
+        if command -v auditctl >/dev/null 2>&1; then
+            printf "\\033[1;34m[*] Attempting to enable auditd system via auditctl...\\033[0m\\n"
+            # -e 1 enables auditing
+            if auditctl -e 1 >/dev/null 2>&1; then
+                printf "\\033[1;32m[+] auditd system enabled successfully via auditctl.\\033[0m\\n"
+            else
+                printf "\\033[1;31m[-] Failed to enable auditd system via auditctl. Check auditd status and configuration.\\033[0m\\n"
+            fi
+        else
+            printf "\\033[1;33m[!] Warning: auditctl command not found. Cannot verify/enable audit system status.\\033[0m\\n"
+        fi
+
+        # Configure specific audit rules (/etc/audit/audit.rules) based on STIG
+        # Note: Rules optimized to reduce system impact while maintaining security
+        printf "\\033[1;34m[*] Configuring optimized auditd rules based on STIG...\\033[0m\\n"
+        local audit_rules_file="/etc/audit/audit.rules"
+
+        # Backup existing rules
+        if [ -f "$audit_rules_file" ]; then
+            cp "$audit_rules_file" "${audit_rules_file}.bak.$(date +%F-%T)" 2>/dev/null || true
+            printf "\\033[1;32m[+] Backed up existing audit rules to %s.bak.\\033[0m\\n" "$audit_rules_file"
+        fi
+
+        ##################### START OF RULESET
+        cat > "$audit_rules_file" << 'EOF'
+# This file is automatically generated by HARDN-XDR for STIG compliance.
+# Any manual changes may be overwritten.
+# 
+# Note: This configuration has been optimized to reduce system impact while
+# maintaining essential security monitoring. Removed overly strict rules that
+# could cause performance degradation or excessive logging.
+
+# Remove any existing rules
+-D
+
+# Increase the buffers to absorb a larger burst of events
+-b 8192
+
+# Set failure mode to syslog
+-f 1
+
+# Audit system startup and shutdown
+-w /sbin/init -p x -k system-lifecycle
+-w /sbin/reboot -p x -k system-lifecycle
+-w /sbin/halt -p x -k system-lifecycle
+-w /sbin/poweroff -p x -k system-lifecycle
+-w /usr/sbin/shutdown -p x -k system-lifecycle
+
+# Audit account, group, and authentication database changes
+-w /etc/passwd -p wa -k identity
+-w /etc/shadow -p wa -k identity
+-w /etc/group -p wa -k identity
+-w /etc/gshadow -p wa -k identity
+-w /etc/security/opasswd -p wa -k identity
+-a always,exit -F arch=b64 -S sethostname -S setdomainname -k system-info
+-a always,exit -F arch=b32 -S sethostname -S setdomainname -k system-info
+
+# Audit changes to system configuration files
+-w /etc/sysconfig/ -p wa -k system-config
+-w /etc/default/ -p wa -k system-config
+-w /etc/security/ -p wa -k system-config
+-w /etc/pam.d/ -p wa -k system-config
+-w /etc/login.defs -p wa -k system-config
+-w /etc/bashrc -p wa -k system-config
+-w /etc/profile -p wa -k system-config
+-w /etc/csh.cshrc -p wa -k system-config
+-w /etc/csh.login -p wa -k system-config
+-w /etc/crontab -p wa -k system-config
+-w /etc/at.allow -p wa -k system-config
+-w /etc/at.deny -p wa -k system-config
+-w /etc/cron.allow -p wa -k system-config
+-w /etc/cron.deny -p wa -k system-config
+-w /etc/cron.d/ -p wa -k system-config
+-w /etc/cron.hourly/ -p wa -k system-config
+-w /etc/cron.daily/ -p wa -k system-config
+-w /etc/cron.weekly/ -p wa -k system-config
+-w /etc/cron.monthly/ -p wa -k system-config
+-w /etc/anacrontab -p wa -k system-config
+-w /var/spool/cron/crontabs/ -p wa -k system-config
+-w /etc/ssh/sshd_config -p wa -k system-config
+-w /etc/sysctl.conf -p wa -k system-config
+-w /etc/modprobe.d/ -p wa -k system-config
+-w /etc/apt/sources.list -p wa -k system-config
+-w /etc/apt/sources.list.d/ -p wa -k system-config
+-w /etc/resolv.conf -p wa -k system-config
+-w /etc/hosts -p wa -k system-config
+-w /etc/network/interfaces -p wa -k system-config
+-w /etc/fstab -p wa -k system-config
+
+# Audit module loading and unloading
+-w /sbin/insmod -p x -k modules
+-w /sbin/rmmod -p x -k modules
+-w /sbin/modprobe -p x -k modules
+-a always,exit -F arch=b64 -S init_module -S delete_module -k modules
+-a always,exit -F arch=b32 -S init_module -S delete_module -k modules
+
+# Audit login/logout and session information
+-w /var/log/faillog -p wa -k logins
+-w /var/log/lastlog -p wa -k logins
+-w /var/log/tallylog -p wa -k logins
+-w /var/run/utmp -p wa -k session
+-w /var/log/wtmp -p wa -k session
+-w /var/log/btmp -p wa -k session
+
+# Audit privilege escalation (sudo, su)
+-w /usr/bin/sudo -p x -k privilege-escalation
+-w /usr/bin/su -p x -k privilege-escalation
+
+# Audit changes to audit configuration
+-w /etc/audit/auditd.conf -p wa -k audit-config
+-w /etc/audit/audit.rules -p wa -k audit-config
+
+# Audit use of privileged commands (specific, not broad directory monitoring)
+-w /bin/mount -p x -k privileged-command
+-w /bin/umount -p x -k privileged-command
+-w /usr/bin/passwd -p x -k privileged-command
+-w /usr/bin/chsh -p x -k privileged-command
+-w /usr/bin/gpasswd -p x -k privileged-command
+
+# Audit critical file deletions by user (focused on critical files)
+-a always,exit -F arch=b64 -S unlink,unlinkat,rename,renameat -F dir=/etc -F auid>=1000 -F auid!=unset -k config-file-delete
+-a always,exit -F arch=b32 -S unlink,unlinkat,rename,renameat -F dir=/etc -F auid>=1000 -F auid!=unset -k config-file-delete
+
+# Audit system time changes
+-a always,exit -F arch=b64 -S adjtimex,settimeofday,clock_settime -k time-change
+-a always,exit -F arch=b32 -S adjtimex,settimeofday,clock_settime -k time-change
+-w /etc/localtime -p wa -k time-change
+
+# Audit network configuration changes (simplified)
+-a always,exit -F arch=b64 -S sethostname,setdomainname -k network-config
+-a always,exit -F arch=b32 -S sethostname,setdomainname -k network-config
+-w /etc/sysconfig/network -p wa -k network-config
+-w /etc/sysconfig/network-scripts/ -p wa -k network-config
+
+# Audit mount and unmount operations
+-a always,exit -F arch=b64 -S mount,umount,umount2 -k mounts
+-a always,exit -F arch=b32 -S mount,umount,umount2 -k mounts
+
+# Audit use of the ptrace syscall (debugging/tracing)
+-a always,exit -F arch=b64 -S ptrace -k ptrace
+-a always,exit -F arch=b32 -S ptrace -k ptrace
+
+# Audit use of the setuid/setgid/setresuid/setresgid syscalls
+-a always,exit -F arch=b64 -S setuid,setgid,setresuid,setresgid -k user-id-change
+-a always,exit -F arch=b32 -S setuid,setgid,setresuid,setresgid -k user-id-change
+
+# Audit chroot operations
+-a always,exit -F arch=b64 -S chroot -k chroot
+-a always,exit -F arch=b32 -S chroot -k chroot
+
+# Audit system lifecycle operations
+-a always,exit -F arch=b64 -S reboot -k system-lifecycle
+-a always,exit -F arch=b32 -S reboot -k system-lifecycle
+
+# Audit namespace operations (containerization security)
+-a always,exit -F arch=b64 -S setns,unshare -k namespaces
+-a always,exit -F arch=b32 -S setns,unshare -k namespaces
+
+# Audit final immutable rule
+-e 2
+EOF
+        # END OF RULESET
+
+        # Load the new rules
+        printf "\\033[1;34m[*] Loading new auditd rules...\\033[0m\\n"
+        if auditctl -R "$audit_rules_file" >/dev/null 2>&1; then
+            printf "\\033[1;32m[+] New auditd rules loaded successfully.\\033[0m\\n"
+        else
+            printf "\\033[1;31m[-] Failed to load new auditd rules. Check the rules file for syntax errors.\\033[0m\\n"
+        fi
+
     else
-        printf "\\033[1;31m[-] Failed to enable Suricata service\\033[0m\\n"
+        printf "\\033[1;33m[!] Warning: auditd is not installed (checked with dpkg -s). Skipping configuration.\\033[0m\\n"
+        printf "\\033[1;33m[!] Please ensure auditd is listed in ../../progs.csv for installation.\\033[0m\\n"
     fi
+    printf "\\033[1;32m[+] auditd configuration attempt completed.\\033[0m\\n"
+
+
     
-    if suricata-update >/dev/null 2>&1; then
-        printf "\\033[1;32m[+] Suricata rules updated successfully\\033[0m\\n"
+    ####################################### Suricata
+    printf "\\033[1;31m[+] Checking and configuring Suricata...\\033[0m\\n"
+
+    # Check if Suricata is already installed via package manager
+    if dpkg -s suricata >/dev/null 2>&1; then
+        printf "\\033[1;32m[+] Suricata package is already installed.\\033[0m\\n"
     else
-        printf "\\033[1;33m[!] Warning: Suricata rules update failed\\033[0m\\n"
+        printf "\\033[1;33m[*] Suricata package not found. Attempting to install from source...\\033[0m\\n"
+
+        local suricata_version="7.0.0" # Specify the desired version
+        local download_url="https://www.suricata-ids.org/download/releases/suricata-${suricata_version}.tar.gz"
+        local download_dir="/tmp/suricata_install"
+        local tar_file="$download_dir/suricata-${suricata_version}.tar.gz"
+        local extracted_dir="suricata-${suricata_version}"
+
+        # Ensure necessary build dependencies are installed
+        printf "\\033[1;34m[*] Installing Suricata build dependencies...\\033[0m\\n"
+        if ! apt-get update >/dev/null 2>&1 || ! apt-get install -y \
+            build-essential libpcap-dev libnet1-dev libyaml-0-2 libyaml-dev zlib1g zlib1g-dev \
+            libcap-ng-dev libmagic-dev libjansson-dev libnss3-dev liblz4-dev libtool \
+            libnfnetlink-dev libevent-dev pkg-config libhiredis-dev libczmq-dev \
+            python3 python3-yaml python3-setuptools python3-pip python3-dev \
+            rustc cargo >/dev/null 2>&1; then
+            printf "\\033[1;31m[-] Error: Failed to install Suricata build dependencies. Skipping Suricata configuration.\\033[0m\\n"
+            return 1
+        fi
+        printf "\\033[1;32m[+] Suricata build dependencies installed.\\033[0m\\n"
+
+        mkdir -p "$download_dir"
+        cd "$download_dir" || { printf "\\033[1;31m[-] Error: Cannot change directory to %s.\\033[0m\\n" "$download_dir"; return 1; }
+
+        printf "Downloading %s...\\n" "$download_url"
+        if wget -q "$download_url" -O "$tar_file"; then
+            printf "\\033[1;32m[+] Download successful.\\033[0m\\n"
+            printf "Extracting...\\n"
+            if tar -xzf "$tar_file" -C "$download_dir"; then
+                printf "\\033[1;32m[+] Extraction successful.\\033[0m\\n"
+
+                if [[ -d "$download_dir/$extracted_dir" ]]; then
+                    cd "$download_dir/$extracted_dir" || { printf "\\033[1;31m[-] Error: Cannot change directory to extracted folder.\\033[0m\\n"; return 1; }
+
+                    printf "Running ./configure...\\n"
+                    # Configure with specified options
+                    if ./configure \
+                        --prefix=/usr \
+                        --sysconfdir=/etc \
+                        --localstatedir=/var \
+                        --disable-gccmarch-native \
+                        --enable-lua \
+                        --enable-geoip \
+                        > /dev/null 2>&1; then # Added common options and suppressed output
+                        printf "\\033[1;32m[+] Configure successful.\\033[0m\\n"
+
+                        printf "Running make...\\n"
+                        if make > /dev/null 2>&1; then # Suppressed output
+                            printf "\\033[1;32m[+] Make successful.\\033[0m\\n"
+
+                            printf "Running make install...\\n"
+                            if make install > /dev/null 2>&1; then # Suppressed output
+                                printf "\\033[1;32m[+] Suricata installed successfully from source.\\033[0m\\n"
+                                # Ensure libraries are found
+                                ldconfig >/dev/null 2>&1 || true
+                            else
+                                printf "\\033[1;31m[-] Error: make install failed.\\033[0m\\n"
+                                cd /tmp || true # Move out before cleanup
+                                rm -rf "$download_dir"
+                                return 1
+                            fi
+                        else
+                            printf "\\033[1;31m[-] Error: make failed.\\033[0m\\n"
+                            cd /tmp || true # Move out before cleanup
+                            rm -rf "$download_dir"
+                            return 1
+                        fi
+                    else
+                        printf "\\033[1;31m[-] Error: ./configure failed.\\033[0m\\n"
+                        cd /tmp || true # Move out before cleanup
+                        rm -rf "$download_dir"
+                        return 1
+                    fi
+                else
+                    printf "\\033[1;31m[-] Error: Extracted directory not found.\\033[0m\\n"
+                    cd /tmp || true # Move out before cleanup
+                    rm -rf "$download_dir"
+                    return 1
+                fi
+            else
+                printf "\\033[1;31m[-] Error: Failed to extract %s.\\033[0m\\n" "$tar_file"
+                cd /tmp || true # Move out before cleanup
+                rm -rf "$download_dir"
+                return 1
+            fi
+        else
+            printf "\\033[1;31m[-] Error: Failed to download %s.\\033[0m\\n" "$download_url"
+            cd /tmp || true # Move out before cleanup
+            rm -rf "$download_dir"
+            return 1
+        fi
+
+        # Clean up temporary files
+        cd /tmp || true # Move out of the download directory before removing
+        rm -rf "$download_dir"
     fi
+
+    # If Suricata is installed (either found via dpkg or just installed from source)
+    if command -v suricata >/dev/null 2>&1; then
+        printf "Configuring Suricata...\\n"
+
+        # Ensure the default configuration directory exists and has default files
+        if [ ! -d /etc/suricata ]; then
+            printf "\\033[1;33m[*] Creating /etc/suricata and copying default config...\\033[0m\\n"
+            mkdir -p /etc/suricata
     
-    if systemctl start suricata; then
-        printf "\\033[1;32m[+] Suricata service started successfully\\033[0m\\n"
+            if [ ! -f /etc/suricata/suricata.yaml ]; then
+                 printf "\\033[1;31m[-] Error: Suricata default configuration file /etc/suricata/suricata.yaml not found after installation. Skipping configuration.\\033[0m\\n"
+                 return 1
+            fi
+        fi
+
+        # Enable the service (assuming systemd service file was installed by make install)
+        if systemctl enable suricata >/dev/null 2>&1; then
+            printf "\\033[1;32m[+] Suricata service enabled successfully.\\033[0m\\n"
+        else
+            printf "\\033[1;31m[-] Failed to enable Suricata service. Check if the service file exists (e.g., /lib/systemd/system/suricata.service).\\033[0m\\n"
+        fi
+
+        # Update rules
+        printf "\\033[1;34m[*] Running suricata-update...\\033[0m\\n"
+        # suricata-update might need python dependencies, ensure they are installed
+        if ! command -v suricata-update >/dev/null 2>&1; then
+             printf "\\033[1;33m[*] suricata-update command not found. Attempting to install...\\033[0m\\n"
+             if pip3 install --upgrade pip >/dev/null 2>&1 && pip3 install --upgrade suricata-update >/dev/null 2>&1; then
+                 printf "\\033[1;32m[+] suricata-update installed successfully via pip3.\\033[0m\\n"
+             else
+                 printf "\\033[1;31m[-] Error: Failed to install suricata-update via pip3. Skipping rule update.\\033[0m\\n"
+             fi
+        fi
+
+        if command -v suricata-update >/dev/null 2>&1; then
+            if suricata-update >/dev/null 2>&1; then
+                printf "\\033[1;32m[+] Suricata rules updated successfully.\\033[0m\\n"
+            else
+                printf "\\033[1;33m[!] Warning: Suricata rules update failed. Check output manually.\\033[0m\\n"
+            fi
+        else
+             printf "\\033[1;31m[-] suricata-update command not available, skipping rule update.\\033[0m\\n"
+        fi
+
+        # Start the service
+        if systemctl start suricata >/dev/null 2>&1; then
+            printf "\\033[1;32m[+] Suricata service started successfully.\\033[0m\\n"
+        else
+            printf "\\033[1;31m[-] Failed to start Suricata service. Check logs for details.\\033[0m\\n"
+        fi
     else
-        printf "\\033[1;31m[-] Failed to start Suricata service\\033[0m\\n"
+        printf "\\033[1;31m[-] Suricata command not found after installation attempt, skipping configuration.\\033[0m\\n"
+    fi
+
+    ########################### debsums
+    printf "Configuring debsums...\\n"
+    if command -v debsums >/dev/null 2>&1; then
+        if debsums_init >/dev/null 2>&1; then
+            printf "\\033[1;32m[+] debsums initialized successfully\\033[0m\\n"
+        else
+            printf "\\033[1;31m[-] Failed to initialize debsums\\033[0m\\n"
+        fi
+        
+        # Add debsums check to daily cron
+        if ! grep -q "debsums" /etc/crontab; then
+            echo "0 4 * * * root /usr/bin/debsums -s 2>&1 | logger -t debsums" >> /etc/crontab
+            printf "\\033[1;32m[+] debsums daily check added to crontab\\033[0m\\n"
+        else
+            printf "\\033[1;33m[!] debsums already in crontab\\033[0m\\n"
+        fi
+        
+        # Run initial check
+        printf "Running initial debsums check...\\n"
+        if debsums -s >/dev/null 2>&1; then
+            printf "\\033[1;32m[+] Initial debsums check completed successfully\\033[0m\\n"
+        else
+            printf "\\033[1;33m[!] Warning: Some packages failed debsums verification\\033[0m\\n"
+        fi
+    else
+        printf "\\033[1;31m[-] debsums command not found, skipping configuration\\033[0m\\n"
     fi
     
-    # AIDE (Advanced Intrusion Detection Environment)
+    ############################## AIDE (Advanced Intrusion Detection Environment)
     if ! dpkg -s aide >/dev/null 2>&1; then
         printf "Installing and configuring AIDE...\\n"
         apt install -y aide >/dev/null 2>&1
@@ -355,20 +1169,226 @@ setup_security(){
     else
         printf "\\033[1;33m[!] AIDE already installed, skipping configuration...\\033[0m\\n"
     fi
-    # libpam-tmpdir
+    ################################ STIG-PAM
+    printf "\\033[1;31m[+] Setting basic STIG compliant PAM rules...\\033[0m\\n"
+
+    # Configure pam_faillock for account lockout
+    printf "Configuring pam_faillock for account lockout...\\n"
+    if [ -f /etc/pam.d/common-auth ]; then
+        # Add pam_faillock.so to common-auth (before pam_unix.so)
+        if ! grep -q "pam_faillock.so" /etc/pam.d/common-auth; then
+            sed -i '/^auth.*pam_unix.so/i auth       required      pam_faillock.so preauth silent audit deny=5 unlock_time=900' /etc/pam.d/common-auth
+            sed -i '/^auth.*pam_unix.so/a auth       [default=die] pam_faillock.so authfail audit deny=5 unlock_time=900' /etc/pam.d/common-auth
+            printf "\\033[1;32m[+] Added pam_faillock.so to /etc/pam.d/common-auth.\\033[0m\\n"
+        else
+            printf "\\033[1;34m[*] pam_faillock.so already configured in /etc/pam.d/common-auth.\\033[0m\\n"
+        fi
+    else
+        printf "\\033[1;33m[!] Warning: /etc/pam.d/common-auth not found, skipping pam_faillock auth configuration...\\033[0m\\n"
+    fi
+
+    if [ -f /etc/pam.d/common-account ]; then
+        # Add pam_faillock.so to common-account (before pam_unix.so)
+        if ! grep -q "pam_faillock.so" /etc/pam.d/common-account; then
+            sed -i '/^account.*pam_unix.so/i account    required      pam_faillock.so' /etc/pam.d/common-account
+            printf "\\033[1;32m[+] Added pam_faillock.so to /etc/pam.d/common-account.\\033[0m\\n"
+        else
+            printf "\\033[1;34m[*] pam_faillock.so already configured in /etc/pam.d/common-account.\\033[0m\\n"
+        fi
+    else
+        printf "\\033[1;33m[!] Warning: /etc/pam.d/common-account not found, skipping pam_faillock account configuration...\\033[0m\\n"
+    fi
+
+    # Configure pam_limits for session limits
+    printf "Configuring pam_limits for session limits...\\n"
+    if [ -f /etc/pam.d/common-session ]; then
+        if ! grep -q "pam_limits.so" /etc/pam.d/common-session; then
+            echo "session    required      pam_limits.so" >> /etc/pam.d/common-session
+            printf "\\033[1;32m[+] Added pam_limits.so to /etc/pam.d/common-session.\\033[0m\\n"
+        else
+            printf "\\033[1;34m[*] pam_limits.so already configured in /etc/pam.d/common-session.\\033[0m\\n"
+        fi
+    else
+        printf "\\033[1;33m[!] Warning: /etc/pam.d/common-session not found, skipping pam_limits configuration...\\033[0m\\n"
+    fi
+
+    # Configure pam_lastlog for login notifications
+    printf "Configuring pam_lastlog for login notifications...\\n"
+    if [ -f /etc/pam.d/common-session ]; then
+        if ! grep -q "pam_lastlog.so" /etc/pam.d/common-session; then
+            echo "session    optional      pam_lastlog.so" >> /etc/pam.d/common-session
+            printf "\\033[1;32m[+] Added pam_lastlog.so to /etc/pam.d/common-session.\\033[0m\\n"
+        else
+            printf "\\033[1;34m[*] pam_lastlog.so already configured in /etc/pam.d/common-session.\\033[0m\\n"
+        fi
+    else
+        printf "\\033[1;33m[!] Warning: /etc/pam.d/common-session not found, skipping pam_lastlog configuration...\\033[0m\\n"
+    fi
+
+    # Keep pam_tmpdir configuration as requested
     printf "Configuring PAM tmpdir...\\n"
     if [ -f /etc/pam.d/common-session ]; then
         if ! grep -q "pam_tmpdir.so" /etc/pam.d/common-session; then
             echo "session optional pam_tmpdir.so" >> /etc/pam.d/common-session
+            printf "\\033[1;32m[+] Added pam_tmpdir.so to /etc/pam.d/common-session.\\033[0m\\n"
+        else
+            printf "\\033[1;34m[*] pam_tmpdir.so already configured in /etc/pam.d/common-session.\\033[0m\\n"
         fi
     else
-        printf "Warning: /etc/pam.d/common-session not found, skipping PAM tmpdir configuration...\\n"
+        printf "\\033[1;33m[!] Warning: /etc/pam.d/common-session not found, skipping PAM tmpdir configuration...\\033[0m\\n"
+    fi
+
+    printf "\\033[1;32m[+] Basic STIG compliant PAM rules configuration attempt completed.\\033[0m\\n"
+    #################################### YARA
+    printf "\\033[1;31m[+] Setting up YARA rules...\\033[0m\\n"
+
+    # Check if YARA command exists (implies installation)
+    if ! command -v yara >/dev/null 2>&1; then
+        printf "\\033[1;33m[!] Warning: YARA command not found. Skipping rule setup.\\033[0m\\n"
+        # YARA should be installed via install_package_dependencies if listed in progs.csv
+        # If it's not installed, we can't set up rules anyway.
+    else
+        printf "\\033[1;32m[+] YARA command found.\\033[0m\\n"
+        printf "\\033[1;34m[*] Creating YARA rules directory...\\033[0m\\n"
+        mkdir -p /etc/yara/rules
+        chmod 755 /etc/yara/rules # Ensure directory is accessible
+
+        printf "\\033[1;34m[*] Checking for git...\\033[0m\\n"
+        if ! command -v git >/dev/null 2>&1; then
+            printf "\\033[1;33m[*] git not found. Attempting to install...\\033[0m\\n"
+            if apt-get update >/dev/null 2>&1 && apt-get install -y git >/dev/null 2>&1; then
+                printf "\\033[1;32m[+] git installed successfully.\\033[0m\\n"
+            else
+                printf "\\033[1;31m[-] Error: Failed to install git. Cannot download YARA rules.\\033[0m\\n"
+                return 1 # Exit this section
+            fi
+        else
+            printf "\\033[1;32m[+] git command found.\\033[0m\\n"
+        fi
+
+        local rules_repo_url="https://github.com/Yara-Rules/rules.git"
+        local temp_dir
+        temp_dir=$(mktemp -d -t yara-rules-XXXXXXXX)
+
+        if [[ ! -d "$temp_dir" ]]; then
+            printf "\\033[1;31m[-] Error: Failed to create temporary directory for YARA rules.\\033[0m\\n"
+            return 1 # Exit this section
+        fi
+
+        printf "\\033[1;34m[*] Cloning YARA rules from %s to %s...\\033[0m\\n" "$rules_repo_url" "$temp_dir"
+        if git clone --depth 1 "$rules_repo_url" "$temp_dir" >/dev/null 2>&1; then
+            printf "\\033[1;32m[+] YARA rules cloned successfully.\\033[0m\\n"
+
+            printf "\\033[1;34m[*] Copying .yar rules to /etc/yara/rules/...\\033[0m\\n"
+            local copied_count=0
+            # Find all .yar files in the cloned repo and copy them
+            while IFS= read -r -d $'\0' yar_file; do
+                if cp "$yar_file" /etc/yara/rules/; then
+                    ((copied_count++))
+                else
+                    printf "\\033[1;33m[!] Warning: Failed to copy rule file: %s\\033[0m\\n" "$yar_file"
+                fi
+            done < <(find "$temp_dir" -name "*.yar" -print0)
+
+            if [[ "$copied_count" -gt 0 ]]; then
+                printf "\\033[1;32m[+] Copied %s YARA rule files to /etc/yara/rules/.\\033[0m\\n" "$copied_count"
+            else
+                 printf "\\033[1;33m[!] Warning: No .yar files found or copied from the repository.\\033[0m\\n"
+            fi
+
+        else
+            printf "\\033[1;31m[-] Error: Failed to clone YARA rules repository.\\033[0m\\n"
+        fi
+
+        printf "\\033[1;34m[*] Cleaning up temporary directory %s...\\033[0m\\n" "$temp_dir"
+        rm -rf "$temp_dir"
+        printf "\\033[1;32m[+] Cleanup complete.\\033[0m\\n"
+
+        printf "\\033[1;32m[+] YARA rules setup attempt completed.\\033[0m\\n"
     fi
     
-    # YARA
-    printf "YARA installed and ready for custom rules...\\n"
-    mkdir -p /etc/yara/rules
+
+    ######################### STIG banner (/etc/issue.net)
+    printf "\\033[1;31m[+] Configuring STIG compliant banner for remote logins (/etc/issue.net)...\\033[0m\\n"
+    local banner_net_file="/etc/issue.net"
+    if [ -f "$banner_net_file" ]; then
+        # Backup existing banner file
+        cp "$banner_net_file" "${banner_net_file}.bak.$(date +%F-%T)" 2>/dev/null || true
+    else
+        touch "$banner_net_file"
+    fi
+    # Write the STIG compliant banner
+    {
+        echo "************************************************************"
+        echo "*                                                          *"
+        echo "*  This system is for the use of authorized users only.    *"
+        echo "*  Individuals using this computer system without authority *"
+        echo "*  or in excess of their authority are subject to having    *"
+        echo "*  all of their activities on this system monitored and     *"
+        echo "*  recorded by system personnel.                            *"
+        echo "*                                                          *"
+        echo "************************************************************"
+    } > "$banner_net_file"
+    chmod 644 "$banner_net_file"
+    printf "\\033[1;32m[+] STIG compliant banner configured in %s.\\033[0m\\n" "$banner_net_file"
+
+
+
+    ##################################### SELinux
+    printf "Configuring SELinux...\\n"
+
+    # Check and install necessary packages
+    local selinux_packages="selinux-basics selinux-policy-default"
+    printf "\\033[1;34m[*] Checking and installing SELinux packages (%s)...\\033[0m\\n" "$selinux_packages"
+    # shellcheck disable=SC2086
+    if ! dpkg -s $selinux_packages >/dev/null 2>&1; then
+        # shellcheck disable=SC2086
+        if apt-get update >/dev/null 2>&1 && apt-get install -y $selinux_packages >/dev/null 2>&1; then
+            printf "\\033[1;32m[+] SELinux packages installed successfully.\\033[0m\\n"
+        else
+            printf "\\033[1;31m[-] Error: Failed to install SELinux packages. Skipping SELinux configuration.\\033[0m\\n"
+            return 1 # Exit this section if packages fail to install
+        fi
+    else
+        printf "\\033[1;32m[+] SELinux packages are already installed.\\033[0m\\n"
+    fi
+
+    # Activate SELinux
+    printf "\\033[1;34m[*] Attempting to activate SELinux...\\033[0m\\n"
+    if selinux-activate >/dev/null 2>&1; then
+        printf "\\033[1;32m[+] SELinux activated successfully.\\033[0m\\n"
+    else
+        printf "\\033[1;33m[!] Warning: Failed to activate SELinux. This might require manual intervention or a reboot.\\033[0m\\n"
+    fi
+
+    # Configure /etc/selinux/config to permissive mode first as recommended
+    local selinux_config="/etc/selinux/config"
+    printf "\\033[1;34m[*] Configuring %s to permissive mode...\\033[0m\\n" "$selinux_config"
+
+    # Backup existing config
+    if [ -f "$selinux_config" ]; then
+        cp "$selinux_config" "${selinux_config}.bak.$(date +%F-%T)" 2>/dev/null || true
+    fi
+
+    # Write the new config
+    if { echo "SELINUX=permissive"; echo "SELINUXTYPE=default"; } > "$selinux_config"; then
+        printf "\\033[1;32m[+] SELinux configuration set to permissive mode in %s.\\033[0m\\n" "$selinux_config"
+        printf "\\033[1;33m[!] IMPORTANT: A reboot is required for SELinux to initialize in permissive mode.\\033[0m\\n"
+        printf "\\033[1;33m[!] After reboot, check logs (e.g., 'dmesg | grep selinux', 'auditctl -s', 'ausearch -m avc') for errors.\\033[0m\\n"
+        printf "\\033[1;33m[!] If no errors, you can manually change SELINUX=permissive to SELINUX=enforcing in %s and reboot again.\\033[0m\\n" "$selinux_config"
+    else
+        printf "\\033[1;31m[-] Error: Failed to write SELinux configuration to %s.\\033[0m\\n" "$selinux_config"
+    fi
+
+    printf "\\033[1;32m[+] SELinux configuration attempt completed.\\033[0m\\n"
     
+    ########################################## Lynis
+    printf "Configuring Lynis...\\n"
+    lynis update info >/dev/null 2>&1 || true
+    echo "0 2 * * 0 root /usr/bin/lynis audit system --cronjob" >> /etc/crontab
+    
+    printf "\\033[1;32m[+] Security tools configuration completed!\\033[0m\\n"
+    printf "\\033[1;33m[!] Note: Some changes require a reboot to take full effect.\\033[0m\\n"
 }
 
 restrict_compilers() {
@@ -466,104 +1486,143 @@ disable_firewire_drivers() {
     fi
 }
 
-
 purge_old_packages() {
     printf "\\033[1;31m[+] Purging configuration files of old/removed packages...\033[0m\\n"
-   
     local packages_to_purge
-    # packages_to_purge=$(dpkg -l | grep '^rc' | awk '{print $2}') # Old problematic line
-    packages_to_purge=$( (dpkg -l | grep '^rc' || true) | awk '{print $2}' ) # Corrected line
-   
+    packages_to_purge=$(dpkg -l | grep '^rc' | awk '{print $2}')
 
-    if [[ -n "$packages_to_purge" ]]; then # Check if the string is non-empty
-        
+    if [[ "$packages_to_purge" ]]; then
         printf "\\033[1;33m[*] Found the following packages with leftover configuration files to purge:\033[0m\\n"
         echo "$packages_to_purge"
        
+        if command -v whiptail >/dev/null; then
+            whiptail --title "Packages to Purge" --msgbox "The following packages have leftover configuration files that will be purged:\n\n$packages_to_purge" 15 70
+        fi
+
         for pkg in $packages_to_purge; do
-          
             printf "\\033[1;31m[+] Purging %s...\\033[0m\\n" "$pkg"
-            if apt-get purge -y "$pkg" >/dev/null 2>&1; then
-                
+            if apt-get purge -y "$pkg"; then
                 printf "\\033[1;32m[+] Successfully purged %s.\\033[0m\\n" "$pkg"
             else
-                
                 printf "\\033[1;31m[-] Failed to purge %s. Trying dpkg --purge...\\033[0m\\n" "$pkg"
-                if dpkg --purge "$pkg" >/dev/null 2>&1; then
-                  
+                if dpkg --purge "$pkg"; then
                     printf "\\033[1;32m[+] Successfully purged %s with dpkg.\\033[0m\\n" "$pkg"
                 else
-                   
                     printf "\\033[1;31m[-] Failed to purge %s with dpkg as well.\\033[0m\\n" "$pkg"
                 fi
             fi
         done
+        whiptail --infobox "Purged configuration files for removed packages." 7 70
     else
-      
         printf "\\033[1;32m[+] No old/removed packages with leftover configuration files found to purge.\033[0m\\n"
+        whiptail --infobox "No leftover package configurations to purge." 7 70
     fi
    
-   
     printf "\\033[1;31m[+] Running apt-get autoremove and clean to free up space...\033[0m\\n"
-    apt-get autoremove -y >/dev/null 2>&1
-    apt-get clean >/dev/null 2>&1
-    printf "\\033[1;32m[+] Package cleanup completed.\033[0m\\n"
-    
-    ### Hardware Security Configuration ###
-    printf "\\033[1;31m[+] Checking for deleted files still in use (LOGG-2190)...\033[0m\\n"
-    
-    local deleted_files_in_use report_file pids_to_kill
-    
-    if ! command -v lsof >/dev/null 2>&1; then
-        printf "\\033[1;33m[!] lsof command not found. Skipping check for deleted files in use.\033[0m\\n"
-    else
-        printf "\\033[1;33m[*] Running lsof scan (this may take a moment)...\\033[0m\\n"
-        deleted_files_in_use=$(timeout 30 lsof +c 15 2>/dev/null | grep '(deleted)' || true)
-        lsof_exit_code=$?
-
-        if [[ $lsof_exit_code -eq 124 ]]; then
-            printf "\\033[1;33m[!] Warning: lsof command timed out after 30 seconds. Skipping deleted files check.\033[0m\\n"
-        elif [[ -n "$deleted_files_in_use" ]]; then
-            printf "\\033[1;33m[!] Warning: The following deleted files are still in use by processes:\\033[0m\\n"
-            echo "$deleted_files_in_use" # Print to console for script log
-            
-            report_file=$(mktemp)
-            echo "HARDN-LOG-2190: Deleted files are still in use by processes." > "$report_file"
-            {
-                echo "This can indicate a security issue (e.g., a rootkit hiding files)"
-                echo "or a normal operational behavior (e.g., a service holding a log file that was rotated)."
-                echo "Review the list below. These processes might need to be restarted or terminated to release the files."
-                echo "---------------------------------------------------------------------------------------------"
-                echo "COMMAND  PID  USER   FD   TYPE DEVICE SIZE/OFF NODE NAME" # Header for context
-                echo "$deleted_files_in_use"
-                echo "---------------------------------------------------------------------------------------------"
-            } >> "$report_file"
-            
-            pids_to_kill=$(echo "$deleted_files_in_use" | awk '{print $2}' | sort -u | grep -E '^[0-9]+$')
-            
-            if [[ -n "$pids_to_kill" ]]; then
-                echo "The following PIDs are associated with these files: $(echo "$pids_to_kill" | tr '\n' ' ')" >> "$report_file"
-                echo "Recommendation: Investigate these processes. You will be asked if you want to attempt to terminate them." >> "$report_file"
-            else
-                echo "Could not identify specific PIDs from the lsof output. Manual investigation required." >> "$report_file"
-            fi
-
-            cat "$report_file" # Show the report
-            if [[ -n "$pids_to_kill" ]]; then
-                printf "\\n\\033[1;31m[CRITICAL] LOGG-2190: Deleted files are still in use. Manual intervention required to terminate PIDs: %s\033[0m\\n" "$(echo "$pids_to_kill" | tr '\n' ' ')"
-            else
-                printf "\\n\\033[1;31m[CRITICAL] LOGG-2190: Deleted files are still in use. PIDs could not be reliably extracted. Manual investigation required.\033[0m\\n"
-            fi
-            rm -f "$report_file"
-            printf "\\033[1;33m[!] Recommendation: Review process termination results. If files are still held or services are disrupted, investigate further. Restarting affected services gracefully is often the best approach.\033[0m\\n"
-
-        else # No deleted files in use
-            printf "\\033[1;32m[+] No deleted files found to be still in use.\033[0m\\n"
-        fi
-    fi 
+    apt-get autoremove -y
+    apt-get clean
+    whiptail --infobox "Apt cache cleaned." 7 70
 }
 
+enable_nameservers() {
+    printf "\\033[1;31m[+] Checking and configuring DNS nameservers (Quad9 primary, Google secondary)...\033[0m\\n"
+    local resolv_conf quad9_ns google_ns nameserver_count configured_persistently changes_made
+	resolv_conf="/etc/resolv.conf"
+    quad9_ns="9.9.9.9"
+    google_ns="8.8.8.8"
+    nameserver_count=0
+    configured_persistently=false
+    changes_made=false
 
+    if [[ -f "$resolv_conf" ]]; then
+        nameserver_count=$(grep -E "^\s*nameserver\s+" "$resolv_conf" | grep -Ev "127\.0\.0\.1|::1" | awk '{print $2}' | sort -u | wc -l)
+    fi
+
+    printf "\\033[1;34m[*] Found %s non-localhost nameserver(s) in %s.\033[0m\\n" "$nameserver_count" "$resolv_conf"
+
+    # Always attempt to set Quad9 as primary and Google as secondary
+    # Check for systemd-resolved
+    if systemctl is-active --quiet systemd-resolved && \
+       [[ -L "$resolv_conf" ]] && \
+       (readlink "$resolv_conf" | grep -qE "systemd/resolve/(stub-resolv.conf|resolv.conf)"); then
+        
+        printf "\\033[1;34m[*] systemd-resolved is active and manages %s.\033[0m\\n" "$resolv_conf"
+        local resolved_conf_systemd temp_resolved_conf
+		resolved_conf_systemd="/etc/systemd/resolved.conf"
+        temp_resolved_conf=$(mktemp)
+
+        if [[ ! -f "$resolved_conf_systemd" ]]; then
+            printf "\\033[1;33m[*] Creating %s as it does not exist.\033[0m\\n" "$resolved_conf_systemd"
+            echo "[Resolve]" > "$resolved_conf_systemd"
+            chmod 644 "$resolved_conf_systemd"
+        fi
+        
+        cp "$resolved_conf_systemd" "$temp_resolved_conf"
+
+        # Set DNS= and FallbackDNS= explicitly
+        if grep -qE "^\s*DNS=" "$temp_resolved_conf"; then
+            sed -i -E "s/^\s*DNS=.*/DNS=$quad9_ns $google_ns/" "$temp_resolved_conf"
+        else
+            if grep -q "\[Resolve\]" "$temp_resolved_conf"; then
+                sed -i "/\[Resolve\]/a DNS=$quad9_ns $google_ns" "$temp_resolved_conf"
+            else
+                echo -e "\n[Resolve]\nDNS=$quad9_ns $google_ns" >> "$temp_resolved_conf"
+            fi
+        fi
+
+        # Set FallbackDNS as well (optional, for redundancy)
+        if grep -qE "^\s*FallbackDNS=" "$temp_resolved_conf"; then
+            sed -i -E "s/^\s*FallbackDNS=.*/FallbackDNS=$google_ns $quad9_ns/" "$temp_resolved_conf"
+        else
+            if grep -q "\[Resolve\]" "$temp_resolved_conf"; then
+                sed -i "/\[Resolve\]/a FallbackDNS=$google_ns $quad9_ns" "$temp_resolved_conf"
+            else
+                echo -e "\n[Resolve]\nFallbackDNS=$google_ns $quad9_ns" >> "$temp_resolved_conf"
+            fi
+        fi
+
+        if ! cmp -s "$temp_resolved_conf" "$resolved_conf_systemd"; then
+            cp "$temp_resolved_conf" "$resolved_conf_systemd"
+            printf "\\033[1;32m[+] Updated %s. Restarting systemd-resolved...\033[0m\\n" "$resolved_conf_systemd"
+            if systemctl restart systemd-resolved; then
+                printf "\\033[1;32m[+] systemd-resolved restarted successfully.\033[0m\\n"
+                configured_persistently=true
+                changes_made=true
+            else
+                printf "\\033[1;31m[-] Failed to restart systemd-resolved. Manual check required.\033[0m\\n"
+            fi
+        else
+            printf "\\033[1;34m[*] No effective changes to %s were needed.\033[0m\\n" "$resolved_conf_systemd"
+        fi
+        rm -f "$temp_resolved_conf"
+    fi
+
+    # If not using systemd-resolved, try to set directly in /etc/resolv.conf
+    if [[ "$configured_persistently" = false ]]; then
+        printf "\\033[1;34m[*] Attempting direct modification of %s.\033[0m\\n" "$resolv_conf"
+        if [[ -f "$resolv_conf" ]] && [[ -w "$resolv_conf" ]]; then
+            # Remove existing Quad9/Google entries and add them at the top
+            grep -vE "^\s*nameserver\s+($quad9_ns|$google_ns)" "$resolv_conf" > "${resolv_conf}.tmp"
+            {
+                echo "nameserver $quad9_ns"
+                echo "nameserver $google_ns"
+                cat "${resolv_conf}.tmp"
+            } > "$resolv_conf"
+            rm -f "${resolv_conf}.tmp"
+            printf "\\033[1;32m[+] Set Quad9 as primary and Google as secondary in %s.\033[0m\\n" "$resolv_conf"
+            printf "\\033[1;33m[!] Warning: Direct changes to %s might be overwritten by network management tools.\033[0m\\n" "$resolv_conf"
+            changes_made=true
+        else
+            printf "\\033[1;31m[-] Could not modify %s (file not found or not writable).\033[0m\\n" "$resolv_conf"
+        fi
+    fi
+
+    if [[ "$changes_made" = true ]]; then
+        whiptail --infobox "DNS configured: Quad9 primary, Google secondary." 7 70
+    else
+        whiptail --infobox "DNS configuration checked. No changes made or needed." 8 70
+    fi
+}
 
 enable_process_accounting_and_sysstat() {
     printf "\\033[1;31m[+] Enabling process accounting (acct) and system statistics (sysstat)...\033[0m\\n"
@@ -596,35 +1655,6 @@ enable_process_accounting_and_sysstat() {
             fi
         else
             printf "\\033[1;32m[+] acct/psacct service is already active.\033[0m\\n"
-        fi
-    fi
-
-    # Check for automation tools [TOOL-5002]
-    printf "\\033[1;31m[+] Checking for presence of automation tools (TOOL-5002)...\033[0m\\n"
-    local automation_tools found_tools
-    automation_tools=("ansible" "puppet" "chef-client" "salt-call" "salt-minion")
-    found_tools=""
-
-    for tool in "${automation_tools[@]}"; do
-        if command -v "$tool" >/dev/null 2>&1; then
-            printf "\\033[1;33m[!] Found automation tool: %s\033[0m\\n" "$tool"
-            if [[ -z "$found_tools" ]]; then
-                found_tools="$tool"
-            else
-                found_tools="$found_tools, $tool"
-            fi
-        fi
-    done
-
-    if [[ -n "$found_tools" ]]; then
-        printf "\\033[1;33m[!] Automation tools detected: %s. This may impact manual configuration changes.\033[0m\\n" "$found_tools"
-        if command -v whiptail >/dev/null; then
-            whiptail --title "HARDN-XDR" --msgbox "The following automation tools were detected: $found_tools.\n\nBe aware that these tools might manage system configuration and could overwrite manual changes made by this script. It's recommended to integrate hardening practices into your automation workflows." 12 78
-        fi
-    else
-        printf "\\033[1;32m[+] No common automation tools (Ansible, Puppet, Chef, Salt) detected.\033[0m\\n"
-        if command -v whiptail >/dev/null; then
-            whiptail --title "HARDN-XDR" --infobox "No common automation tools (Ansible, Puppet, Chef, Salt) were detected." 8 78
         fi
     fi
 
@@ -684,147 +1714,149 @@ enable_process_accounting_and_sysstat() {
     fi
 }
 
+# Central logging
+setup_central_logging() {
+    printf "\033[1;31m[+] Setting up central logging for security tools...\033[0m\n"
+
+    # Check and install rsyslog and logrotate if necessary
+    local logging_packages="rsyslog logrotate"
+    printf "\\033[1;34m[*] Checking and installing logging packages (%s)...\\033[0m\\n" "$logging_packages"
+    # shellcheck disable=SC2086
+    if ! dpkg -s $logging_packages >/dev/null 2>&1; then
+        # shellcheck disable=SC2086
+        if apt-get update >/dev/null 2>&1 && apt-get install -y $logging_packages >/dev/null 2>&1; then
+            printf "\\033[1;32m[+] Logging packages installed successfully.\\033[0m\\n"
+        else
+            printf "\\033[1;31m[-] Error: Failed to install logging packages. Skipping central logging configuration.\\033[0m\\n"
+            return 1 # Exit this section if packages fail to install
+        fi
+    else
+        printf "\\033[1;32m[+] Logging packages are already installed.\\033[0m\\n"
+    fi
+
+
+    # Create necessary directories
+    printf "\\033[1;34m[*] Creating log directories and files...\\033[0m\\n"
+    mkdir -p /usr/local/var/log/suricata
+    # Note: /var/log/suricata is often created by the suricata package itself
+    touch /usr/local/var/log/suricata/hardn-xdr.log
+    chmod 640 /usr/local/var/log/suricata/hardn-xdr.log
+    chown root:adm /usr/local/var/log/suricata/hardn-xdr.log
+    printf "\\033[1;32m[+] Log directory /usr/local/var/log/suricata created and permissions set.\\033[0m\\n"
+
+
+    # Create rsyslog configuration for centralized logging
+    printf "\\033[1;34m[*] Creating rsyslog configuration file /etc/rsyslog.d/30-hardn-xdr.conf...\\033[0m\\n"
+    cat > /etc/rsyslog.d/30-hardn-xdr.conf << 'EOF'
+# HARDN-XDR Central Logging Configuration
+# This file is automatically generated by HARDN-XDR.
+# Any manual changes may be overwritten.
+
+# Create a template for security logs
+$template HARDNFormat,"%TIMESTAMP% %HOSTNAME% %syslogtag%%msg%\n"
+
+# Define the central log file path
+local5.* /usr/local/var/log/suricata/hardn-xdr.log;HARDNFormat
+
+# Specific rules to route logs to local5 facility if they don't use it by default
+# Suricata (often uses local5, but explicit rule ensures it)
+if $programname == 'suricata' then local5.*
+# AIDE
+if $programname == 'aide' then local5.*
+# Fail2Ban
+if $programname == 'fail2ban' then local5.*
+# AppArmor
+if $programname == 'apparmor' then local5.*
+# Auditd/SELinux (auditd logs via auditd, setroubleshoot logs via setroubleshoot)
+if $programname == 'audit' or $programname == 'setroubleshoot' then local5.*
+# RKHunter (often logs with tag rkhunter)
+if $programname == 'rkhunter' or $syslogtag contains 'rkhunter' then local5.*
+# Debsums (piped to logger, tag might be debsums or CRON)
+if $programname == 'debsums' or $syslogtag contains 'debsums' then local5.*
+# Lynis (cronjob logs via logger, tag might be lynis or CRON)
+if $programname == 'lynis' or $syslogtag contains 'lynis' then local5.*
+# Chkrootkit (cronjob logs via logger, tag might be chkrootkit or CRON)
+if $programname == 'chkrootkit' or $syslogtag contains 'chkrootkit' then local5.*
+
+# Stop processing these messages after they are sent to the central log
+& stop
+EOF
+    chmod 644 /etc/rsyslog.d/30-hardn-xdr.conf
+    printf "\\033[1;32m[+] Rsyslog configuration created/updated.\\033[0m\\n"
+
+
+    # Create logrotate configuration for the central log
+    printf "\\033[1;34m[*] Creating logrotate configuration file /etc/logrotate.d/hardn-xdr...\\033[0m\\n"
+    cat > /etc/logrotate.d/hardn-xdr << 'EOF'
+/usr/local/var/log/suricata/hardn-xdr.log {
+    daily
+    rotate 30
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 640 root adm
+    postrotate
+        # Ensure rsyslog reloads its configuration or reopens log files
+        # Use the standard rsyslog-rotate script if available, otherwise restart
+        if [ -x /usr/lib/rsyslog/rsyslog-rotate ]; then
+            /usr/lib/rsyslog/rsyslog-rotate
+        else
+            systemctl reload rsyslog >/dev/null 2>&1 || true
+        fi
+    endscript
+    # Add a prerotate script to ensure the file exists and has correct permissions before rotation
+    prerotate
+        if [ ! -f /usr/local/var/log/suricata/hardn-xdr.log ]; then
+            mkdir -p /usr/local/var/log/suricata
+            touch /usr/local/var/log/suricata/hardn-xdr.log
+        fi
+        chmod 640 /usr/local/var/log/suricata/hardn-xdr.log
+        chown root:adm /usr/local/var/log/suricata/hardn-xdr.log
+    endscript
+}
+EOF
+    chmod 644 /etc/logrotate.d/hardn-xdr
+    printf "\\033[1;32m[+] Logrotate configuration created/updated.\\033[0m\\n"
+
+    #####################################################################################
+    # @linuxuser255
+    # Other tools (Fail2Ban, AppArmor, Auditd, Debsums, Chkrootkit, Lynis) are configured
+    # to log to syslog either by default or via the crontab/service setup in setup_security.
+    # No specific configuration needed here beyond the rsyslog rules.
+
+
+    # Restart rsyslog to apply changes
+    printf "\\033[1;34m[*] Restarting rsyslog service to apply configuration changes...\\033[0m\\n"
+    if systemctl restart rsyslog; then
+        printf "\\033[1;32m[+] Rsyslog service restarted successfully.\\033[0m\\n"
+    else
+        printf "\\033[1;31m[-] Failed to restart rsyslog service. Manual check required.\\033[0m\\n"
+    fi
+
+    # Create a symlink in /var/log for easier access
+    printf "\\033[1;34m[*] Creating symlink /var/log/hardn-xdr.log...\\033[0m\\n"
+    ln -sf /usr/local/var/log/suricata/hardn-xdr.log /var/log/hardn-xdr.log
+    printf "\\033[1;32m[+] Symlink created at /var/log/hardn-xdr.log.\\033[0m\\n"
+
+
+    printf "\\033[1;32m[+] Central logging setup complete. All security logs will be collected in /usr/local/var/log/suricata/hardn-xdr.log\033[0m\n"
+    printf "\\033[1;32m[+] A symlink has been created at /var/log/hardn-xdr.log for easier access.\\033[0m\\n"
+}
 
 disable_service_if_active() {
     local service_name
     service_name="$1"
     if systemctl is-active --quiet "$service_name"; then
         printf "\033[1;31m[+] Disabling active service: %s...\033[0m\n" "$service_name"
-        systemctl disable --now "$service_name" >/dev/null 2>&1 || printf "\033[1;33m[!] Failed to disable service: %s (may not be installed or already disabled).\033[0m\n" "$service_name"
+        systemctl disable --now "$service_name" || printf "\033[1;33m[!] Failed to disable service: %s (may not be installed or already disabled).\033[0m\n" "$service_name"
     elif systemctl list-unit-files --type=service | grep -qw "^$service_name.service"; then
         printf "\033[1;31m[+] Service %s is not active, ensuring it is disabled...\033[0m\n" "$service_name"
-        systemctl disable "$service_name" >/dev/null 2>&1 || printf "\033[1;33m[!] Failed to disable service: %s (may not be installed or already disabled).\033[0m\n" "$service_name"
+        systemctl disable "$service_name" || printf "\033[1;33m[!] Failed to disable service: %s (may not be installed or already disabled).\033[0m\n" "$service_name"
     else
         printf "\033[1;34m[*] Service %s not found or not installed. Skipping.\033[0m\n" "$service_name"
     fi
 }
-
-hardn_apache() {
-    printf "\\033[1;31m[+] Hardening Apache web server (BOOT-5264)...\\033[0m\\n"
-    
-    if ! command -v apache2ctl >/dev/null; then
-        printf "\\033[1;33m[!] Apache web server not found. Skipping hardening steps.\033[0m\\n"
-        whiptail --msgbox "Apache web server not found. Skipping hardening steps." 8 78
-        return
-    fi
-
-    # Disable directory listing
-    local apache_conf="/etc/apache2/apache2.conf"
-    if grep -q "Options Indexes" "$apache_conf"; then
-        sed -i 's/Options Indexes/Options -Indexes/' "$apache_conf"
-        printf "\\033[1;32m[+] Disabled directory listing in %s\\033[0m\\n" "$apache_conf"
-    else
-        printf "\\033[1;34m[*] Directory listing already disabled in %s\\033[0m\\n" "$apache_conf"
-    fi
-
-    # Disable server signature and tokens
-    if ! grep -q "ServerSignature Off" "$apache_conf"; then
-        echo "ServerSignature Off" >> "$apache_conf"
-        printf "\\033[1;32m[+] Disabled server signature in %s\\033[0m\\n" "$apache_conf"
-    else
-        printf "\\033[1;34m[*] Server signature already disabled in %s\\033[0m\\n" "$apache_conf"
-    fi
-
-    if ! grep -q "ServerTokens Prod" "$apache_conf"; then
-        echo "ServerTokens Prod" >> "$apache_conf"
-        printf "\\033[1;32m[+] Set ServerTokens to Prod in %s\\033[0m\\n" "$apache_conf"
-    else
-        printf "\\033[1;34m[*] ServerTokens already set to Prod in %s\\033[0m\\n" "$apache_conf"
-    fi
-
-    # Disable TRACE method
-    local conf_file="/etc/apache2/conf-available/security.conf"
-    if [[ ! -f "$conf_file" ]]; then
-        touch "$conf_file"
-        printf "\\033[1;32m[+] Created security configuration file: %s\\033[0m\\n" "$conf_file"
-    fi
-    if ! grep -q "TraceEnable Off" "$conf_file"; then
-        echo "TraceEnable Off" >> "$conf_file"
-        printf "\\033[1;32m[+] Disabled TRACE method in %s\\033[0m\\n" "$conf_file"
-    else
-        printf "\\033[1;34m[*] TRACE method already disabled in %s\\033[0m\\n" "$conf_file"
-    fi
-    # Disable HTTP methods other than GET, POST, and HEAD
-    if ! grep -q "LimitExcept GET POST HEAD" "$conf_file"; then
-        echo "LimitExcept GET POST HEAD { deny all; }" >> "$conf_file"
-        printf "\\033[1;32m[+] Restricted HTTP methods in %s\\033[0m\\n" "$conf_file"
-    else
-        printf "\\033[1;34m[*] HTTP methods already restricted in %s\\033[0m\\n" "$conf_file"
-    fi
-    # Disable SSLv2 and SSLv3
-    if ! grep -q "SSLProtocol" "$apache_conf"; then
-        echo "SSLProtocol all -SSLv2 -SSLv3" >> "$apache_conf"
-        printf "\\033[1;32m[+] Disabled SSLv2 and SSLv3 in %s\\033[0m\\n" "$apache_conf"
-    else
-        sed -i 's/SSLProtocol.*/SSLProtocol all -SSLv2 -SSLv3/' "$apache_conf"
-        printf "\\033[1;32m[+] Updated SSLProtocol to disable SSLv2 and SSLv3 in %s\\033[0m\\n" "$apache_conf"
-    fi
-    # Disable weak ciphers
-    if ! grep -q "SSLCipherSuite" "$apache_conf"; then
-        echo "SSLCipherSuite HIGH:!aNULL:!MD5:!3DES" >> "$apache_conf"
-        printf "\\033[1;32m[+] Set strong ciphers in %s\\033[0m\\n" "$apache_conf"
-    else
-        sed -i 's/SSLCipherSuite.*/SSLCipherSuite HIGH:!aNULL:!MD5:!3DES/' "$apache_conf"
-        printf "\\033[1;32m[+] Updated SSLCipherSuite to use strong ciphers in %s\\033[0m\\n" "$apache_conf"
-    fi
-    # Disable HTTP/2 if not needed
-    if grep -q "Protocols h2" "$apache_conf"; then
-        sed -i 's/Protocols h2/Protocols http/' "$apache_conf"
-        printf "\\033[1;32m[+] Disabled HTTP/2 in %s\\033[0m\\n" "$apache_conf"
-    else
-        printf "\\033[1;34m[*] HTTP/2 not enabled, skipping disable step in %s\\033[0m\\n" "$apache_conf"
-    fi
-    # Restart Apache to apply changes
-    if systemctl restart apache2; then
-        printf "\\033[1;32m[+] Apache web server restarted successfully.\033[0m\\n"
-    else
-        printf "\\033[1;31m[-] Failed to restart Apache web server. Please check manually.\033[0m\\n"
-    fi
-    printf "\\033[1;32m[+] Apache hardening complete. Review the configuration in %s for any additional customizations.\033[0m\\n" "$apache_conf"
-    whiptail --msgbox "Apache hardening complete. Review the configuration in $apache_conf for any additional customizations." 10 70
-}
-
-hardn_system_services() {
-    printf "\\033[1;31m[+] Analyzing security of systemd services (BOOT-5264)...\033[0m\\n"
-    
-    if ! command -v systemd-analyze >/dev/null; then
-        printf "\\033[1;33m[!] systemd-analyze command not found. Skipping service security analysis.\033[0m\\n"
-        whiptail --msgbox "systemd-analyze command not found. Skipping service security analysis." 8 78
-        return
-    fi
-
-    local services
-    services=$(systemctl list-units --type=service --state=running --no-legend --plain | awk '{print $1}')
-    
-    if [ -z "$services" ]; then
-        printf "\\033[1;33m[!] No running services found to analyze.\033[0m\\n"
-        whiptail --msgbox "No running services found to analyze." 8 78
-        return
-    fi
-
-    local output_file
-    output_file=$(mktemp)
-
-    echo "$services" | while IFS= read -r service_name; do
-        printf "\\n\\033[1;34m[*] Analyzing: %s\\033[0m\\n" "$service_name" >> "$output_file"
-        if systemd-analyze security "$service_name" >> "$output_file" 2>&1; then
-            printf "\\033[1;32m  [+] Analysis for %s completed.\\033[0m\\n" "$service_name" >> "$output_file"
-        else
-            printf "\\033[1;31m  [-] Failed to analyze %s or service has issues.\\033[0m\\n" "$service_name" >> "$output_file"
-        fi
-        echo "-----------------------------------------------------" >> "$output_file"
-    done
-
-    printf "\\033[1;32m[+] Systemd service security analysis complete.\\033[0m\\n"
-    
-    if command -v whiptail >/dev/null; then
-        whiptail --title "HARDN-XDR" --msgbox "Systemd service security analysis has been completed.\n\nAll running services have been analyzed for security exposure levels.\n\nPress OK to continue with the hardening process." 12 70
-    fi
-  
-    rm -f "$output_file"
-}
-
-
 
 remove_unnecessary_services() {
     printf "\033[1;32m[+] Disabling unnecessary services...\033[0m\n"
@@ -853,57 +1885,62 @@ remove_unnecessary_services() {
     printf "\033[1;32m[+] Unnecessary services checked and disabled/removed where applicable.\033[0m\n"
 }
 
-
 pen_test() {
-    printf "\\033[1;31m[+] Running penetration test with Lynis in pentest mode...\\033[0m\\n"
+    printf "\\033[1;31m[+] Running penetration tests...\\033[0m\\n"
 
-    
-    lynis audit system --pentest 
+    # Ensure Lynis is installed
+    if ! dpkg -s lynis >/dev/null 2>&1; then
+        printf "\\033[1;33m[*] Lynis not found. Attempting to install...\\033[0m\\n"
+        if apt-get update && apt-get install -y lynis; then
+            printf "\\033[1;32m[+] Lynis installed successfully.\\033[0m\\n"
+        else
+            printf "\\033[1;31m[-] Failed to install Lynis. Cannot run penetration tests.\\033[0m\\n"
+            return 1
+        fi
+    else
+        printf "\\033[1;32m[+] Lynis is already installed.\\033[0m\\n"
+    fi
 
-    
-    local lynis_exit_code=$?
+    # Run the Lynis audit
+    printf "\\033[1;34m[*] Running Lynis audit...\\033[0m\\n"
+    if ! lynis audit system --pentest --quick 2>/dev/null; then
+        printf "\\033[1;31m[-] Lynis audit failed. Please check the output for details.\\033[0m\\n"
+        return 1
+    fi
 
-    # Display a message box with the results
-    whiptail --title "Lynis Penetration Test Results" --msgbox "Lynis penetration test completed with exit code: $lynis_exit_code. Check /var/log/lynis.log for details." 10 60
+    printf "\\033[1;32m[+] Penetration tests completed!\\033[0m\\n"
 }
 
-cleanup() {
+
+cleanup(){
     printf "\\033[1;31m[+] Cleaning up temporary files...\\033[0m\\n"
     rm -rf /tmp/* >/dev/null 2>&1
     apt autoremove -y >/dev/null 2>&1
     apt clean >/dev/null 2>&1
     apt update -y >/dev/null 2>&1
     printf "\\033[1;32m[+] Cleanup completed!\\033[0m\\n"
-    
-    # Notify user installation is complete
-    printf "\\n\\033[1;32mHARDN-XDR Install Complete, please reboot your system\\033[0m\\n"
-    whiptail --title "HARDN-XDR" --msgbox "HARDN-XDR Install Complete, please reboot your system" 8 60
+
 }
-
-
-
 
 
 main() {
     print_ascii_banner
     welcomemsg
     update_system_packages
-    install_package_dependencies "$progsfile"
-    maininstall "hardn" "HARDN-XDR Main Program"
-    build_hardn_package
+    install_package_dependencies "../../progs.csv"
     setup_security
-    hardn_apache
     enable_process_accounting_and_sysstat
+    enable_nameservers
     purge_old_packages
     disable_firewire_drivers
     restrict_compilers
-    hardn_system_services
     disable_binfmt_misc
     remove_unnecessary_services
+    setup_central_logging
     pen_test
     cleanup
 
     printf "\\n\\033[1;32mHARDN-XDR installation completed, Please reboot your System.\\033[0m\\n"
 }
 
-main "$@" 
+main
