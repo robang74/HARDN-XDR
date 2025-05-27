@@ -2,7 +2,7 @@ name: Update Package Dependencies
 
 on:
   schedule:
-    - cron: '0 3 * * 1'  # Weekly on Mondays at 3 AM UTC
+    - cron: '0 0 * * 1'
   workflow_dispatch:
 
 jobs:
@@ -16,7 +16,10 @@ jobs:
       - name: Set up Git
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"      - name: Update package list
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+      - name: Update package list
+        id: update_packages
         run: |
           # Update package list repositories
           sudo apt-get update
@@ -91,14 +94,13 @@ jobs:
           # Check if there are differences
           if ! cmp -s progs-temp.csv progs.csv; then
             mv progs-temp.csv progs.csv
-            echo "changes_made=true" >> $GITHUB_OUTPUT
+            echo "changes_made=true" >> "$GITHUB_OUTPUT"
             echo "Changes made to progs.csv"
           else
-            echo "changes_made=false" >> $GITHUB_OUTPUT
+            echo "changes_made=false" >> "$GITHUB_OUTPUT"
             echo "No changes needed in progs.csv"
             rm -f progs-temp.csv
           fi
-        id: update_packages
 
       - name: Create Pull Request (if changes made)
         if: steps.update_packages.outputs.changes_made == 'true'
