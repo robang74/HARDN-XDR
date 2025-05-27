@@ -2,7 +2,7 @@ name: Update Package Dependencies
 
 on:
   schedule:
-    - cron: '0 0 * * 1'
+    - cron: '0 3 * * 1'  # Weekly on Mondays at 3 AM UTC
   workflow_dispatch:
 
 jobs:
@@ -23,6 +23,15 @@ jobs:
         run: |
           # Update package list repositories
           sudo apt-get update
+          
+          # Check if progs.csv exists
+          if [ ! -f "progs.csv" ]; then
+            echo "progs.csv file not found, creating an empty one"
+            echo "# Package list created on $(date)" > progs.csv
+            echo "name,version" >> progs.csv
+            echo "changes_made=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           
           # Create temporary file with validated packages
           echo "# Updated package list - $(date)" > progs-temp.csv
