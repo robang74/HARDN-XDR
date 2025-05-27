@@ -21,8 +21,11 @@ jobs:
       - name: Update package list
         id: update_packages
         run: |
-          # Update package list repositories
-          sudo apt-get update
+          # Update package list with error handling
+          if ! sudo apt-get update; then
+            echo "::error::apt-get update failed. Check APT sources or network."
+            exit 1
+          fi
           
           # Check if progs.csv exists
           if [ ! -f "progs.csv" ]; then
