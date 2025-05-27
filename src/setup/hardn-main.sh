@@ -446,7 +446,6 @@ setup_security(){
             echo "fs.suid_dumpable = 0"
             echo "kernel.dmesg_restrict = 1"
             echo "kernel.unprivileged_bpf_disabled = 1"
-            echo "kernel.unprivileged_userns_clone = 1"
             echo "kernel.kexec_load_disabled = 1"
             echo "kernel.sysrq = 0"
             echo "kernel.core_pattern = |/bin/false"
@@ -1412,57 +1411,9 @@ EOF
     printf "\\033[1;32m[+] STIG compliant banner configured in %s.\\033[0m\\n" "$banner_net_file"
 
 
-
-    ##################################### SELinux
-    printf "Configuring SELinux...\\n"
-
-    # Check and install necessary packages
-    local selinux_packages="selinux-basics selinux-policy-default"
-    printf "\\033[1;34m[*] Checking and installing SELinux packages (%s)...\\033[0m\\n" "$selinux_packages"
-    # shellcheck disable=SC2086
-    if ! dpkg -s $selinux_packages >/dev/null 2>&1; then
-        # shellcheck disable=SC2086
-        if apt-get update >/dev/null 2>&1 && apt-get install -y $selinux_packages >/dev/null 2>&1; then
-            printf "\\033[1;32m[+] SELinux packages installed successfully.\\033[0m\\n"
-        else
-            printf "\\033[1;31m[-] Error: Failed to install SELinux packages. Skipping SELinux configuration.\\033[0m\\n"
-            return 1 # Exit this section if packages fail to install
-        fi
-    else
-        printf "\\033[1;32m[+] SELinux packages are already installed.\\033[0m\\n"
-    fi
-
-    # Activate SELinux
-    printf "\\033[1;34m[*] Attempting to activate SELinux...\\033[0m\\n"
-    if selinux-activate >/dev/null 2>&1; then
-        printf "\\033[1;32m[+] SELinux activated successfully.\\033[0m\\n"
-    else
-        printf "\\033[1;33m[!] Warning: Failed to activate SELinux. This might require manual intervention or a reboot.\\033[0m\\n"
-    fi
-
-    # Configure /etc/selinux/config to permissive mode first as recommended
-    local selinux_config="/etc/selinux/config"
-    printf "\\033[1;34m[*] Configuring %s to permissive mode...\\033[0m\\n" "$selinux_config"
-
-    # Backup existing config
-    if [ -f "$selinux_config" ]; then
-        cp "$selinux_config" "${selinux_config}.bak.$(date +%F-%T)" 2>/dev/null || true
-    fi
-
-    # Write the new config
-    if { echo "SELINUX=permissive"; echo "SELINUXTYPE=default"; } > "$selinux_config"; then
-        printf "\\033[1;32m[+] SELinux configuration set to permissive mode in %s.\\033[0m\\n" "$selinux_config"
-        printf "\\033[1;33m[!] IMPORTANT: A reboot is required for SELinux to initialize in permissive mode.\\033[0m\\n"
-        printf "\\033[1;33m[!] After reboot, check logs (e.g., 'dmesg | grep selinux', 'auditctl -s', 'ausearch -m avc') for errors.\\033[0m\\n"
-        printf "\\033[1;33m[!] If no errors, you can manually change SELINUX=permissive to SELINUX=enforcing in %s and reboot again.\\033[0m\\n" "$selinux_config"
-    else
-        printf "\\033[1;31m[-] Error: Failed to write SELinux configuration to %s.\\033[0m\\n" "$selinux_config"
-    fi
-
-    printf "\\033[1;32m[+] SELinux configuration attempt completed.\\033[0m\\n"
-    
     ########################################## Lynis
     printf "Configuring Lynis...\\n"
+    apt install lynis
     lynis update info >/dev/null 2>&1 || true
     echo "0 2 * * 0 root /usr/bin/lynis audit system --cronjob" >> /etc/crontab
     
@@ -1970,7 +1921,7 @@ pen_test() {
     # Ensure Lynis is installed
     if ! dpkg -s lynis >/dev/null 2>&1; then
         printf "\\033[1;33m[*] Lynis not found. Attempting to install via apt-get...\\033[0m\\n"
-        if apt-get update && apt-get install -y lynis; then
+        if apt-get update && apt install -y lynis; then
             printf "\\033[1;32m[+] Lynis installed successfully via apt-get.\\033[0m\\n"
         else
             printf "\\033[1;31m[-] Failed to install Lynis via apt-get. Attempting manual installation...\\033[0m\\n"
