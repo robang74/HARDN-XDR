@@ -448,7 +448,6 @@ setup_security(){
             echo "kernel.unprivileged_bpf_disabled = 1"
             echo "kernel.unprivileged_userns_clone = 1"
             echo "kernel.kexec_load_disabled = 1"
-            echo "kernel.modules_disabled = 1"
             echo "kernel.sysrq = 0"
             echo "kernel.core_pattern = |/bin/false"
             echo "kernel.core_uses_pid = 1"
