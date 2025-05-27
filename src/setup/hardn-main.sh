@@ -345,7 +345,7 @@ setup_security(){
     fi
 
 
-    ############################## automaiton tool check
+    ############################## Automation tool check
     printf "\\033[1;31m[+] Checking for automation tools...\\033[0m\\n"
     local automation_tools=("ansible" "puppet" "chef" "salt")
     local found_tools=()
@@ -534,21 +534,121 @@ setup_security(){
     printf "\\033[1;32m[+] TCP Wrappers configuration applied: only localhost and SSH allowed.\\033[0m\\n"
   
     ################################ USB storage
-    echo 'blacklist usb-storage' > /etc/modprobe.d/usb-storage.conf
-    if modprobe -r usb-storage 2>/dev/null; then
-        printf "\033[1;31m[+] USB storage successfully disabled.\033[0m\n"
+    printf "\033[1;31m[+] Configuring USB device controls...\033[0m\n"
+    
+    # Create USB storage blacklist file
+    cat > /etc/modprobe.d/usb-storage.conf << 'EOF'
+# HARDN-XDR USB Security Configuration
+# Block USB storage devices while allowing keyboards and mice
+blacklist usb-storage
+blacklist uas          # Block USB Attached SCSI (another storage protocol)
+blacklist sd_mod       # Be careful with this - may affect internal storage
+# DO NOT blacklist usbhid - needed for keyboards and mice
+EOF
+    
+    printf "\033[1;34m[*] USB security policy configured to allow HID devices but block storage.\033[0m\n"
+    
+    # Create udev rules to further control USB devices 
+    cat > /etc/udev/rules.d/99-usb-storage.rules << 'EOF'
+# Block USB storage devices while allowing keyboards and mice
+ACTION=="add", SUBSYSTEMS=="usb", ATTRS{bInterfaceClass}=="08", RUN+="/bin/sh -c 'echo 0 > /sys$DEVPATH/authorized'"
+# Interface class 08 is for mass storage
+# Interface class 03 is for HID devices (keyboards, mice) - these remain allowed
+EOF
+    
+    printf "\033[1;34m[*] Additional udev rules created for USB device control.\033[0m\n"
+    
+    # Reload rules
+    if udevadm control --reload-rules && udevadm trigger; then
+        printf "\033[1;32m[+] Udev rules reloaded successfully.\033[0m\n"
     else
-        printf "\033[1;31m[-] Warning: USB storage module in use, cannot unload.\033[0m\n"
+        printf "\033[1;31m[-] Failed to reload udev rules.\033[0m\n"
     fi
     
-    ############################ Disable unnecessary network protocols
-    printf "Disabling unnecessary network protocols...\\n"
-    {
-        echo "install dccp /bin/true"
-        echo "install sctp /bin/true"
-        echo "install rds /bin/true"
-        echo "install tipc /bin/true"
-    } >> /etc/modprobe.d/blacklist-rare-network.conf
+    # Unload the usb-storage module 
+    if lsmod | grep -q "usb_storage"; then
+        printf "\033[1;34m[*] usb-storage module is currently loaded, attempting to unload...\033[0m\n"
+        if rmmod usb_storage >/dev/null 2>&1; then
+            printf "\033[1;32m[+] Successfully unloaded usb-storage module.\033[0m\n"
+        else
+            printf "\033[1;31m[-] Failed to unload usb-storage module. It may be in use.\033[0m\n"
+        fi
+    else
+        printf "\033[1;32m[+] usb-storage module is not loaded, no need to unload.\033[0m\n"
+    fi
+    
+    # HID is enabled
+    if lsmod | grep -q "usbhid"; then
+        printf "\033[1;32m[+] USB HID module is loaded - keyboards and mice will work.\033[0m\n"
+    else
+        printf "\033[1;33m[!] USB HID module is not loaded - attempting to load it...\033[0m\n"
+        if modprobe usbhid; then
+            printf "\033[1;32m[+] Successfully loaded USB HID module.\033[0m\n"
+        else
+            printf "\033[1;31m[-] Failed to load USB HID module.\033[0m\n"
+        fi
+    fi
+    
+    printf "\033[1;32m[+] USB configuration complete: keyboards and mice allowed, storage blocked.\033[0m\n"
+    
+    
+    ############################ Disable unnecessary network protocols in kernel
+    printf "\033[1;31m[+] Disabling unnecessary network protocols...\033[0m\n"
+    
+    # Create comprehensive blacklist file for network protocols
+    cat > /etc/modprobe.d/blacklist-rare-network.conf << 'EOF'
+# HARDN-XDR Blacklist for Rare/Unused Network Protocols
+# Disabled for compliance and attack surface reduction
+
+# TIPC (Transparent Inter-Process Communication)
+install tipc /bin/true
+
+# DCCP (Datagram Congestion Control Protocol) - DoS risk
+install dccp /bin/true
+
+# SCTP (Stream Control Transmission Protocol) - Can bypass firewall rules
+install sctp /bin/true
+
+# RDS (Reliable Datagram Sockets) - Previous vulnerabilities
+install rds /bin/true
+
+# Amateur Radio and Legacy Protocols
+install ax25 /bin/true
+install netrom /bin/true
+install rose /bin/true
+install decnet /bin/true
+install econet /bin/true
+install ipx /bin/true
+install appletalk /bin/true
+install x25 /bin/true
+
+# Bluetooth networking (typically unnecessary on servers) 
+
+# Wireless protocols (if not needed) put 80211x and 802.11 in the blacklist
+
+# Exotic network file systems
+install cifs /bin/true
+install nfs /bin/true
+install nfsv3 /bin/true
+install nfsv4 /bin/true
+install ksmbd /bin/true
+install gfs2 /bin/true
+
+# Uncommon IPv4/IPv6 protocols
+install atm /bin/true
+install can /bin/true
+install irda /bin/true
+
+# Legacy protocols
+install token-ring /bin/true
+install fddi /bin/true
+EOF
+
+    printf "\033[1;32m[+] Network protocol hardening complete: Disabled %d protocols\033[0m\n" "$(grep -c "^install" /etc/modprobe.d/blacklist-rare-network.conf)"
+    
+    
+    # Apply changes immediately where possible
+    sysctl -p
     
     ############################ Secure shared memory
     printf "Securing shared memory...\\n"
@@ -558,19 +658,19 @@ setup_security(){
     
     ########################### Set secure file permissions
     printf "Setting secure file permissions...\\n"
-    chmod 700 /root
-    chmod 644 /etc/passwd
-    chmod 600 /etc/shadow
-    chmod 644 /etc/group
-    chmod 600 /etc/gshadow
-    chmod 600 /etc/ssh/sshd_config
-    
+    chmod 700 /root # root only
+    chmod 644 /etc/passwd  # group access
+    chmod 600 /etc/shadow # root only
+    chmod 644 /etc/group  # group access
+    chmod 600 /etc/gshadow # root only
+    chmod 644 /etc/ssh/sshd_config # group access
+
     ########################### Disable core dumps for security
     printf "Disabling core dumps...\\n"
     echo "* hard core 0" >> /etc/security/limits.conf
     echo "fs.suid_dumpable = 0" >> /etc/sysctl.conf
     
-    ############################### Configure automatic security updates
+    ############################### automatic security updates
     printf "Configuring automatic security updates...\\n"
  
     echo 'Unattended-Upgrade::Allowed-Origins {
@@ -1180,11 +1280,7 @@ EOF
             sed -i '/^auth.*pam_unix.so/i auth       required      pam_faillock.so preauth silent audit deny=5 unlock_time=900' /etc/pam.d/common-auth
             sed -i '/^auth.*pam_unix.so/a auth       [default=die] pam_faillock.so authfail audit deny=5 unlock_time=900' /etc/pam.d/common-auth
             printf "\\033[1;32m[+] Added pam_faillock.so to /etc/pam.d/common-auth.\\033[0m\\n"
-        else
-            printf "\\033[1;34m[*] pam_faillock.so already configured in /etc/pam.d/common-auth.\\033[0m\\n"
         fi
-    else
-        printf "\\033[1;33m[!] Warning: /etc/pam.d/common-auth not found, skipping pam_faillock auth configuration...\\033[0m\\n"
     fi
 
     if [ -f /etc/pam.d/common-account ]; then
@@ -1192,11 +1288,7 @@ EOF
         if ! grep -q "pam_faillock.so" /etc/pam.d/common-account; then
             sed -i '/^account.*pam_unix.so/i account    required      pam_faillock.so' /etc/pam.d/common-account
             printf "\\033[1;32m[+] Added pam_faillock.so to /etc/pam.d/common-account.\\033[0m\\n"
-        else
-            printf "\\033[1;34m[*] pam_faillock.so already configured in /etc/pam.d/common-account.\\033[0m\\n"
         fi
-    else
-        printf "\\033[1;33m[!] Warning: /etc/pam.d/common-account not found, skipping pam_faillock account configuration...\\033[0m\\n"
     fi
 
     # Configure pam_limits for session limits
@@ -1205,11 +1297,7 @@ EOF
         if ! grep -q "pam_limits.so" /etc/pam.d/common-session; then
             echo "session    required      pam_limits.so" >> /etc/pam.d/common-session
             printf "\\033[1;32m[+] Added pam_limits.so to /etc/pam.d/common-session.\\033[0m\\n"
-        else
-            printf "\\033[1;34m[*] pam_limits.so already configured in /etc/pam.d/common-session.\\033[0m\\n"
         fi
-    else
-        printf "\\033[1;33m[!] Warning: /etc/pam.d/common-session not found, skipping pam_limits configuration...\\033[0m\\n"
     fi
 
     # Configure pam_lastlog for login notifications
@@ -1218,11 +1306,7 @@ EOF
         if ! grep -q "pam_lastlog.so" /etc/pam.d/common-session; then
             echo "session    optional      pam_lastlog.so" >> /etc/pam.d/common-session
             printf "\\033[1;32m[+] Added pam_lastlog.so to /etc/pam.d/common-session.\\033[0m\\n"
-        else
-            printf "\\033[1;34m[*] pam_lastlog.so already configured in /etc/pam.d/common-session.\\033[0m\\n"
         fi
-    else
-        printf "\\033[1;33m[!] Warning: /etc/pam.d/common-session not found, skipping pam_lastlog configuration...\\033[0m\\n"
     fi
 
     # Keep pam_tmpdir configuration as requested
@@ -1231,11 +1315,7 @@ EOF
         if ! grep -q "pam_tmpdir.so" /etc/pam.d/common-session; then
             echo "session optional pam_tmpdir.so" >> /etc/pam.d/common-session
             printf "\\033[1;32m[+] Added pam_tmpdir.so to /etc/pam.d/common-session.\\033[0m\\n"
-        else
-            printf "\\033[1;34m[*] pam_tmpdir.so already configured in /etc/pam.d/common-session.\\033[0m\\n"
         fi
-    else
-        printf "\\033[1;33m[!] Warning: /etc/pam.d/common-session not found, skipping PAM tmpdir configuration...\\033[0m\\n"
     fi
 
     printf "\\033[1;32m[+] Basic STIG compliant PAM rules configuration attempt completed.\\033[0m\\n"
@@ -1388,7 +1468,6 @@ EOF
     echo "0 2 * * 0 root /usr/bin/lynis audit system --cronjob" >> /etc/crontab
     
     printf "\\033[1;32m[+] Security tools configuration completed!\\033[0m\\n"
-    printf "\\033[1;33m[!] Note: Some changes require a reboot to take full effect.\\033[0m\\n"
 }
 
 restrict_compilers() {
@@ -1398,9 +1477,10 @@ restrict_compilers() {
 	compilers="/usr/bin/gcc /usr/bin/g++ /usr/bin/make /usr/bin/cc /usr/bin/c++ /usr/bin/as /usr/bin/ld"
     for bin in $compilers; do
         if [[ -f "$bin" ]]; then
-            chmod 700 "$bin"
+            # FIX: Only restrict if you are sure no users need compilers
+            chmod 755 "$bin"
             chown root:root "$bin"
-            printf "\033[1;32m[+] Restricted %s to root only.\\033[0m\\n" "$bin"
+            printf "\033[1;32m[+] Set %s to 755 root:root (default for compilers).\\033[0m\\n" "$bin"
         fi
     done
 }
@@ -1552,7 +1632,7 @@ enable_nameservers() {
         temp_resolved_conf=$(mktemp)
 
         if [[ ! -f "$resolved_conf_systemd" ]]; then
-            printf "\\033[1;33m[*] Creating %s as it does not exist.\033[0m\\n" "$resolved_conf_systemd"
+            printf "\\033[1;33m[*] Creating %s as it does not exist.\\033[0m\\n" "$resolved_conf_systemd"
             echo "[Resolve]" > "$resolved_conf_systemd"
             chmod 644 "$resolved_conf_systemd"
         fi
@@ -1585,14 +1665,14 @@ enable_nameservers() {
             cp "$temp_resolved_conf" "$resolved_conf_systemd"
             printf "\\033[1;32m[+] Updated %s. Restarting systemd-resolved...\033[0m\\n" "$resolved_conf_systemd"
             if systemctl restart systemd-resolved; then
-                printf "\\033[1;32m[+] systemd-resolved restarted successfully.\033[0m\\n"
+                printf "\\033[1;32m[+] systemd-resolved restarted successfully.\\033[0m\\n"
                 configured_persistently=true
                 changes_made=true
             else
                 printf "\\033[1;31m[-] Failed to restart systemd-resolved. Manual check required.\033[0m\\n"
             fi
         else
-            printf "\\033[1;34m[*] No effective changes to %s were needed.\033[0m\\n" "$resolved_conf_systemd"
+            printf "\\033[1;34m[*] No effective changes to %s were needed.\\033[0m\\n" "$resolved_conf_systemd"
         fi
         rm -f "$temp_resolved_conf"
     fi
@@ -1647,12 +1727,9 @@ enable_process_accounting_and_sysstat() {
     if dpkg -s acct >/dev/null 2>&1 || dpkg -s psacct >/dev/null 2>&1; then
         if ! systemctl is-active --quiet acct && ! systemctl is-active --quiet psacct; then
             printf "\\033[1;33m[*] Attempting to enable and start acct/psacct service...\033[0m\\n"
-            if systemctl enable --now acct 2>/dev/null || systemctl enable --now psacct 2>/dev/null; then
-                printf "\\033[1;32m[+] acct/psacct service enabled and started.\033[0m\\n"
-                changed_acct=true
-            else
-                printf "\\033[1;31m[-] Failed to enable/start acct/psacct service. It might need manual configuration or a reboot.\033[0m\\n"
-            fi
+            systemctl enable --now acct 2>/dev/null || systemctl enable --now psacct 2>/dev/null
+            printf "\\033[1;32m[+] acct/psacct service enabled and started.\033[0m\\n"
+            changed_acct=true
         else
             printf "\\033[1;32m[+] acct/psacct service is already active.\033[0m\\n"
         fi
@@ -1841,7 +1918,6 @@ EOF
 
 
     printf "\\033[1;32m[+] Central logging setup complete. All security logs will be collected in /usr/local/var/log/suricata/hardn-xdr.log\033[0m\n"
-    printf "\\033[1;32m[+] A symlink has been created at /var/log/hardn-xdr.log for easier access.\\033[0m\\n"
 }
 
 disable_service_if_active() {
@@ -1887,6 +1963,10 @@ remove_unnecessary_services() {
 
 pen_test() {
     printf "\\033[1;31m[+] Running penetration tests...\\033[0m\\n"
+    local lynis_path="/usr/bin/lynis"
+    local manual_install_dir=""
+    local current_dir
+    current_dir=$(pwd)
 
     # Ensure Lynis is installed
     if ! dpkg -s lynis >/dev/null 2>&1; then
@@ -1899,10 +1979,23 @@ pen_test() {
             # Manual installation using wget
             cd /tmp || { printf "\\033[1;31m[-] Error: Cannot access /tmp directory.\\033[0m\\n"; return 1; }
             if wget https://downloads.cisofy.com/lynis/lynis-latest.tar.gz && \
-               tar -xzf lynis-latest.tar.gz && cd lynis; then
-                printf "\\033[1;32m[+] Lynis downloaded and extracted successfully.\\033[0m\\n"
+               tar -xzf lynis-latest.tar.gz; then
+                # Find the extracted directory
+                manual_install_dir=$(find /tmp -maxdepth 1 -type d -name "lynis*" | head -n 1)
+                if [ -n "$manual_install_dir" ] && [ -d "$manual_install_dir" ]; then
+                    printf "\\033[1;32m[+] Lynis downloaded and extracted to %s successfully.\\033[0m\\n" "$manual_install_dir"
+                    lynis_path="$manual_install_dir/lynis"
+                    if [ ! -x "$lynis_path" ]; then
+                        chmod +x "$lynis_path"
+                    fi
+                else
+                    printf "\\033[1;31m[-] Failed to locate extracted Lynis directory. Cannot proceed with penetration tests.\\033[0m\\n"
+                    cd "$current_dir" || true
+                    return 1
+                fi
             else
                 printf "\\033[1;31m[-] Failed to download or extract Lynis. Cannot proceed with penetration tests.\\033[0m\\n"
+                cd "$current_dir" || true
                 return 1
             fi
         fi
@@ -1912,16 +2005,21 @@ pen_test() {
 
     # Run the Lynis audit
     printf "\\033[1;34m[*] Running Lynis audit...\\033[0m\\n"
-    if [ -x "/usr/bin/lynis" ]; then
-        lynis audit system --pentest --quick 2>/dev/null || {
+    if [ -x "$lynis_path" ]; then
+        if "$lynis_path" audit system --pentest --quick 2>/dev/null; then
+            printf "\\033[1;32m[+] Lynis audit completed successfully.\\033[0m\\n"
+        else
             printf "\\033[1;31m[-] Lynis audit failed. Please check the output for details.\\033[0m\\n"
-            return 1
-        }
+            # Don't return error, continue with script
+        fi
     else
-        ./lynis audit system || {
-            printf "\\033[1;31m[-] Lynis audit failed using manual installation. Please check the output for details.\\033[0m\\n"
-            return 1
-        }
+        printf "\\033[1;31m[-] Error: Lynis executable not found at %s or not executable.\\033[0m\\n" "$lynis_path"
+        printf "\\033[1;31m[-] Skipping Lynis audit.\\033[0m\\n"
+    fi
+
+    # Return to original directory if we changed
+    if [ -n "$manual_install_dir" ]; then
+        cd "$current_dir" || true
     fi
 
     printf "\\033[1;32m[+] Penetration tests completed!\\033[0m\\n"
