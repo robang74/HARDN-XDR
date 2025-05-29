@@ -991,7 +991,6 @@ EOF
 -w /etc/cron.monthly/ -p wa -k system-config
 -w /etc/anacrontab -p wa -k system-config
 -w /var/spool/cron/crontabs/ -p wa -k system-config
--w /etc/ssh/sshd_config -p wa -k system-config
 -w /etc/sysctl.conf -p wa -k system-config
 -w /etc/modprobe.d/ -p wa -k system-config
 -w /etc/apt/sources.list -p wa -k system-config
@@ -1288,56 +1287,7 @@ EOF
     else
         printf "\\033[1;33m[!] AIDE already installed, skipping configuration...\\033[0m\\n"
     fi
-    ################################ STIG-PAM
-    printf "\\033[1;31m[+] Setting basic STIG compliant PAM rules...\\033[0m\\n"
-
-    # Configure pam_faillock for account lockout
-    printf "Configuring pam_faillock for account lockout...\\n"
-    if [ -f /etc/pam.d/common-auth ]; then
-        # Add pam_faillock.so to common-auth (before pam_unix.so)
-        if ! grep -q "pam_faillock.so" /etc/pam.d/common-auth; then
-            sed -i '/^auth.*pam_unix.so/i auth       required      pam_faillock.so preauth silent audit deny=5 unlock_time=900' /etc/pam.d/common-auth
-            sed -i '/^auth.*pam_unix.so/a auth       [default=die] pam_faillock.so authfail audit deny=5 unlock_time=900' /etc/pam.d/common-auth
-            printf "\\033[1;32m[+] Added pam_faillock.so to /etc/pam.d/common-auth.\\033[0m\\n"
-        fi
-    fi
-
-    if [ -f /etc/pam.d/common-account ]; then
-        # Add pam_faillock.so to common-account (before pam_unix.so)
-        if ! grep -q "pam_faillock.so" /etc/pam.d/common-account; then
-            sed -i '/^account.*pam_unix.so/i account    required      pam_faillock.so' /etc/pam.d/common-account
-            printf "\\033[1;32m[+] Added pam_faillock.so to /etc/pam.d/common-account.\\033[0m\\n"
-        fi
-    fi
-
-    # Configure pam_limits for session limits
-    printf "Configuring pam_limits for session limits...\\n"
-    if [ -f /etc/pam.d/common-session ]; then
-        if ! grep -q "pam_limits.so" /etc/pam.d/common-session; then
-            echo "session    required      pam_limits.so" >> /etc/pam.d/common-session
-            printf "\\033[1;32m[+] Added pam_limits.so to /etc/pam.d/common-session.\\033[0m\\n"
-        fi
-    fi
-
-    # Configure pam_lastlog for login notifications
-    printf "Configuring pam_lastlog for login notifications...\\n"
-    if [ -f /etc/pam.d/common-session ]; then
-        if ! grep -q "pam_lastlog.so" /etc/pam.d/common-session; then
-            echo "session    optional      pam_lastlog.so" >> /etc/pam.d/common-session
-            printf "\\033[1;32m[+] Added pam_lastlog.so to /etc/pam.d/common-session.\\033[0m\\n"
-        fi
-    fi
-
-    # Keep pam_tmpdir configuration as requested
-    printf "Configuring PAM tmpdir...\\n"
-    if [ -f /etc/pam.d/common-session ]; then
-        if ! grep -q "pam_tmpdir.so" /etc/pam.d/common-session; then
-            echo "session optional pam_tmpdir.so" >> /etc/pam.d/common-session
-            printf "\\033[1;32m[+] Added pam_tmpdir.so to /etc/pam.d/common-session.\\033[0m\\n"
-        fi
-    fi
-
-    printf "\\033[1;32m[+] Basic STIG compliant PAM rules configuration attempt completed.\\033[0m\\n"
+  
     #################################### YARA
     printf "\\033[1;31m[+] Setting up YARA rules...\\033[0m\\n"
 
