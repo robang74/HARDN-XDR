@@ -419,7 +419,7 @@ setup_security(){
             # Ensure findtime is at least 15 minutes (900 seconds)
             sed -i 's/^\s*findtime\s*=\s*.*/findtime = 900/' "$jail_local" 2>/dev/null || true
             # Ensure maxretry is 3 or less
-            sed -i 's/^\s*maxretry\s*=\s*.*/maxretry = 3/' "$jail_local" 2>/dev/null || true
+            sed -i 's/^\s*maxretry\s*=\s*.*/maxretry = 5/' "$jail_local" 2>/dev/null || true
 
             # Ensure sshd jail is enabled (uncomment or add if missing)
             if ! grep -q '^\s*\[sshd\]' "$jail_local"; then
@@ -817,8 +817,6 @@ EOF
     
     ################################### OpenSSH Server
     printf "Configuring OpenSSH...\\n"
-    sed -i 's/#PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
-    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
     sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config
     sed -i 's/#Protocol 2/Protocol 2/' /etc/ssh/sshd_config
     sed -i 's/#MaxAuthTries 6/MaxAuthTries 3/' /etc/ssh/sshd_config
