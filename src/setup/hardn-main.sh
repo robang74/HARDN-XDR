@@ -46,19 +46,19 @@ update_system_packages() {
 install_package_dependencies() {
     printf "\\033[1;31m[+] Installing package dependencies from ../../progs.csv...\\033[0m\\n"
     progsfile="../../progs.csv"
-    apt-get install apt-listbugs -y >/dev/null 2>&1 || {
-        printf "\\033[1;31m[-] Error: Failed to install apt-listbugs. Please check your package manager.\\033[0m\\n"
-        return 1
-    }
-    apt-get install apt-listchanges -y >/dev/null 2>&1 || {
-        printf "\\033[1;31m[-] Error: Failed to install apt-listchanges. Please check your package manager.\\033[0m\\n"
-        return 1
-    }
 
-    apt-get install libpam-tmpdir -y >/dev/null 2>&1 || {
-        printf "\\033[1;31m[-] Error: Failed to install libpam-tmpdir. Please check your package manager.\\033[0m\\n"
-        return 1
-    }
+    # Ensure git is installed first
+    if ! command -v git >/dev/null 2>&1; then
+        printf "\\033[1;34m[*] Git is not installed. Attempting to install git...\\033[0m\\n"
+        if DEBIAN_FRONTEND=noninteractive apt-get install -y git >/dev/null 2>&1; then
+            printf "\\033[1;32m[+] Successfully installed git.\\033[0m\\n"
+        else
+            printf "\\033[1;31m[-] Error: Failed to install git. Please check your package manager.\\033[0m\\n"
+            return 1
+        fi
+    else
+        printf "\\033[1;34m[*] Git is already installed.\\033[0m\\n"
+    fi
 
     # Check if the CSV file exists
     if [[ ! -f "$progsfile" ]]; then
@@ -66,30 +66,51 @@ install_package_dependencies() {
         return 1
     fi
 
-    while IFS=, read -r name _ desc || [[ -n "$name" ]]; do
+    while IFS=, read -r name version || [[ -n "$name" ]]; do
         # Skip comments and empty lines
         [[ -z "$name" || "$name" =~ ^[[:space:]]*# ]] && continue
 
         # Clean up package name (remove quotes and trim whitespace)
         name=$(echo "$name" | xargs)
-
-
+        version=$(echo "$version" | xargs)
 
         if [[ -n "$name" ]]; then
-            if ! dpkg -s "$name" >/dev/null 2>&1; then
-                printf "\\033[1;34m[*] Attempting to install package: %s (%s)...\\033[0m\\n" "$name" "${desc:-No description}"
-                if DEBIAN_FRONTEND=noninteractive apt install -y "$name"; then
-                    printf "\\033[1;32m[+] Successfully installed %s.\\033[0m\\n" "$name"
-                else
-                    printf "\\033[1;33m[!] apt install failed for %s, trying apt-get...\\033[0m\\n" "$name"
-                    if DEBIAN_FRONTEND=noninteractive apt-get install -y "$name"; then
-                         printf "\\033[1;32m[+] Successfully installed %s with apt-get.\\033[0m\\n" "$name"
-                    else
-                        printf "\\033[1;31m[-] Error: Failed to install %s with both apt and apt-get. Please check manually.\\033[0m\\n" "$name"
-                    fi
-                fi
+            if [[ "$version" == "latest" ]]; then
+                printf "\\033[1;34m[*] Attempting to manually install package: %s (version: %s)...\\033[0m\\n" "$name" "$version"
+                # Custom logic for git-based installation
+                case "$name" in
+                    qemu-kvm)
+                        printf "\\033[1;34m[*] Manually installing qemu-kvm using git...\\033[0m\\n"
+                        git clone https://github.com/qemu/qemu.git /tmp/qemu
+                        cd /tmp/qemu || { printf "\\033[1;31m[-] Failed to access QEMU directory.\\033[0m\\n"; return 1; }
+                        ./configure && make && sudo make install
+                        ;;
+                    chkrootkit)
+                        printf "\\033[1;34m[*] Manually installing chkrootkit using git...\\033[0m\\n"
+                        git clone https://github.com/ChkRootkit/chkrootkit.git /tmp/chkrootkit
+                        cd /tmp/chkrootkit || { printf "\\033[1;31m[-] Failed to access chkrootkit directory.\\033[0m\\n"; return 1; }
+                        make sense && sudo make install
+                        ;;
+                    *)
+                        printf "\\033[1;33m[!] Warning: No manual installation process defined for %s. Skipping...\\033[0m\\n" "$name"
+                        ;;
+                esac
             else
-                printf "\\033[1;34m[*] Package %s is already installed.\\033[0m\\n" "$name"
+                if ! dpkg -s "$name" >/dev/null 2>&1; then
+                    printf "\\033[1;34m[*] Attempting to install package: %s (%s)...\\033[0m\\n" "$name" "${version:-No description}"
+                    if DEBIAN_FRONTEND=noninteractive apt install -y "$name=$version"; then
+                        printf "\\033[1;32m[+] Successfully installed %s.\\033[0m\\n" "$name"
+                    else
+                        printf "\\033[1;33m[!] apt install failed for %s, trying apt-get...\\033[0m\\n" "$name"
+                        if DEBIAN_FRONTEND=noninteractive apt-get install -y "$name=$version"; then
+                             printf "\\033[1;32m[+] Successfully installed %s with apt-get.\\033[0m\\n" "$name"
+                        else
+                            printf "\\033[1;31m[-] Error: Failed to install %s with both apt and apt-get. Please check manually.\\033[0m\\n" "$name"
+                        fi
+                    fi
+                else
+                    printf "\\033[1;34m[*] Package %s is already installed.\\033[0m\\n" "$name"
+                fi
             fi
         else
             printf "\\033[1;33m[!] Warning: Skipping line with empty package name.\\033[0m\\n"
