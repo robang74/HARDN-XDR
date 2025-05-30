@@ -692,7 +692,7 @@ EOF
     ############################### automatic security updates
     printf "Configuring automatic security updates...\\n"
  
-    echo 'Unattended-Upgrade::Allowed-Origins {
+    echo "Unattended-Upgrade::Allowed-Origins {
         "${distro_id}:${distro_codename}-security";
         "${distro_id}ESMApps:${distro_codename}-apps-security";
         "${distro_id}ESM:${distro_codename}-infra-security";
