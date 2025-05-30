@@ -18,18 +18,26 @@
 </p>
 
 
-
+<br>
+<br>
 <p align="center">
   <img src="https://img.shields.io/badge/OVERVIEW-white?style=for-the-badge&labelColor=black" alt="OVERVIEW"><br><br>
 </p>
 
 
-### HARDN-XDR
-- **Our** Goal: assist the open source community in building a Debian based **"GOLDEN IMAGE"** System.
-- This Debian Package is only tested for **BARE-METAL installs of Debian based distributions and Virtual Machines**
-- Is a robust and secure endpoint management solution designed to simplify and enhance the management of devices in your network. It provides advanced features for monitoring, securing, and maintaining endpoints efficiently.
-- We also bring you with this release `STIG` COMPLIANCE to align with the Security Technical Information Guides provided by the DOD Cyber Exchange.
+## HARDN-XDR
+- **Our Goal**: 
+  - Assist the open source community in building a Debian based **"GOLDEN IMAGE"** System.
+- **Our Purpose**: 
+  - To empower IT administrators and users with the tools they need to ensure endpoint security, optimize performance, and maintain compliance across their organization.
+- **What we have to offer**:
+  - A robust and secure endpoint management solution designed to simplify and enhance the management of devices in your network. 
+  - Advanced features for monitoring, securing, and maintaining endpoints efficiently.
+  - `STIG` COMPLIANCE to align with the [Security Technical Information Guides](https://public.cyber.mil/stigs/) provided by the [DOD Cyber Exchange](https://public.cyber.mil/).
 
+
+<br>
+<br>
 <p align="center">
   <img src="https://img.shields.io/badge/FEATURES-white?style=for-the-badge&labelColor=black" alt="FEATURES"><br><br>
 </p>
@@ -38,13 +46,59 @@
 - **Enhanced Security**: Protect endpoints with advanced security protocols.
 - **Scalability**: Manage endpoints across small to large-scale networks.
 - **User-Friendly Interface**: Intuitive design for seamless navigation and management.
-- **STIG Compliance**: This release brings the utmost, security for Debian Government based information systems. 
+- **STIG Compliance**: This release brings the utmost security for Debian Government based information systems. 
 
 
-### Actions
+<br>
+<br>
+<p align="center">
+  <img src="https://img.shields.io/badge/INSTALLATION-white?style=for-the-badge&labelColor=black" alt="INSTALLATION"><br><br>
+</p>
+
+
+## Quick Start: 
+
+
+### Installation Notes
+- HARDN-XDR is currently being developed and tested for **BARE-METAL installs of Debian based distributions and Virtual Machines**.
+- Ensure you have the latest version of **Debian 12** or **Ubuntu 24.04**.
+- By installing HARDN-XDR with the commands listed in the installation process, the following changes will be made to your system:
+> - A collection of security focused packages will be installed.
+> - Security tools and services will be enabled.
+> - System hardening and STIG settings will be applied.
+> - A malware and signature detection and response system will be set up.
+> - A monitoring and reporting system will be activated. 
+- For a detailed list of all that will be changed, please refer to [HARDN.md](docs/HARDN.md).
+- For an overview of HARDN-Debian STIG Compliance, please refer to [deb_stig.md](docs/deb_stig.md).
+
+<br>
+
+### Installation
+
+1.  **Download the HARDN script:**
+    Open your terminal and run the following command to download the main script:
+    ```bash
+    curl -LO https://raw.githubusercontent.com/OpenSource-For-Freedom/HARDN-XDR/main/src/setup/hardn-main.sh
+    ```
+
+2.  **Run the HARDN setup:**
+    Launch the script with superuser privileges to begin the hardening process:
+    ```bash
+    sudo chmod +x hardn-main.sh
+    sudo ./hardn-main.sh
+    ```
+    This will start the HARDN setup. 
+
+
+
+<br>
+
+## Actions
 - [![Auto Update Dependencies](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/validate.yml/badge.svg)](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/validate.yml)
 
-### File Structure
+<br>
+
+## File Structure
 
 
 ```bash
@@ -73,40 +127,10 @@ HARDN/
 </p>
 
 
-<p align="center">
-  <img src="https://img.shields.io/badge/PURPOSE-white?style=for-the-badge&labelColor=black" alt="PURPOSE"><br><br>
-</p>
-
-The purpose of HARDN-XDR is to empower IT administrators and users with the tools they need to ensure endpoint security, optimize performance, and maintain compliance across their organization.
-
-<p align="center">
-  <img src="https://img.shields.io/badge/INSTALLATION-white?style=for-the-badge&labelColor=black" alt="INSTALLATION"><br><br>
-</p>
 
 
-## Quick Start: 
 
-### Installation
-
-1.  **Download the HARDN script:**
-    Open your terminal and run the following command to download the main script:
-    ```bash
-    curl -LO https://raw.githubusercontent.com/OpenSource-For-Freedom/HARDN-XDR/main/src/setup/hardn-main.sh
-    ```
-
-2.  **Run the HARDN setup:**
-    Launch the script with superuser privileges to begin the hardening process:
-    ```bash
-    sudo chmod +x hardn-main.sh
-    sudo ./hardn-main.sh
-    ```
-    This will start the HARDN setup. 
-
-
-### Installation Notes
-- Ensure you have the latest version of Debian 12 or Ubuntu 24.04.
-- Follow the updated installation steps in the `docs` directory.
-
+<br>
 
 <p align="center">
   <img src="https://img.shields.io/badge/PROJECT PARTNERS-white?style=for-the-badge&labelColor=black" alt="PROJECT PARTNERS"><br><br>
@@ -117,14 +141,15 @@ The purpose of HARDN-XDR is to empower IT administrators and users with the tool
   <img src="docs/assets/cybersynapse.png" alt="cybersynapse Logo" />
 </p>
 
-
+<br>
 
 <p align="center">
   <img src="https://img.shields.io/badge/LICENSE-white?style=for-the-badge&labelColor=black" alt="LICENSE"><br><br>
-This project is licensed under the MIT License
+This project is licensed under the MIT License.
   
 </p>
 
+<br>
 
 <p align="center">
   <img src="https://img.shields.io/badge/CONTACT-white?style=for-the-badge&labelColor=black" alt="CONTACT"><br><br>
