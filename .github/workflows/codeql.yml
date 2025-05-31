@@ -1,4 +1,4 @@
-name: "Security Overwatch Workflow"
+name: "Security Overwatch"
 
 on:
   push:
@@ -33,8 +33,8 @@ jobs:
         set -e
 
         echo "Running linting..."
-        find . -type f -name "*.sh" -exec shellcheck {} \;
-        find . -type f -name "*.py" -exec pylint {} \;
+        find . -type f -name "*.sh" -exec shellcheck {} \\;
+        find . -type f -name "*.py" -exec pylint {} \\;
 
         echo "Running secret scanning..."
         trufflehog filesystem --path ./ --json
@@ -43,3 +43,22 @@ jobs:
         bandit -r .
 
         echo "All checks completed successfully!"
+
+    - name: Create or Update Weekly Issue
+      run: |
+        echo "Setting up GitHub CLI..."
+        apt update && apt install -y gh
+        gh auth login --with-token <<< "$GITHUB_TOKEN"
+
+        echo "Checking for existing issue..."
+        ISSUE_TITLE="Weekly Security Scan Results"
+        ISSUE_BODY="This issue contains the results of the weekly security scans."
+        EXISTING_ISSUE=$(gh issue list --search "$ISSUE_TITLE" --json number | jq -r '.[0].number')
+
+        if [ "$EXISTING_ISSUE" != "null" ]; then
+          echo "Updating existing issue..."
+          gh issue comment "$EXISTING_ISSUE" --body "Updated results:\n$(cat scan_results.txt)"
+        else
+          echo "Creating new issue..."
+          gh issue create --title "$ISSUE_TITLE" --body "$ISSUE_BODY"
+        fi
