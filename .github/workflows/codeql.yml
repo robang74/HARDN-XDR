@@ -39,6 +39,11 @@ jobs:
         echo "Installing Git..."
         apt update && apt install -y git
 
+    - name: Configure Safe Directory
+      run: |
+        echo "Configuring Git safe directory..."
+        git config --global --add safe.directory /__w/HARDN-XDR/HARDN-XDR
+
     - name: Verify Git Repository
       run: |
         echo "Verifying Git repository..."
