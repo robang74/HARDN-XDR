@@ -33,6 +33,10 @@ jobs:
           shellcheck "$script" > "scan_results/$sanitized_name.txt" || true
         done
         echo "ShellCheck completed. Results stored in scan_results/"
+    - name: install git
+      run: |
+        echo "installing git"
+        apt install git
 
     - name: Commit and Push Fixes
       run: |
