@@ -1,4 +1,4 @@
-name: "Security Shell Overwatch"
+name: "Security Overwatch"
 
 on:
   push:
