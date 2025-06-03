@@ -1,4 +1,4 @@
-name: "Security Shell Overwatch"
+name: "CodeQL Security Scanning for Bash"
 
 on:
   push:
@@ -6,60 +6,52 @@ on:
   pull_request:
     branches: [ "main" ]
   schedule:
-    - cron: '23 15 * * 2'
+    - cron: '0 2 * * 7' # Weekly scan on Sundays
 
 jobs:
-  shellcheck-scan:
-    name: ShellCheck Scanning and Logging
-    runs-on: ubuntu-22.04
+  codeql-analysis:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Install Dependencies
-      run: |
-        echo "Installing ShellCheck and GitHub CLI..."
-        sudo apt update && sudo apt install -y shellcheck git gh
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: "bash" # Explicitly enable bash analysis
 
-    - name: Run ShellCheck on Shell Scripts
+    - name: Build CodeQL Database
       run: |
-        echo "Running ShellCheck..."
-        mkdir -p shellcheck_logs
-        for script in $(find src/setup -type f -name "*.sh"); do
-          echo "Scanning $script"
-          sanitized_name=$(echo "$script" | sed 's/\\//_/g')
-          shellcheck "$script" > "shellcheck_logs/$sanitized_name.log" || true
-        done
-        echo "ShellCheck completed. Logs stored in shellcheck_logs/"
+        echo "Building the CodeQL database..."
+        # Adjust these commands to build your project if necessary
+        # For example, install dependencies or compile code
+        bash --version # Ensure bash is available
+        echo "No specific build steps required for bash scripts."
 
-    - name: Upload Logs
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+      with:
+        category: "/security-tests"
+
+    - name: Upload CodeQL Results
       uses: actions/upload-artifact@v3
       with:
-        name: shellcheck-logs
-        path: shellcheck_logs/
+        name: codeql-results
+        path: codeql-results/
 
-  submit-issue:
-    name: Submit Issue
-    needs: shellcheck-scan
-    runs-on: ubuntu-22.04
-    steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
-
-    - name: Download Logs
-      uses: actions/download-artifact@v4
-      with:
-        name: shellcheck-logs
-
-    - name: Create Issue
+    - name: Create Issue for Security Findings
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        echo "Creating GitHub Issue..."
-        ISSUE_TITLE="ShellCheck Fixes Needed"
-        ISSUE_BODY="ShellCheck has identified issues in the following scripts:\n\n"
-        for log in shellcheck_logs/*.log; do
-          ISSUE_BODY="$ISSUE_BODY$(basename "$log"):\n$(cat "$log")\n\n"
+        echo "Creating GitHub Issue for Security Findings..."
+        ISSUE_TITLE="CodeQL Security Findings"
+        ISSUE_BODY="CodeQL has identified potential security issues in the repository:\n\n"
+        for finding in codeql-results/*.log; do
+          ISSUE_BODY="$ISSUE_BODY$(basename "$finding"):\n$(cat "$finding")\n\n"
         done
         echo -e "$ISSUE_BODY" > issue_body.txt
         gh issue create --title "$ISSUE_TITLE" --body-file issue_body.txt
