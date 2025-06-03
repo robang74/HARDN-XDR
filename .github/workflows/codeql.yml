@@ -33,8 +33,6 @@ jobs:
           shellcheck "$script" > "scan_results/$sanitized_name.txt" || true
         done
         echo "ShellCheck completed. Results stored in scan_results/"
-        echo "Contents of scan_results directory:"
-        ls -la scan_results/ || echo "No files in scan_results/"
 
     - name: Install Git
       run: |
@@ -56,12 +54,14 @@ jobs:
         echo "Cleaning up untracked files..."
         git clean -fdx || true
         echo "Checking out the main branch..."
-        git checkout main
+        git checkout -t origin/main
 
     - name: Create New Branch
       run: |
-        echo "Creating shellcheck-fixes branch..."
-        git checkout -b shellcheck-fixes
+        TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
+        BRANCH_NAME="shellcheck-fixes-$TIMESTAMP"
+        echo "Creating new branch: $BRANCH_NAME"
+        git checkout -b "$BRANCH_NAME"
 
     - name: Commit and Push Fixes
       env:
@@ -73,7 +73,9 @@ jobs:
         if [ -d "scan_results" ] && [ "$(ls -A scan_results)" ]; then
           git add scan_results/
           git commit -m "Apply Security fixes"
-          git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} shellcheck-fixes
+          TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
+          BRANCH_NAME="shellcheck-fixes-$TIMESTAMP"
+          git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} "$BRANCH_NAME"
         else
           echo "No files to commit in scan_results/ directory."
         fi
@@ -89,23 +91,7 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        echo "Creating pull request..."
-        gh pr create --title "ShellCheck Fixes" --body "This pull request contains fixes for issues identified during the ShellCheck scan." --base main --head shellcheck-fixes
-
-    - name: Create or Update Weekly Issue
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        echo "Checking for existing issue..."
-        ISSUE_TITLE="Weekly ShellCheck Findings"
-        ISSUE_BODY="This issue contains the results of the weekly ShellCheck scans."
-        EXISTING_ISSUE=$(gh issue list --search "$ISSUE_TITLE" --json number | jq -r '.[0].number')
-
-        if [ "$EXISTING_ISSUE" != "null" ]; then
-          echo "Updating existing issue..."
-          RESULTS=$(cat scan_results/*.txt)
-          gh issue comment "$EXISTING_ISSUE" --body "Updated results:\n\`\`\`\n$RESULTS\n\`\`\`"
-        else
-          echo "Creating new issue..."
-          RESULTS=$(cat scan_results/*.txt)
-          gh issue create --title "$ISSUE_TITLE" --body "$ISSUE_BODY\n\`\`\`\n$RESULTS\n\`\`\`"
+        TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
+        BRANCH_NAME="shellcheck-fixes-$TIMESTAMP"
+        echo "Creating pull request for branch: $BRANCH_NAME"
+        gh pr create --title "ShellCheck Fixes" --body "This pull request contains fixes for issues identified during the ShellCheck scan." --base main --head "$BRANCH_NAME"
