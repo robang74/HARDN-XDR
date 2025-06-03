@@ -9,76 +9,57 @@ on:
     - cron: '23 15 * * 2'
 
 jobs:
-  security-checks:
-    name: Run ShellCheck Security Scans and Create Artifact
+  shellcheck-scan:
+    name: ShellCheck Scanning and Logging
     runs-on: ubuntu-latest
-    container:
-      image: ubuntu:latest # Use an Ubuntu container
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Install ShellCheck
+    - name: Install Dependencies
       run: |
-        echo "Installing ShellCheck..."
-        apt update && apt install -y shellcheck
+        echo "Installing ShellCheck and GitHub CLI..."
+        apt update && apt install -y shellcheck git gh
 
     - name: Run ShellCheck on Shell Scripts
       run: |
         echo "Running ShellCheck..."
-        mkdir -p fixed_files
+        mkdir -p shellcheck_logs
         for script in $(find src/setup -type f -name "*.sh"); do
           echo "Scanning $script"
-          sanitized_name=$(echo "$script" | sed 's/\//_/g')
-          shellcheck --format=diff "$script" > "fixed_files/$sanitized_name.diff" || true
+          sanitized_name=$(echo "$script" | sed 's/\\//_/g')
+          shellcheck "$script" > "shellcheck_logs/$sanitized_name.log" || true
         done
-        echo "ShellCheck completed. Fixed files stored in fixed_files/"
+        echo "ShellCheck completed. Logs stored in shellcheck_logs/"
 
-    - name: Upload Fixed Files as Artifact
+    - name: Upload Logs
       uses: actions/upload-artifact@v3
       with:
-        name: fixed-files
-        path: fixed_files/
+        name: shellcheck-logs
+        path: shellcheck_logs/
 
-  create-pull-request:
-    name: Create Pull Request with Fixed Files
-    needs: security-checks
+  submit-issue:
+    name: Submit Issue
+    needs: shellcheck-scan
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Download Artifact
+    - name: Download Logs
       uses: actions/download-artifact@v3
       with:
-        name: fixed-files
+        name: shellcheck-logs
 
-    - name: Apply Fixes to Repository
-      run: |
-        echo "Applying fixes..."
-        for patch in fixed_files/*.diff; do
-          patch -p1 < "$patch" || true
-        done
-        git config --global user.name "GitHub Actions Bot"
-        git config --global user.email "actions@github.com"
-        BRANCH_NAME="shell-fix"
-        if git show-ref --quiet refs/heads/$BRANCH_NAME; then
-          echo "Branch $BRANCH_NAME exists. Switching to it..."
-          git checkout $BRANCH_NAME
-        else
-          echo "Branch $BRANCH_NAME does not exist. Creating it..."
-          git checkout -b $BRANCH_NAME
-        fi
-        echo "Committing changes..."
-        git add .
-        git commit -m "ShellCheck fixes applied"
-        echo "Pushing branch: $BRANCH_NAME"
-        git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} $BRANCH_NAME || true
-
-    - name: Create Pull Request
+    - name: Create Issue
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        BRANCH_NAME="shell-fix"
-        echo "Creating new pull request..."
-        gh pr create --title "ShellCheck Fixes" --body "This pull request contains fixes for issues identified by ShellCheck." --base main --head "$BRANCH_NAME"
+        echo "Creating GitHub Issue..."
+        ISSUE_TITLE="ShellCheck Fixes Needed"
+        ISSUE_BODY="ShellCheck has identified issues in the following scripts:\n\n"
+        for log in shellcheck_logs/*.log; do
+          ISSUE_BODY="$ISSUE_BODY$(basename "$log"):\n$(cat "$log")\n\n"
+        done
+        echo -e "$ISSUE_BODY" > issue_body.txt
+        gh issue create --title "$ISSUE_TITLE" --body-file issue_body.txt
