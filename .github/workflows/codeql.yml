@@ -51,6 +51,8 @@ jobs:
         git remote add origin $GITHUB_SERVER_URL/$GITHUB_REPOSITORY
         echo "Fetching remote history..."
         git fetch origin
+        echo "Cleaning up untracked files..."
+        git stash --include-untracked || true
         echo "Checking out the main branch..."
         git checkout main
         echo "Creating shellcheck-fixes branch..."
