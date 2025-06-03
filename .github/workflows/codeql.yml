@@ -70,21 +70,13 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        echo "Setting up GitHub CLI..."
-        apt update && apt install -y gh
-        echo "Authenticating GitHub CLI..."
-        echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
-
         echo "Creating pull request..."
         gh pr create --title "ShellCheck Fixes" --body "This pull request contains fixes for issues identified during the ShellCheck scan." --base main --head shellcheck-fixes
 
     - name: Create or Update Weekly Issue
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        echo "Setting up GitHub CLI..."
-        apt update && apt install -y gh
-        echo "Authenticating GitHub CLI..."
-        echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
-
         echo "Checking for existing issue..."
         ISSUE_TITLE="Weekly ShellCheck Findings"
         ISSUE_BODY="This issue contains the results of the weekly ShellCheck scans."
