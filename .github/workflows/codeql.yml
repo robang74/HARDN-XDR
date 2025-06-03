@@ -29,8 +29,9 @@ jobs:
         apt update || (echo "Failed to update repositories" && exit 1)
         apt install -y jq || (echo "Failed to install jq using apt. Falling back to direct binary download..." && \
           curl -Lo /usr/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && chmod +x /usr/bin/jq)
-        echo "jq version:"
-        jq --version || (echo "jq is not installed or not in PATH" && exit 1)
+        echo "Verifying jq installation..."
+        jq --version || (echo "jq is not installed or not accessible in PATH" && exit 1)
+        echo "jq is successfully installed."
 
     - name: Run ShellCheck on Shell Scripts
       run: |
