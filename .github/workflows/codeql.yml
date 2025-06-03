@@ -44,7 +44,7 @@ jobs:
         echo "Configuring Git safe directory..."
         git config --global --add safe.directory /__w/HARDN-XDR/HARDN-XDR
 
-    - name: Initialize Git Repository
+    - name: Initialize Git Repository and Create New Branch
       run: |
         echo "Initializing Git repository..."
         git init
@@ -55,9 +55,6 @@ jobs:
         git clean -fdx || true
         echo "Checking out the main branch..."
         git checkout -t origin/main
-
-    - name: Create New Branch
-      run: |
         TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
         BRANCH_NAME="shellcheck-fixes-$TIMESTAMP"
         echo "Creating new branch: $BRANCH_NAME"
@@ -76,7 +73,7 @@ jobs:
           git add scan_results/
           git commit -m "Apply Security fixes"
         else
-          echo "No files to commit in scan_results/ directory. Creating a dummy commit to ensure branch has commits."
+          echo "No files to commit in scan_results/ directory. Creating a dummy commit to ensure branch has history."
           echo "Dummy commit content" > dummy_file.txt
           git add dummy_file.txt
           git commit -m "Dummy commit to ensure branch has history"
