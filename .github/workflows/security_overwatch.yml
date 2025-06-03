@@ -22,7 +22,7 @@ jobs:
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v2
       with:
-        languages: "bash" # Explicitly enable bash analysis
+        languages: "bash" # Explicit
 
     - name: Build CodeQL Database
       run: |
