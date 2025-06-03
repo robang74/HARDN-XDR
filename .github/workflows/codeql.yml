@@ -44,23 +44,23 @@ jobs:
         echo "Configuring Git safe directory..."
         git config --global --add safe.directory /__w/HARDN-XDR/HARDN-XDR
 
-    - name: Verify Git Repository
+    - name: Initialize Git Repository
       run: |
-        echo "Verifying Git repository..."
-        if [ ! -d ".git" ]; then
-          echo "Git repository not found. Initializing..."
-          git init
-          git remote add origin $GITHUB_SERVER_URL/$GITHUB_REPOSITORY
-          git fetch origin
-          git checkout main
-        fi
+        echo "Initializing Git repository..."
+        git init
+        git remote add origin $GITHUB_SERVER_URL/$GITHUB_REPOSITORY
+        git fetch origin
+        echo "Cleaning up untracked files..."
+        git stash --include-untracked || true
+
+        echo "Creating new branch..."
+        git checkout -b shellcheck-fixes
 
     - name: Commit and Push Fixes
       run: |
         echo "Committing fixes..."
         git config --global user.name "GitHub Actions Bot"
         git config --global user.email "actions@github.com"
-        git checkout -b shellcheck-fixes
         git add scan_results/
         git commit -m "Apply Security fixes"
         git push origin shellcheck-fixes
