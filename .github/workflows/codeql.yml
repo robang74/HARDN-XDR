@@ -44,13 +44,17 @@ jobs:
         echo "Configuring Git safe directory..."
         git config --global --add safe.directory /__w/HARDN-XDR/HARDN-XDR
 
-    - name: Initialize Git Repository
+    - name: Initialize Git Repository and Create Branch
       run: |
         echo "Initializing Git repository..."
         git init
         git remote add origin $GITHUB_SERVER_URL/$GITHUB_REPOSITORY
+        echo "Fetching remote history..."
         git fetch origin
-        git checkout -b shellcheck-fixes || git checkout shellcheck-fixes
+        echo "Checking out the main branch..."
+        git checkout main
+        echo "Creating shellcheck-fixes branch..."
+        git checkout -b shellcheck-fixes
 
     - name: Commit and Push Fixes
       env:
