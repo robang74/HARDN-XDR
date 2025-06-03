@@ -38,7 +38,7 @@ jobs:
         category: "/security-tests"
 
     - name: Upload CodeQL Results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: codeql-results
         path: codeql-results/
