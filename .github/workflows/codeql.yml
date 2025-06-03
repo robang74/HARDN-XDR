@@ -66,6 +66,13 @@ jobs:
         echo "Pushing changes to remote branch..."
         git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} shellcheck-fixes --force
 
+    - name: Install GitHub CLI
+      run: |
+        echo "Installing GitHub CLI..."
+        apt update && apt install -y gh
+        echo "Verifying GitHub CLI installation..."
+        gh --version
+
     - name: Create Pull Request
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
