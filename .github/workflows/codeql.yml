@@ -70,16 +70,19 @@ jobs:
         echo "Committing fixes..."
         git config --global user.name "GitHub Actions Bot"
         git config --global user.email "actions@github.com"
+        TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
+        BRANCH_NAME="shellcheck-fixes-$TIMESTAMP"
         if [ -d "scan_results" ] && [ "$(ls -A scan_results)" ]; then
           git add scan_results/
           git commit -m "Apply Security fixes"
-          TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
-          BRANCH_NAME="shellcheck-fixes-$TIMESTAMP"
-          echo "Pushing branch: $BRANCH_NAME"
-          git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} "$BRANCH_NAME"
         else
-          echo "No files to commit in scan_results/ directory."
+          echo "No files to commit in scan_results/ directory. Creating a dummy commit to ensure branch has commits."
+          echo "Dummy commit content" > dummy_file.txt
+          git add dummy_file.txt
+          git commit -m "Dummy commit to ensure branch has history"
         fi
+        echo "Pushing branch: $BRANCH_NAME"
+        git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} "$BRANCH_NAME"
 
     - name: Install GitHub CLI
       run: |
