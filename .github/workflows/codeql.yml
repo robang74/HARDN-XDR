@@ -10,7 +10,7 @@ on:
 
 jobs:
   security-checks:
-    name: Run ShellCheck Security Scans
+    name: Run ShellCheck Security Scans and Create Artifact
     runs-on: ubuntu-latest
     container:
       image: ubuntu:latest # Use an Ubuntu container
@@ -26,37 +26,42 @@ jobs:
     - name: Run ShellCheck on Shell Scripts
       run: |
         echo "Running ShellCheck..."
-        mkdir -p scan_results
-        for script in $(find . -type f -name "*.sh"); do
+        mkdir -p fixed_files
+        for script in $(find src/setup -type f -name "*.sh"); do
           echo "Scanning $script"
           sanitized_name=$(echo "$script" | sed 's/\//_/g')
-          shellcheck "$script" > "scan_results/$sanitized_name.txt" || true
+          shellcheck --format=diff "$script" > "fixed_files/$sanitized_name.diff" || true
         done
-        echo "ShellCheck completed. Results stored in scan_results/"
+        echo "ShellCheck completed. Fixed files stored in fixed_files/"
 
-    - name: Install Git
-      run: |
-        echo "Installing Git..."
-        apt update && apt install -y git
+    - name: Upload Fixed Files as Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: fixed-files
+        path: fixed_files/
 
-    - name: Configure Safe Directory
-      run: |
-        echo "Configuring Git safe directory..."
-        git config --global --add safe.directory /__w/HARDN-XDR/HARDN-XDR
+  create-pull-request:
+    name: Create Pull Request with Fixed Files
+    needs: security-checks
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
 
-    - name: Initialize Git Repository and Reuse or Create Branch
+    - name: Download Artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: fixed-files
+
+    - name: Apply Fixes to Repository
       run: |
-        echo "Initializing Git repository..."
-        git init
-        git remote add origin $GITHUB_SERVER_URL/$GITHUB_REPOSITORY
-        echo "Fetching remote history..."
-        git fetch origin
-        echo "Cleaning up untracked files..."
-        git clean -fdx || true
-        echo "Checking out the main branch..."
-        git checkout -t origin/main
-        BRANCH_NAME="shellcheck-fixes"
-        echo "Checking if branch $BRANCH_NAME exists..."
+        echo "Applying fixes..."
+        for patch in fixed_files/*.diff; do
+          patch -p1 < "$patch" || true
+        done
+        git config --global user.name "GitHub Actions Bot"
+        git config --global user.email "actions@github.com"
+        BRANCH_NAME="shell-fix"
         if git show-ref --quiet refs/heads/$BRANCH_NAME; then
           echo "Branch $BRANCH_NAME exists. Switching to it..."
           git checkout $BRANCH_NAME
@@ -64,46 +69,16 @@ jobs:
           echo "Branch $BRANCH_NAME does not exist. Creating it..."
           git checkout -b $BRANCH_NAME
         fi
-
-    - name: Commit and Push Fixes
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        echo "Committing fixes..."
-        git config --global user.name "GitHub Actions Bot"
-        git config --global user.email "actions@github.com"
-        BRANCH_NAME="shellcheck-fixes"
-        if [ -d "scan_results" ] && [ "$(ls -A scan_results)" ]; then
-          git add scan_results/
-          git commit -m "Update Security fixes"
-        else
-          echo "No files to commit in scan_results/ directory. Creating a dummy commit to ensure branch has history."
-          echo "Dummy commit content" > dummy_file.txt
-          git add dummy_file.txt
-          git commit -m "Dummy commit to ensure branch has history"
-        fi
+        echo "Committing changes..."
+        git add .
+        git commit -m "ShellCheck fixes applied"
         echo "Pushing branch: $BRANCH_NAME"
-        git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} $BRANCH_NAME || true
+        git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} $BRANCH_NAME || true
 
-    - name: Install GitHub CLI
-      run: |
-        echo "Installing GitHub CLI..."
-        apt update && apt install -y gh
-        echo "Verifying GitHub CLI installation..."
-        gh --version
-
-    - name: Create or Update Pull Request
+    - name: Create Pull Request
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        BRANCH_NAME="shellcheck-fixes"
-        echo "Checking for existing pull request for branch: $BRANCH_NAME..."
-        EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" | grep -o '#[0-9]*' | head -n 1)
-        if [ -n "$EXISTING_PR" ]; then
-          echo "Updating existing pull request..."
-          RESULTS=$(cat scan_results/*.txt)
-          gh pr comment "$EXISTING_PR" --body "Updated results:\n\`\`\`\n$RESULTS\n\`\`\`"
-        else
-          echo "Creating new pull request..."
-          gh pr create --title "ShellCheck Fixes" --body "This pull request contains fixes for issues identified during the ShellCheck scan." --base main --head "$BRANCH_NAME"
-        fi
+        BRANCH_NAME="shell-fix"
+        echo "Creating new pull request..."
+        gh pr create --title "ShellCheck Fixes" --body "This pull request contains fixes for issues identified by ShellCheck." --base main --head "$BRANCH_NAME"
