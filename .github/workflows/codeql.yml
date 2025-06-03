@@ -33,7 +33,7 @@ jobs:
         echo "ShellCheck completed. Logs stored in shellcheck_logs/"
 
     - name: Upload Logs
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: shellcheck-logs
         path: shellcheck_logs/
