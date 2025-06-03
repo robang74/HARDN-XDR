@@ -44,7 +44,7 @@ jobs:
         echo "Configuring Git safe directory..."
         git config --global --add safe.directory /__w/HARDN-XDR/HARDN-XDR
 
-    - name: Initialize Git Repository and Create New Branch
+    - name: Initialize Git Repository and Reuse or Create Branch
       run: |
         echo "Initializing Git repository..."
         git init
@@ -55,10 +55,15 @@ jobs:
         git clean -fdx || true
         echo "Checking out the main branch..."
         git checkout -t origin/main
-        TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
-        BRANCH_NAME="shellcheck-fixes-$TIMESTAMP"
-        echo "Creating new branch: $BRANCH_NAME"
-        git checkout -b "$BRANCH_NAME"
+        BRANCH_NAME="shellcheck-fixes"
+        echo "Checking if branch $BRANCH_NAME exists..."
+        if git show-ref --quiet refs/heads/$BRANCH_NAME; then
+          echo "Branch $BRANCH_NAME exists. Switching to it..."
+          git checkout $BRANCH_NAME
+        else
+          echo "Branch $BRANCH_NAME does not exist. Creating it..."
+          git checkout -b $BRANCH_NAME
+        fi
 
     - name: Commit and Push Fixes
       env:
@@ -67,11 +72,10 @@ jobs:
         echo "Committing fixes..."
         git config --global user.name "GitHub Actions Bot"
         git config --global user.email "actions@github.com"
-        TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
-        BRANCH_NAME="shellcheck-fixes-$TIMESTAMP"
+        BRANCH_NAME="shellcheck-fixes"
         if [ -d "scan_results" ] && [ "$(ls -A scan_results)" ]; then
           git add scan_results/
-          git commit -m "Apply Security fixes"
+          git commit -m "Update Security fixes"
         else
           echo "No files to commit in scan_results/ directory. Creating a dummy commit to ensure branch has history."
           echo "Dummy commit content" > dummy_file.txt
@@ -79,7 +83,7 @@ jobs:
           git commit -m "Dummy commit to ensure branch has history"
         fi
         echo "Pushing branch: $BRANCH_NAME"
-        git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} "$BRANCH_NAME"
+        git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} $BRANCH_NAME || true
 
     - name: Install GitHub CLI
       run: |
@@ -88,11 +92,18 @@ jobs:
         echo "Verifying GitHub CLI installation..."
         gh --version
 
-    - name: Create Pull Request
+    - name: Create or Update Pull Request
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
-        BRANCH_NAME="shellcheck-fixes-$TIMESTAMP"
-        echo "Creating pull request for branch: $BRANCH_NAME"
-        gh pr create --title "ShellCheck Fixes" --body "This pull request contains fixes for issues identified during the ShellCheck scan." --base main --head "$BRANCH_NAME"
+        BRANCH_NAME="shellcheck-fixes"
+        echo "Checking for existing pull request for branch: $BRANCH_NAME..."
+        EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --json number | jq -r '.[0].number')
+        if [ "$EXISTING_PR" != "null" ]; then
+          echo "Updating existing pull request..."
+          RESULTS=$(cat scan_results/*.txt)
+          gh pr comment "$EXISTING_PR" --body "Updated results:\n\`\`\`\n$RESULTS\n\`\`\`"
+        else
+          echo "Creating new pull request..."
+          gh pr create --title "ShellCheck Fixes" --body "This pull request contains fixes for issues identified during the ShellCheck scan." --base main --head "$BRANCH_NAME"
+        fi
