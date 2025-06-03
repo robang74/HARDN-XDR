@@ -75,6 +75,7 @@ jobs:
           git commit -m "Apply Security fixes"
           TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
           BRANCH_NAME="shellcheck-fixes-$TIMESTAMP"
+          echo "Pushing branch: $BRANCH_NAME"
           git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} "$BRANCH_NAME"
         else
           echo "No files to commit in scan_results/ directory."
