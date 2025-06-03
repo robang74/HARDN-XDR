@@ -39,6 +39,11 @@ jobs:
         echo "Installing Git..."
         apt update && apt install -y git
 
+    - name: Install jq
+      run: |
+        echo "Installing jq..."
+        apt update && apt install -y jq
+
     - name: Configure Safe Directory
       run: |
         echo "Configuring Git safe directory..."
@@ -73,37 +78,3 @@ jobs:
         git config --global user.name "GitHub Actions Bot"
         git config --global user.email "actions@github.com"
         BRANCH_NAME="shellcheck-fixes"
-        if [ -d "scan_results" ] && [ "$(ls -A scan_results)" ]; then
-          git add scan_results/
-          git commit -m "Update Security fixes"
-        else
-          echo "No files to commit in scan_results/ directory. Creating a dummy commit to ensure branch has history."
-          echo "Dummy commit content" > dummy_file.txt
-          git add dummy_file.txt
-          git commit -m "Dummy commit to ensure branch has history"
-        fi
-        echo "Pushing branch: $BRANCH_NAME"
-        git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} $BRANCH_NAME || true
-
-    - name: Install GitHub CLI
-      run: |
-        echo "Installing GitHub CLI..."
-        apt update && apt install -y gh
-        echo "Verifying GitHub CLI installation..."
-        gh --version
-
-    - name: Create or Update Pull Request
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        BRANCH_NAME="shellcheck-fixes"
-        echo "Checking for existing pull request for branch: $BRANCH_NAME..."
-        EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --json number | jq -r '.[0].number')
-        if [ "$EXISTING_PR" != "null" ]; then
-          echo "Updating existing pull request..."
-          RESULTS=$(cat scan_results/*.txt)
-          gh pr comment "$EXISTING_PR" --body "Updated results:\n\`\`\`\n$RESULTS\n\`\`\`"
-        else
-          echo "Creating new pull request..."
-          gh pr create --title "ShellCheck Fixes" --body "This pull request contains fixes for issues identified during the ShellCheck scan." --base main --head "$BRANCH_NAME"
-        fi
