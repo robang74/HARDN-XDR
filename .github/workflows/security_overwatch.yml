@@ -19,7 +19,7 @@ jobs:
     - name: Install Dependencies
       run: |
         echo "Installing ShellCheck and GitHub CLI..."
-        apt update && apt install -y shellcheck git gh
+        sudo apt update && sudo apt install -y shellcheck git gh
 
     - name: Run ShellCheck on Shell Scripts
       run: |
@@ -33,7 +33,7 @@ jobs:
         echo "ShellCheck completed. Logs stored in shellcheck_logs/"
 
     - name: Upload Logs
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with:
         name: shellcheck-logs
         path: shellcheck_logs/
