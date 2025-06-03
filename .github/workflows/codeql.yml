@@ -44,7 +44,7 @@ jobs:
         echo "Configuring Git safe directory..."
         git config --global --add safe.directory /__w/HARDN-XDR/HARDN-XDR
 
-    - name: Initialize Git Repository and Create Branch
+    - name: Initialize Git Repository
       run: |
         echo "Initializing Git repository..."
         git init
@@ -52,9 +52,12 @@ jobs:
         echo "Fetching remote history..."
         git fetch origin
         echo "Cleaning up untracked files..."
-        git stash --include-untracked || true
+        git clean -fdx || true
         echo "Checking out the main branch..."
         git checkout main
+
+    - name: Create New Branch
+      run: |
         echo "Creating shellcheck-fixes branch..."
         git checkout -b shellcheck-fixes
 
@@ -67,10 +70,7 @@ jobs:
         git config --global user.email "actions@github.com"
         git add scan_results/
         git commit -m "Apply Security fixes"
-        echo "Pulling latest changes from remote branch..."
-        git pull --rebase origin shellcheck-fixes || true
-        echo "Pushing changes to remote branch..."
-        git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} shellcheck-fixes --force
+        git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} shellcheck-fixes
 
     - name: Install GitHub CLI
       run: |
