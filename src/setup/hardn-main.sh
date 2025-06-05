@@ -3,7 +3,7 @@
 # HARDN-XDR - The Linux Security Hardening Sentinel
 # Developed and built by Christopher Bingham and Tim Burns
 
-# --- Global Variables ---
+
 export APT_LISTBUGS_FRONTEND=none
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROGS_CSV_PATH="${SCRIPT_DIR}/../../progs.csv"
@@ -48,15 +48,19 @@ welcomemsg() {
     whiptail --title "HARDN-XDR" --msgbox "Welcome to HARDN-XDR a Debian Security tool for System Hardening" 10 60
     echo ""
     echo "This installer will update your system first..."
-    whiptail --title "HARDN-XDR" --yesno "Do you want to continue with the installation?" 10 60
-    # Original yes/no whiptail did not have an explicit exit path for "no"
+    if whiptail --title "HARDN-XDR" --yesno "Do you want to continue with the installation?" 10 60; then
+        true  
+    else
+        echo "Installation cancelled by user."
+        exit 1
+    fi
 }
 
 preinstallmsg() {
     echo ""
     whiptail --title "HARDN-XDR" --msgbox "Welcome to HARDN-XDR. A Linux Security Hardening program." 10 60
     echo "The system will be configured to ensure STIG and Security compliance."
-    # Removed: || { clear; exit 1; }
+   
 }
 
 update_system_packages() {
@@ -375,7 +379,8 @@ EOF
     
     HARDN_STATUS "info" "USB security policy configured to allow HID devices but block storage."
     
-    
+    # Create udev rules to further control USB devices 
+    cat > /etc/udev/rules.d/99-usb-storage.rules << 'EOF'
 # Block USB storage devices while allowing keyboards and mice
 ACTION=="add", SUBSYSTEMS=="usb", ATTRS{bInterfaceClass}=="08", RUN+="/bin/sh -c 'echo 0 > /sys$DEVPATH/authorized'"
 # Interface class 08 is for mass storage
@@ -514,70 +519,6 @@ EOF
     HARDN_STATUS "info" "Starting kernel security hardening..."
       
 
-    ########################################## KERNEL SEC
-    HARDN_STATUS "info" "Applying kernel security settings..."
-    
-    # Define kernel security parameters and their expected values
-    declare -A kernel_params=(
-        ["dev.tty.ldisc_autoload"]="0"
-        ["fs.protected_fifos"]="2"
-        ["fs.protected_hardlinks"]="1"
-        ["fs.protected_regular"]="2"
-        ["fs.protected_symlinks"]="1"
-        ["fs.suid_dumpable"]="0"
-        ["kernel.core_uses_pid"]="1"
-        ["kernel.ctrl-alt-del"]="0"
-        ["kernel.dmesg_restrict"]="1"
-        ["kernel.kptr_restrict"]="2"
-        ["kernel.perf_event_paranoid"]="3"
-        ["kernel.randomize_va_space"]="2"
-        ["kernel.unprivileged_bpf_disabled"]="1"
-        ["net.core.bpf_jit_harden"]="2"
-        ["net.ipv4.conf.all.accept_redirects"]="0"
-        ["net.ipv4.conf.all.accept_source_route"]="0"
-        ["net.ipv4.conf.all.bootp_relay"]="0"
-        ["net.ipv4.conf.all.forwarding"]="0"
-        ["net.ipv4.conf.all.log_martians"]="1"
-        ["net.ipv4.conf.all.mc_forwarding"]="0"
-        ["net.ipv4.conf.all.proxy_arp"]="0"
-        ["net.ipv4.conf.all.rp_filter"]="1"
-        ["net.ipv4.conf.all.send_redirects"]="0"
-        ["net.ipv4.conf.default.accept_redirects"]="0"
-        ["net.ipv4.conf.default.accept_source_route"]="0"
-        ["net.ipv4.conf.default.log_martians"]="1"
-        ["net.ipv4.icmp_echo_ignore_broadcasts"]="1"
-        ["net.ipv4.icmp_ignore_bogus_error_responses"]="1"
-        ["net.ipv4.tcp_syncookies"]="1"
-        ["net.ipv4.tcp_timestamps"]="0"
-        ["net.ipv6.conf.all.accept_redirects"]="0"
-        ["net.ipv6.conf.all.accept_source_route"]="0"
-        ["net.ipv6.conf.default.accept_redirects"]="0"
-        ["net.ipv6.conf.default.accept_source_route"]="0"
-    )
-
-    # Apply each kernel parameter
-    for param in "${!kernel_params[@]}"; do
-        expected_value="${kernel_params[$param]}"
-        
-        # Get current value
-        current_value=$(sysctl -n "$param" 2>/dev/null)
-
-        # Check if the parameter exists
-        if [[ -z "$current_value" ]]; then
-            HARDN_STATUS "warning" "Kernel parameter '$param' not found. Skipping."
-            continue
-        fi
-
-        # Check if the current value matches the expected value
-        if [[ "$current_value" != "$expected_value" ]]; then
-            HARDN_STATUS "info" "Setting '$param' to '$expected_value' (was '$current_value')..."
-            echo "$param = $expected_value" >> /etc/sysctl.conf
-            sysctl -p >/dev/null 2>&1
-            HARDN_STATUS "pass" "'$param' set to '$expected_value'."
-        else
-            HARDN_STATUS "info" "'$param' is already set to '$expected_value'."
-        fi
-    done
 
     ############################### automatic security updates
     HARDN_STATUS "info" "Configuring automatic security updates for Debian-based systems..."
@@ -1568,6 +1509,82 @@ enable_process_accounting_and_sysstat() {
             HARDN_STATUS "pass" "Process accounting (acct) and sysstat already configured or no changes needed."
         fi
     }
+    
+apply_kernel_security() {
+    HARDN_STATUS "info" "Applying kernel security settings..."
+
+    declare -A kernel_params=(
+        # === Console and Memory Protections ===
+        ["dev.tty.ldisc_autoload"]="0"
+        ["fs.protected_fifos"]="2"
+        ["fs.protected_hardlinks"]="1"
+        ["fs.protected_regular"]="2"
+        ["fs.protected_symlinks"]="1"
+        ["fs.suid_dumpable"]="0"
+
+        # === Kernel Info Leak Prevention ===
+        ["kernel.core_uses_pid"]="1"
+        ["kernel.ctrl-alt-del"]="0"
+        ["kernel.dmesg_restrict"]="1"
+        ["kernel.kptr_restrict"]="2"
+
+        # === Performance & BPF ===
+        ["kernel.perf_event_paranoid"]="2"
+        ["kernel.randomize_va_space"]="2"
+        ["kernel.unprivileged_bpf_disabled"]="1"
+
+        # === BPF JIT Hardening ===
+        ["net.core.bpf_jit_harden"]="2"
+
+        # === IPv4 Hardening ===
+        ["net.ipv4.conf.all.accept_redirects"]="0"
+        ["net.ipv4.conf.default.accept_redirects"]="0"
+        ["net.ipv4.conf.all.accept_source_route"]="0"
+        ["net.ipv4.conf.default.accept_source_route"]="0"
+        ["net.ipv4.conf.all.bootp_relay"]="0"
+        ["net.ipv4.conf.all.forwarding"]="0"
+        ["net.ipv4.conf.all.log_martians"]="1"
+        ["net.ipv4.conf.default.log_martians"]="1"
+        ["net.ipv4.conf.all.mc_forwarding"]="0"
+        ["net.ipv4.conf.all.proxy_arp"]="0"
+        ["net.ipv4.conf.all.rp_filter"]="1"
+        ["net.ipv4.conf.all.send_redirects"]="0"
+        ["net.ipv4.conf.default.send_redirects"]="0"
+        ["net.ipv4.icmp_echo_ignore_broadcasts"]="1"
+        ["net.ipv4.icmp_ignore_bogus_error_responses"]="1"
+        ["net.ipv4.tcp_syncookies"]="1"
+        ["net.ipv4.tcp_timestamps"]="1"
+
+        # === IPv6 Hardening ===
+        ["net.ipv6.conf.all.accept_redirects"]="0"
+        ["net.ipv6.conf.default.accept_redirects"]="0"
+        ["net.ipv6.conf.all.accept_source_route"]="0"
+        ["net.ipv6.conf.default.accept_source_route"]="0"
+    )
+
+    for param in "${!kernel_params[@]}"; do
+        expected_value="${kernel_params[$param]}"
+        current_value=$(sysctl -n "$param" 2>/dev/null)
+
+        if [[ -z "$current_value" ]]; then
+            HARDN_STATUS "warning" "Kernel parameter '$param' not found. Skipping."
+            continue
+        fi
+
+        if [[ "$current_value" != "$expected_value" ]]; then
+            HARDN_STATUS "info" "Setting '$param' to '$expected_value' (was '$current_value')..."
+            sed -i "/^$param\s*=/d" /etc/sysctl.conf
+            echo "$param = $expected_value" >> /etc/sysctl.conf
+            sysctl -w "$param=$expected_value" >/dev/null 2>&1
+            HARDN_STATUS "pass" "'$param' set to '$expected_value'."
+        else
+            HARDN_STATUS "info" "'$param' is already set to '$expected_value'."
+        fi
+    done
+
+    sysctl --system >/dev/null 2>&1
+    HARDN_STATUS "pass" "Kernel hardening applied successfully."
+}
 
 # Central logging
 setup_central_logging() {
@@ -1772,6 +1789,7 @@ main() {
     update_system_packages
     install_package_dependencies "../../progs.csv"
     setup_security
+    apply_kernel_security
     enable_process_accounting_and_sysstat
     enable_nameservers
     purge_old_packages
