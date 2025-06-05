@@ -375,8 +375,7 @@ EOF
     
     HARDN_STATUS "info" "USB security policy configured to allow HID devices but block storage."
     
-    # Create udev rules to further control USB devices 
-    cat > /etc/udev/rules.d/99-usb-storage.rules << 'EOF'
+    
 # Block USB storage devices while allowing keyboards and mice
 ACTION=="add", SUBSYSTEMS=="usb", ATTRS{bInterfaceClass}=="08", RUN+="/bin/sh -c 'echo 0 > /sys$DEVPATH/authorized'"
 # Interface class 08 is for mass storage
