@@ -1,85 +1,67 @@
 name: Validate Package Dependencies
 
 on:
-  schedule:
-    - cron: '0 3 * * 1'  # Weekly on Mondays at 3 AM UTC
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
-  validate-progs:
+  validate:
+    name: Validate and Update Dependencies
     runs-on: ubuntu-latest
+    permissions:
+      contents: write    # Required for pushing changes and creating branches
+      pull-requests: write
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0    # Full history for branch operations
 
-      - name: Set up Git
+      - name: Update system packages
+        run: |
+          set -o pipefail
+          sudo apt-get update || { echo "::error::apt-get update failed"; exit 1; }
+
+      - name: Create progs.csv if missing
+        id: csv
+        run: |
+          if [ ! -f "progs.csv" ]; then
+            echo "progs.csv file not found. Creating one."
+            echo "name,version" > progs.csv
+            echo "changes_made=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+      - name: Configure git user
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Validate and Update progs.csv
-        id: update_packages
+      - name: Create or switch to update branch
         run: |
-          set -o pipefail
-          set +e
+          git checkout -B update-packages-108
 
-          sudo apt-get update || { echo "::error::apt-get update failed"; exit 1; }
+      - name: Commit any changes
+        run: |
+          git add progs.csv
+          git diff --cached --quiet || git commit -m "Update progs.csv if missing"
+        continue-on-error: true   # Avoid failure if nothing to commit
 
-          if [ ! -f "progs.csv" ]; then
-            echo "progs.csv file not found. Creating one."
-            echo "name,version" > progs.csv
-            echo "changes_made=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
+      - name: Push changes to update branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git push --set-upstream origin update-packages-108
 
-          echo "name,version" > progs-temp.csv
-
-          packages_validated=0
-          packages_missing=0
-
-          tail -n +2 progs.csv | while IFS=',' read -r pkg_name version; do
-            pkg_name=$(echo "$pkg_name" | xargs)
-            if [ -z "$pkg_name" ]; then continue; fi
-
-            if apt-cache show "$pkg_name" > /dev/null 2>&1; then
-              latest_version=$(apt-cache show "$pkg_name" | grep "^Version:" | head -n1 | awk '{print $2}')
-              echo "$pkg_name,$latest_version" >> progs-temp.csv
-              ((packages_validated++))
-            else
-              echo "# REMOVED: $pkg_name,$version - package not found" >> progs-temp.csv
-              ((packages_missing++))
-            fi
-          done
-
-          echo "Validated: $packages_validated"
-          echo "Missing: $packages_missing"
-
-          if ! cmp -s progs.csv progs-temp.csv; then
-            mv progs-temp.csv progs.csv
-            echo "changes_made=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "No changes detected."
-            rm -f progs-temp.csv
-            echo "changes_made=false" >> "$GITHUB_OUTPUT"
-
-      - name: Create Pull Request if changes
-        if: steps.update_packages.outputs.changes_made == 'true'
-        uses: peter-evans/create-pull-request@v7
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
         with:
-          title: "chore: update progs.csv with latest available package versions"
-          body: |
-            This PR updates the package list with:
-            - Refreshed versions from apt-cache
-            - Comments for packages no longer available
-          commit-message: "chore: update progs.csv with latest package versions"
-          branch: update-packages-${{ github.run_number }}
-          delete-branch: true
-          token: ${{ secrets.ACTION_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Update progs.csv if missing"
+          branch: update-packages-108
+          title: "Update progs.csv if missing"
+          body: "This PR updates or creates the progs.csv file if it was missing."
 
-      - name: No changes found
-        if: steps.update_packages.outputs.changes_made == 'false'
-        run: echo "✓ progs.csv is already up-to-date"
