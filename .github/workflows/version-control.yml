@@ -47,8 +47,8 @@ jobs:
         LATEST_TAG=$(git tag -l "v*" | sort -V | tail -n 1)
         
         if [ -z "$LATEST_TAG" ]; then
-          # No tags exist, start with v0.1
-          NEW_VERSION="v0.1"
+          # No tags exist, start with v1.1.8
+          NEW_VERSION="v1.1.9"
           NEW_VERSION_NUMBER="0.1"
         else
           # Extract version number and increment by 0.01
