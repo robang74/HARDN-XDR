@@ -64,4 +64,3 @@ jobs:
           branch: update-packages-108
           title: "Update progs.csv if missing"
           body: "This PR updates or creates the progs.csv file if it was missing."
-
