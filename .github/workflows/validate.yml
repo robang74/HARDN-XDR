@@ -40,9 +40,10 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Create or switch to update branch
+      - name: Create or switch to unique update branch
         run: |
-          git checkout -B update-packages-108
+          BRANCH_NAME="update-packages-${GITHUB_RUN_ID}"
+          git checkout -B "$BRANCH_NAME"
 
       - name: Commit any changes
         run: |
@@ -50,17 +51,18 @@ jobs:
           git diff --cached --quiet || git commit -m "Update progs.csv if missing"
         continue-on-error: true   
 
-      - name: Push changes to update branch
+      - name: Push changes to unique update branch
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git push --set-upstream origin update-packages-108
+          BRANCH_NAME="update-packages-${GITHUB_RUN_ID}"
+          git push --set-upstream origin "$BRANCH_NAME"
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "Update progs.csv if missing"
-          branch: update-packages-108
+          branch: update-packages-${{ github.run_id }}
           title: "Update progs.csv if missing"
           body: "This PR updates or creates the progs.csv file if it was missing."
