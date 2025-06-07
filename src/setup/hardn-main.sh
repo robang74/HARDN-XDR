@@ -390,7 +390,6 @@ setup_security(){
 # Block USB storage devices while allowing keyboards and mice
 blacklist usb-storage
 blacklist uas          # Block USB Attached SCSI (another storage protocol)
-blacklist sd_mod       # Be careful with this - may affect internal storage
 # DO NOT blacklist usbhid - needed for keyboards and mice
 EOF
     
