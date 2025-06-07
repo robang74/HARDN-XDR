@@ -105,6 +105,7 @@
 - [![Dependabot Updates](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/dependabot/dependabot-updates)
 - [![Codacy Workflow Status](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/codacy.yml/badge.svg)](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/codacy.yml)
 - [![Generate GitHub Insights](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/insights.yml/badge.svg)](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/insights.yml)
+- [![Version Control - Patch Increment](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/version-control.yml/badge.svg)](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/version-control.yml)
 <br>
 ## File Structure
 
