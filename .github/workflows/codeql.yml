@@ -23,7 +23,7 @@ jobs:
       matrix:
         include:
         - language: actions
-          build-mode: autobuild  # Changed from 'none' to 'auto'
+          build-mode: none
 
     steps:
     - name: Checkout repository
