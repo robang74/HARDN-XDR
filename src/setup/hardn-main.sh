@@ -2072,7 +2072,7 @@ main() {
     restrict_compilers
     disable_binfmt_misc
     remove_unnecessary_services
-    setup_grub_password
+    grub_security
     setup_central_logging
     pen_test
     cleanup
