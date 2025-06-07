@@ -1,5 +1,4 @@
-
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/OpenSource-For-Freedom/HARDN?include_prereleases)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/OpenSource-For-Freedom/HARDN-XDR?include_prereleases)
 
 
 <p align="center">
@@ -137,60 +136,8 @@ HARDN/
 </p>
 
 
-1. Clone the repository from GitHub:
-  ```bash
-  git clone https://github.com/opensource-for-freedom/HARDN.git
-  ```
-
-2. Install the generated Debian package:
-  ```bash
-  sudo dpkg -i ../hardn_<version>.deb
-  ```
-#### AIDE will 20-60 minutes to fully establish the "ADVANCED INTRUSION DETECTION SYSTEM" however, this runs in the background. 
-  - This script will run syncronously and reboot your system when complete. 
-  - DO-NOT turn your system off: We have established an update routine with reboots using CRON. 
-  - HARDN in itself once executed, will keep your Debian system secure and up to date. 
-
-3. Run the HARDN setup:
-  ```bash
-  sudo hardn
-  ```
-
-4. Follow any additional setup instructions and information provided in the `docs` directory.
-
-### MAINTAINERS
-
-* Building a debian package
-```bash
-debuild -us -uc
-```
-* Clean the repo after building a debian package
-```bash
-debuild -- clean
-```
-
-## Quick Start: Install and Run HARDN on Debian/Ubuntu
-
-### Installation
-
-1.  **Download the HARDN script:**
-    Open your terminal and run the following command to download the main script:
-    ```bash
-    curl -LO https://raw.githubusercontent.com/OpenSource-For-Freedom/HARDN-XDR/main/src/setup/hardn-main.sh
-    ```
-
-2.  **Run the HARDN setup:**
-    Launch the script with superuser privileges to begin the hardening process:
-    ```bash
-    sudo chmod +x hardn-main.sh
-    sudo ./hardn-main.sh
-    ```
-    This will start the HARDN setup. 
 
 
-### Installation Notes
-- Ensure you have the latest version of Debian 12 or Ubuntu 24.04.
-- Follow the updated installation steps in the `docs` directory.
 
 <br>
 
