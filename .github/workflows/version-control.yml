@@ -1,0 +1,105 @@
+# auto versioning 
+name: Version Control
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  version-update:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Configure Git
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+    
+    - name: Check if last commit was by bot
+      id: check_bot
+      run: |
+        LAST_COMMIT_AUTHOR=$(git log -1 --pretty=format:'%an')
+        echo "Last commit author: $LAST_COMMIT_AUTHOR"
+        if [[ "$LAST_COMMIT_AUTHOR" == "github-actions[bot]" ]]; then
+          echo "skip=true" >> $GITHUB_OUTPUT
+          echo "Skipping version update - last commit was by GitHub Actions bot"
+        else
+          echo "skip=false" >> $GITHUB_OUTPUT
+          echo "Proceeding with version update"
+        fi
+    
+    - name: Calculate next version
+      if: steps.check_bot.outputs.skip == 'false'
+      id: version
+      run: |
+        # Get the latest tag, if any
+        LATEST_TAG=$(git tag -l "v*" | sort -V | tail -n 1)
+        
+        if [ -z "$LATEST_TAG" ]; then
+          # No tags exist, start with v0.1
+          NEW_VERSION="v0.1"
+          NEW_VERSION_NUMBER="0.1"
+        else
+          # Extract version number and increment by 0.01
+          CURRENT_VERSION=${LATEST_TAG#v}
+          # Use bc for floating point arithmetic and format with leading zero
+          NEW_VERSION_NUMBER=$(echo "scale=2; $CURRENT_VERSION + 0.01" | bc | sed 's/^\./0./')
+          NEW_VERSION="v$NEW_VERSION_NUMBER"
+        fi
+        
+        echo "current_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+        echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+        echo "new_version_number=$NEW_VERSION_NUMBER" >> $GITHUB_OUTPUT
+        
+        echo "Previous version: $LATEST_TAG"
+        echo "New version: $NEW_VERSION"
+    
+    - name: Install bc for calculations
+      run: sudo apt-get update && sudo apt-get install -y bc
+      
+    - name: Update README with version badge
+      if: steps.check_bot.outputs.skip == 'false'
+      run: |
+        # Create the version badge
+        VERSION_BADGE="![Version](https://img.shields.io/badge/version-${{ steps.version.outputs.new_version_number }}-blue)"
+        
+        # Check if version badge already exists and replace it, or add it after the title
+        if grep -q "!\[Version\]" README.md; then
+          # Replace existing version badge
+          sed -i "s|!\[Version\].*|$VERSION_BADGE|" README.md
+        else
+          # Add version badge after the main title
+          sed -i '/^# CYBER_OPS LMS - Linux Cyber Operations Learning Management System$/a\\n'"$VERSION_BADGE"'' README.md
+        fi
+    
+    - name: Create git tag
+      if: steps.check_bot.outputs.skip == 'false'
+      run: |
+        git tag ${{ steps.version.outputs.new_version }}
+        
+    - name: Commit changes
+      if: steps.check_bot.outputs.skip == 'false'
+      run: |
+        git add README.md
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "🏷️ Update version to ${{ steps.version.outputs.new_version }}"
+        fi
+    
+    - name: Push changes and tags
+      if: steps.check_bot.outputs.skip == 'false'
+      run: |
+        git push origin main
+        git push origin ${{ steps.version.outputs.new_version }}
