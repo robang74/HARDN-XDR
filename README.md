@@ -73,7 +73,7 @@
 
 ### Installation
 
-1.  **Download the HARDN script:**
+1.  **Download the HARDN-XDR script:**
     Open your terminal and run the following command to download the main script:
     ```bash
     curl -LO https://raw.githubusercontent.com/OpenSource-For-Freedom/HARDN-XDR/main/src/setup/hardn-main.sh
@@ -86,12 +86,12 @@
     ./hardn-main.sh --help
     ```
 
-3.  **Run the HARDN setup:**
+3.  **Run the HARDN-XDR setup:**
     Launch the script with superuser privileges to begin the hardening process:
     ```bash
     sudo ./hardn-main.sh
     ```
-    This will start the HARDN v2.0.0 setup with enhanced user interface and comprehensive system hardening. 
+    This will start the HARDN-XDR setup with enhanced user interface and comprehensive system hardening. 
 
 
 
