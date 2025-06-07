@@ -11,14 +11,14 @@ jobs:
     name: Validate and Update Dependencies
     runs-on: ubuntu-latest
     permissions:
-      contents: write    # Required for pushing changes and creating branches
+      contents: write    
       pull-requests: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0    # Full history for branch operations
+          fetch-depth: 0    
 
       - name: Update system packages
         run: |
@@ -48,7 +48,7 @@ jobs:
         run: |
           git add progs.csv
           git diff --cached --quiet || git commit -m "Update progs.csv if missing"
-        continue-on-error: true   # Avoid failure if nothing to commit
+        continue-on-error: true   
 
       - name: Push changes to update branch
         env:
