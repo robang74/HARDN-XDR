@@ -103,8 +103,8 @@
 ## Actions
 - [![Auto Update Dependencies](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/validate.yml/badge.svg)](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/validate.yml)
 - [![Codacy Workflow Status](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/codacy.yml/badge.svg)](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/codacy.yml)
+- [![Generate GitHub Insights](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/insights.yml/badge.svg)](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/insights.yml)
 <br>
-
 ## File Structure
 
 
