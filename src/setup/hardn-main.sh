@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # HARDN-XDR - The Linux Security Hardening Sentinel
-# Version 2.0.0
 # Developed and built by Christopher Bingham and Tim Burns
 
 HARDN_VERSION="2.0.0"
