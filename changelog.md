@@ -1,8 +1,8 @@
 # Changelog
 
-## Version 2.0.0
 
-### 🎉 Major Release - Final Public Version
+
+### Major Release - Final Public Version
 
 #### Added
 - **Version Tracking**: Added explicit version identifier (v2.0.0) throughout the script and user interface
@@ -18,8 +18,7 @@
 - **Version Consistency**: Unified version numbering across all components
 - **User Communication**: Better feedback during installation and completion phases
 
-### 🏆 Final Mission Completed
-This marks the completion of the HARDN-XDR "Final Mission" with a production-ready security hardening solution featuring:
+### Final Mission Goals
 - Comprehensive STIG compliance for Debian-based systems
 - Advanced malware detection and response capabilities
 - Complete system hardening with security tools integration
