@@ -10,6 +10,26 @@ PROGS_CSV_PATH="${SCRIPT_DIR}/../../progs.csv"
 CURRENT_DEBIAN_VERSION_ID=""
 CURRENT_DEBIAN_CODENAME=""
 
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -h | --help)
+            echo "Usage: ./hardn-main.sh [OPTIONS]..."
+            echo ""
+            echo "Options:"
+            echo "  -h, --help        display this help message and exit"
+            echo "  -v, --version     output version information and exit"
+            exit 0
+            ;;
+        -v | --version)
+            echo "hardn-main.sh version $HARDN_VERSION"
+            exit 0
+            ;;
+        *)
+            echo "unknown option: $1"
+            ;;
+    esac
+    shift
+done
 
 HARDN_STATUS() {
     local status="$1"
