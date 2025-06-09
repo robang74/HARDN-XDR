@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Christopher Bingham
-# This installation script is responsible for installing and setting up HARDN-XDR
+# author: Christopher Bingham
+
 check_root () {
         [ "$(id -u)" -ne 0 ] && echo "Please run this script as root." && exit 1
 }
@@ -11,9 +11,7 @@ update_system() {
         apt update && apt upgrade -y
 }
 
-# 1. Check if git is installed.
-# 2. If git is not currently installed,
-# 3.then install it.
+
 check_git() {
         printf "\033[1;31m[+] Checking if git is installed, and installing it if not..\033[0m\n"
         if [ -x "$(command -v git)" ]; then
@@ -26,10 +24,7 @@ check_git() {
 
 # Git clone the repo, then cd into the repo and run the script hardn-main.sh
 retrieve_repo() {
-        # Tim's repository git clone https://github.com/OpenSource-For-Freedom/HARDN-XDR.git
-        # Christopher's repository git clone https://github.com/ChristopherBingham/HARDN-XDR.git'
-        git clone https://github.com/LinuxUser255/HARDN-XDR.git
-        # then cd into HARDN-XDR/src/setup and run the script hardn-main.sh
+        git clone https://github.com/OpenSource-For-Freedom/HARDN-XDR.git
         cd HARDN-XDR/src/setup &&  chmod +x hardn-main.sh && sudo ./hardn-main.sh
 }
 
