@@ -108,11 +108,11 @@ HARDN-XDR/
 ├── install.sh                   # Main installation script
 ├── LICENSE                      # MIT License file
 ├── progs.csv                    # List of programs and packages to be installed
-├── README.md                    # Project overview and instructions
-└── src                          # Source code directory
-    └── setup                    # Setup scripts
-        ├── hardn-main.sh        # Core hardening implementation script
-        └── hardn-uninstall.sh   # Script to remove HARDN-XDR from system
+├── README.md                    
+└── src                          
+    └── setup                    
+        ├── hardn-main.sh        
+        └── hardn-uninstall.sh   
 ```
 
 
