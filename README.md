@@ -62,8 +62,6 @@
 
 1.  **One command**
 
-    **A one-liner: curls it, change mod, make executable, then runs it**
-
     ```bash
     curl -LO https://raw.githubusercontent.com/opensource-for-freedom/HARDN-XDR/refs/heads/main/install.sh && sudo chmod +x install.sh && sudo ./install.sh
     ```
