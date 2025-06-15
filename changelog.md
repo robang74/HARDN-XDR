@@ -1,9 +1,6 @@
 # Changelog
 
 
-
-### Major Release - Final Public Version
-
 #### Added
 - **Version Tracking**: Added explicit version identifier (v2.0.0) throughout the script and user interface
 - **Enhanced User Experience**: Improved welcome messages, banners, and completion notifications with version information
@@ -75,4 +72,3 @@
 
 ---
 
-*Note*: For detailed CLI usage instructions, refer to the [documentation](https://github.com/OpenSource-For-Freedom/HARDN/tree/main/docs).
