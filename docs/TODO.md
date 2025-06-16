@@ -1,4 +1,4 @@
-Thanks for sharing your Lynis scan results. Based on your output, here's a breakdown of the issues and specific **recommended actions** to improve your system's security posture and score:
+Based on Lynis scan results, here's a breakdown of the issues and specific **recommended actions** that can be done to improve system security posture and score:
 
 ---
 
@@ -214,7 +214,7 @@ sudo systemctl enable --now auditd
 ```bash
 #!/bin/bash
 # Debian 12 Security Hardening Script (Lynis Remediation)
-# Author: YourNameHere
+# Author: Christopher Bingham
 # Tested on: Debian 12 (Bookworm)
 
 set -euo pipefail
