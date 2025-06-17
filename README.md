@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/assets/HARDN(1).png" alt="HARDN Logo" width="300px" /><br><br>
+  <img src="https://github.com/OpenSource-For-Freedom/HARDN-XDR/blob/main/docs/assets/HARDN%20(1).png" /><br><br>
   <img src="https://img.shields.io/badge/The_Linux_Security_Project-red?style=for-the-badge&labelColor=black" alt="The Linux Security Project"><br><br>
   <code>HARDN-XDR</code>
 </p>
