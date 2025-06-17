@@ -5,10 +5,7 @@
 # Developed and built by Christopher Bingham and Tim Burns
 # About this script:
 # STIG Compliance: Security Technical Implementation Guide.
-# This is a comprehensive system hardening tool designed for Debian-based Linux distributions.
-# It implements a wide range of security measures following industry best practices and,
-# STIG (Security Technical Implementation Guide) compliance standards.
-# The script systematically hardens various aspects of the system.
+
 HARDN_VERSION="2.0.0"
 export APT_LISTBUGS_FRONTEND=none
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -211,7 +208,6 @@ print_ascii_banner() {
                                         ███    ███ 
                            
                             Extended Detection and Response
-                                   Version ${HARDN_VERSION}
                             by Security International Group
                                   
 EOF
@@ -294,7 +290,7 @@ setup_security(){
             fi
         else
             HARDN_STATUS "info" "No effective changes to $timesyncd_conf were needed."
-            configured=true # Already configured correctly or no changes needed
+            configured=true 
         fi
         rm -f "$temp_timesyncd_conf"
 
@@ -395,8 +391,7 @@ setup_security(){
 # Block USB storage devices while allowing keyboards and mice
 blacklist usb-storage
 blacklist uas          # Block USB Attached SCSI (another storage protocol)
-blacklist sd_mod       # Be careful with this - may affect internal storage
-# DO NOT blacklist usbhid - needed for keyboards and mice
+
 EOF
     
     HARDN_STATUS "info" "USB security policy configured to allow HID devices but block storage."
