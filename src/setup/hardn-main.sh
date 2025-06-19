@@ -231,7 +231,19 @@ setup_security(){
     # OS detection is done by detect_os_details() 
     # global variables CURRENT_DEBIAN_VERSION_ID and CURRENT_DEBIAN_CODENAME are available.
     HARDN_STATUS "pass" "Using detected system: Debian ${CURRENT_DEBIAN_VERSION_ID} (${CURRENT_DEBIAN_CODENAME}) for security setup."
-
+    
+    #################### UFW
+    HARDN_STATUS "info" "UFW Setup"
+    ufw --force reset
+    ufw default deny incoming
+    ufw default allow outgoing
+    ufw allow ssh
+    ufw allow 80/tcp
+    ufw allow 443/tcp
+    ufw logging medium
+    ufw --force enable
+    systemctl enable ufw
+    
  ####################### DELETED FILES
     HARDN_STATUS "info" "Checking for deleted files in use..."
     if command -v lsof >/dev/null 2>&1; then
