@@ -69,7 +69,7 @@
 
 ### Installation Notes
 - HARDN-XDR is currently being developed and tested for **BARE-METAL installs of Debian based distributions and Virtual Machines**.
-- Ensure you have the latest version of **Debian 12** or **Ubuntu 24.04**.
+- Ensure you have the latest version of **Debian 12**.
 - By installing HARDN-XDR with the command listed in the installation, the following changes will be made to your system:
 > - A collection of security focused packages will be installed.
 > - Security tools and services will be enabled.
