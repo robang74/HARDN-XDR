@@ -60,12 +60,45 @@ jobs:
         with:
           category: "/language:actions"
 
-  actionlint:
-    name: Actionlint Workflow Linter
+  gosec:
+    name: Gosec Security Scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: rhysd/actionlint@v1
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          go-version: '>=1.19'
+      - name: Install gosec
+        run: go install github.com/securego/gosec/v2/cmd/gosec@latest
+      - name: Run gosec and save report
+        run: |
+          if find . -type f -name '*.go' | grep -q .; then
+            $(go env GOPATH)/bin/gosec -fmt=text -out=gosec-report.txt ./...
+          else
+            echo "No Go code found, skipping." > gosec-report.txt
+          fi
+      - name: Upload Gosec Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: gosec-report
+          path: gosec-report.txt
 
+  semgrep:
+    name: Semgrep SAST Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run Semgrep and save report
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: "auto"
+          output: "semgrep-report.sarif"
+          format: "sarif"
+      - name: Upload Semgrep Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-report
+          path: semgrep-report.sarif
