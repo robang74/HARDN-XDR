@@ -1,25 +1,24 @@
-name: "CodeQL Advanced"
+name: "ShellCheck, Actions Security, and Advanced CodeQL Scan"
 
 on:
-  workflow_dispatch:
   push:
     branches: [ "main" ]
   pull_request:
-    branches: [ "freeBSD" ]
+    branches: [ "main" ]
   schedule:
     - cron: '39 23 * * 6'  # Weekly on Saturday
 
 jobs:
 
   shellcheck:
-    name: ShellCheck Bash
+    name: ShellCheck Bash Scripts
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Find and lint all Bash scripts with ShellCheck
-        uses: ludeeus/action-shellcheck@master
+        uses: ludeeus/action-shellcheck@v2
         with:
           scandir: .
           fail_on_error: true
@@ -183,18 +182,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Download actionlint
-        run: |
-          curl -sSL https://github.com/rhysd/actionlint/releases/latest/download/actionlint-linux-amd64.zip -o actionlint.zip
-          unzip actionlint.zip
-          chmod +x actionlint
-      - name: Run actionlint
-        run: |
-          if compgen -G ".github/workflows/*.yml" > /dev/null; then
-            ./actionlint
-          else
-            echo "No workflow files found, skipping."
-          fi
+      - uses: rhysd/actionlint@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
   codeql:
     name: Advanced CodeQL Scan (Python & Rust)
@@ -240,3 +230,4 @@ jobs:
         uses: github/codeql-action/analyze@v3
         with:
           category: "/language:${{ matrix.language }}"
+
