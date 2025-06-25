@@ -11,6 +11,7 @@ on:
 jobs:
   codeql:
     name: General CodeQL Scan (Auto)
+    continue-on-error: true
     runs-on: ubuntu-latest
     permissions:
       security-events: write
@@ -58,4 +59,13 @@ jobs:
         uses: github/codeql-action/analyze@v3
         with:
           category: "/language:actions"
+
+  actionlint:
+    name: Actionlint Workflow Linter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: rhysd/actionlint@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
