@@ -192,7 +192,6 @@ setup_security(){
         "auditd.sh" "Setup Auditd for system monitoring" ON
         "kernel_sec.sh" "Apply Kernel Security Hardening" ON
         "stig_pwquality.sh" "Enforce STIG password quality" ON
-        "grub.sh" "Harden GRUB bootloader" ON
         "aide.sh" "Install AIDE for file integrity" ON
         "rkhunter.sh" "Install rkhunter (Rootkit Hunter)" ON
         "chkrootkit.sh" "Install chkrootkit" ON
