@@ -58,7 +58,7 @@
 
 ### Installation
 **Access it through the latest release**
-- You will find the mode resent Debian release here:
+- You will find the most recent Debian release here:
     [HARDN-XDR Debian Package](https://github.com/OpenSource-For-Freedom/HARDN-XDR/releases)
 - Next:
 ```bash
