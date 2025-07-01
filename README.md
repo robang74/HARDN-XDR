@@ -67,6 +67,7 @@ ARCH=$(dpkg --print-architecture)
 VERSION=$(curl -s https://api.github.com/repos/OpenSource-For-Freedom/HARDN-XDR/releases/latest | grep tag_name | cut -d '"' -f4)
 DEB_URL="https://github.com/OpenSource-For-Freedom/HARDN-XDR/releases/download/$VERSION/hardn_${VERSION#v}_${ARCH}.deb"
 
+echo "Downloading: $DEB_URL"
 wget "$DEB_URL" -O hardn-latest.deb
 sudo apt install ./hardn-latest.deb
 ```
