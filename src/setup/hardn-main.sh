@@ -2,7 +2,6 @@
 
 # HARDN-XDR - The Linux Security Hardening Sentinel
 # Version 2.0.0
-# Developed and built by Christopher Bingham and Tim Burns
 # About this script:
 # STIG Compliance: Security Technical Implementation Guide.
 
@@ -219,6 +218,7 @@ setup_security(){
         "binfmt.sh" "Disable binfmt_misc" ON
         "process_accounting.sh" "Enable process accounting" ON
         "unnecesary_services.sh" "Disable unnecessary services" ON
+        "grub.sh" "Sets up a baseline GRUB Security config" ON
         "banner.sh" "Set a login banner" ON
         "deleted_files.sh" "Check for deleted files held by processes" ON
     )
