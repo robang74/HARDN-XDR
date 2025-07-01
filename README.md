@@ -62,8 +62,8 @@
     [HARDN-XDR Debian Package](https://github.com/OpenSource-For-Freedom/HARDN-XDR/releases)
 - Next:
 ```bash
-sudo dpkg -i hardn_1.1.X_all.deb
-sudo chmod hardn-xdr
+wget https://github.com/OpenSource-For-Freedom/HARDN-XDR/releases/download/v1.1.83/hardn_1.1.0_all.deb
+sudo apt install hardn_1.1.0_all.deb
 ```
 
 ## Usage
