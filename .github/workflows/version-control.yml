@@ -77,7 +77,8 @@ jobs:
       - name: Rename .deb to include arch and version
         id: rename
         run: |
-          version="${{ needs.bump-version.outputs.new_tag#v }}"
+          full_tag="${{ needs.bump-version.outputs.new_tag }}"
+          version="${full_tag#v}"  # remove leading 'v'
           arch="${{ matrix.arch }}"
           deb_file=$(ls ../*.deb | head -n 1)
           new_name="hardn_${version}_${arch}.deb"
