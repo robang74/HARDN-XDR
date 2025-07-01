@@ -60,6 +60,10 @@
 **Access it through the latest release**
 - You will find the mode resent Debian release here:
     [HARDN-XDR Debian Package](https://github.com/OpenSource-For-Freedom/HARDN-XDR/releases)
+- Next:
+```bash
+sudo dpkg -i hardn_1.1.X_all.deb
+sudo chmod hardn-xdr
 
 <br>
 
