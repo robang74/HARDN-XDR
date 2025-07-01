@@ -64,8 +64,7 @@
 ```bash
 sudo dpkg -i hardn_1.1.X_all.deb
 sudo chmod hardn-xdr
-
-<br>
+```
 
 ## Usage
 
