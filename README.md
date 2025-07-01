@@ -76,9 +76,15 @@ sudo apt install ./hardn-latest.deb
 After installation:
 ```bash
 dpkg -l | grep hardn
+sudo hardn-xdr
+```
+Options:
+```bash
+hardn-xdr --help
+hardn-xdr --version
 ```
 
-For detailed information and command-line options, consult the man page:
+For detailed info and command-line options, consult the man page:
 ```bash
 man hardn-xdr
 ```
