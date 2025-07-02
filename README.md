@@ -75,7 +75,7 @@ dpkg-buildpackage -us -uc
 ```
 ### Install (adjust filename to your arch + version)
 ```bash
-sudo apt install ./hardn_1.1.X_amd64.deb
+sudo apt install ./hardn_1.1.0_amd64.deb
 ```
 ### Run the program
 ```bash
