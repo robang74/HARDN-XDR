@@ -23,7 +23,7 @@
 
 
 ## HARDN-XDR
-[![Build and Release Debian Package](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/ci.yml)
+[![ci](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/ci.yml)
 - **Our Goal**: 
   - Assist the open source community in building a Debian based **"GOLDEN IMAGE"** System.
 - **Our Purpose**: 
