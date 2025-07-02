@@ -62,7 +62,7 @@ jobs:
           export DEB_BUILD_ARCH=${{ matrix.arch }}
           dpkg-buildpackage -us -uc
 
-      - name: Rename .deb to include arch and version
+      - name: Rename and move .deb into workspace
         id: rename
         run: |
           full_tag="${{ steps.bump.outputs.new_tag }}"
@@ -70,8 +70,9 @@ jobs:
           arch="${{ matrix.arch }}"
           deb_file=$(ls ../*.deb | head -n 1)
           new_name="hardn_${version}_${arch}.deb"
-          mv "$deb_file" "../$new_name"
-          echo "deb_out=${{ github.workspace }}/../$new_name" >> $GITHUB_OUTPUT
+          mv "$deb_file" "./$new_name"
+          echo "deb_out=${{ github.workspace }}/${new_name}" >> $GITHUB_OUTPUT
+
 
       - name: Run test container with .deb and capture logs
         run: |
