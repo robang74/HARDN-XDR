@@ -62,22 +62,31 @@
     [HARDN-XDR Debian Package](https://github.com/OpenSource-For-Freedom/HARDN-XDR/releases)
 - Next:
 - Ensure you're using a full Debian or Ubuntu system with `apt`, `dpkg`, and `bash` installed. Minimal or rescue shells may not support .deb installation.
-- Automatically Detects Architecture
-```bash
-ARCH=$(dpkg --print-architecture)
-VERSION=$(curl -s https://api.github.com/repos/OpenSource-For-Freedom/HARDN-XDR/releases/latest | grep tag_name | cut -d '"' -f4)
-DEB_URL="https://github.com/OpenSource-For-Freedom/HARDN-XDR/releases/download/$VERSION/hardn_${VERSION#v}_${ARCH}.deb"
 
-echo "Downloading: $DEB_URL"
-wget "$DEB_URL" -O hardn-latest.deb
-sudo apt install ./hardn-latest.deb
+# Clone and build manually for testing
+```bash
+git clone https://github.com/OpenSource-For-Freedom/HARDN-XDR
+cd HARDN-XDR
+```
+# Build the .deb
+```bash
+sudo apt install -y dpkg-dev devscripts fakeroot
+dpkg-buildpackage -us -uc
+```
+# Install (adjust filename to your arch + version)
+```bash
+sudo apt install ./hardn_1.1.X_amd64.deb
+```
+# Run the program
+```bash
+sudo hardn-xdr
+
 ```
 
 ## Usage
 
 After installation:
 ```bash
-dpkg -l | grep hardn
 sudo hardn-xdr
 ```
 Options:
