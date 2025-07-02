@@ -75,11 +75,13 @@ cd HARDN-XDR
 chmod +x install.sh
 chmod +x src/setup/hardn-main.sh
 chmod +x src/setup/modules/*.sh
+
 ```
 
 ### 3. Run manually
 ```bash
 sudo ./install.sh
+```
 
 ## Usage
 
