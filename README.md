@@ -66,7 +66,6 @@
 ### Clone and build manually for testing
 ```bash
 git clone https://github.com/OpenSource-For-Freedom/HARDN-XDR
-cd HARDN-XDR
 ```
 ### Build the .deb
 ```bash
