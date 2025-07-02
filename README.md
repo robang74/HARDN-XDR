@@ -61,6 +61,7 @@
 - You will find the most recent Debian release here:
     [HARDN-XDR Debian Package](https://github.com/OpenSource-For-Freedom/HARDN-XDR/releases)
 - Next:
+- Ensure you're using a full Debian or Ubuntu system with `apt`, `dpkg`, and `bash` installed. Minimal or rescue shells may not support .deb installation.
 - Automatically Detects Architecture
 ```bash
 ARCH=$(dpkg --print-architecture)
