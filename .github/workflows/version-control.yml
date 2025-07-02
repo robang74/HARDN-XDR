@@ -77,6 +77,8 @@ jobs:
       - name: Test install of .deb and execution
         run: |
           sudo apt-get update
+          sudo dpkg -i ./$(basename ${{ steps.rename.outputs.deb_out }}) || sudo apt-get install -f -y
+          # Test apt-get install using the local .deb for dependency resolution
           sudo apt-get install -y ./$(basename ${{ steps.rename.outputs.deb_out }})
           echo "Verifying 'hardn-xdr' command"
           sudo hardn-xdr --version || (echo "Execution failed" && exit 1)
