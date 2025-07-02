@@ -7,12 +7,6 @@ on:
 
 permissions:
   contents: write
-  issues: write
-  pull-requests: write
-  statuses: write
-  checks: write
-  deployments: write
-  discussions: write
 
 jobs:
   bump-version:
@@ -20,8 +14,7 @@ jobs:
     outputs:
       new_tag: ${{ steps.bump.outputs.new_tag }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -29,12 +22,10 @@ jobs:
         id: get_tag
         run: |
           latest_tag=$(git tag -l "v1.1.*" --sort=-v:refname | head -n 1)
-          if [ -z "$latest_tag" ]; then
-            latest_tag="v1.1.0"
-          fi
+          if [ -z "$latest_tag" ]; then latest_tag="v1.1.0"; fi
           echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
 
-      - name: Extract patch version and bump
+      - name: Bump patch version
         id: bump
         run: |
           tag="${{ steps.get_tag.outputs.latest_tag }}"
@@ -43,13 +34,6 @@ jobs:
           new_tag="v1.1.$new_patch"
           echo "new_tag=$new_tag"
           echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
-
-      - name: Create and push new tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "${{ steps.bump.outputs.new_tag }}" -m "Release ${{ steps.bump.outputs.new_tag }}"
-          git push origin "${{ steps.bump.outputs.new_tag }}"
 
   build-and-release:
     needs: bump-version
@@ -61,34 +45,41 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.bump-version.outputs.new_tag }}
+      - uses: actions/checkout@v4
 
       - name: Install build dependencies
         run: sudo apt-get update && sudo apt-get install -y dpkg-dev debhelper fakeroot build-essential devscripts
+
+      - name: Inject version + arch into control if needed
+        run: |
+          echo "Using version: ${{ needs.bump-version.outputs.new_tag }}"
 
       - name: Build Debian package
         run: |
           export DEB_BUILD_ARCH=${{ matrix.arch }}
           dpkg-buildpackage -us -uc
 
-      - name: Rename .deb to include arch and version
+      - name: Rename .deb with version and arch
         id: rename
         run: |
-          full_tag="${{ needs.bump-version.outputs.new_tag }}"
-          version="${full_tag#v}"  # remove leading 'v'
+          version="${{ needs.bump-version.outputs.new_tag#v }}"
           arch="${{ matrix.arch }}"
           deb_file=$(ls ../*.deb | head -n 1)
           new_name="hardn_${version}_${arch}.deb"
           mv "$deb_file" "../$new_name"
           echo "deb_out=../$new_name" >> $GITHUB_OUTPUT
 
-      - name: Upload release asset
+      - name: Upload GitHub release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ needs.bump-version.outputs.new_tag }}
           name: "Release ${{ needs.bump-version.outputs.new_tag }}"
           body: "Automated release for version ${{ needs.bump-version.outputs.new_tag }}"
           files: "${{ steps.rename.outputs.deb_out }}"
+
+      - name: Push Git tag only if build succeeds
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ needs.bump-version.outputs.new_tag }}" -m "Release ${{ needs.bump-version.outputs.new_tag }}"
+          git push origin "${{ needs.bump-version.outputs.new_tag }}"
