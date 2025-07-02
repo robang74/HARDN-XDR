@@ -1,4 +1,2 @@
 #!/bin/bash
-# Entry point 
-
-exec /usr/share/hardn-xdr/src/setup/hardn-main.sh "$@"
+SCRIPT_PATH="/usr/share/hardn-xdr/hardn-main.sh"
