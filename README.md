@@ -75,7 +75,8 @@ dpkg-buildpackage -us -uc
 ```
 ### Install 
 ```bash
-sudo apt install ./hardn_1.1.0_all.deb
+sudo dpkg -i ./hardn_1.1.0_all.deb
+sudo apt-get install -f
 ```
 ### Run the program
 ```bash
