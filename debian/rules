@@ -1,11 +1,3 @@
 #!/usr/bin/make -f
 %:
 	dh $@
-
-override_dh_install:
-	dh_install
-
-
-	chmod +x debian/hardn-xdr/usr/share/hardn/hardn-main.sh
-	chmod +x debian/hardn-xdr/usr/share/hardn/install.sh
-	chmod +x debian/hardn-xdr/usr/share/hardn/modules/*.sh
