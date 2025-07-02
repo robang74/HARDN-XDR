@@ -63,21 +63,21 @@
 - Next:
 - Ensure you're using a full Debian or Ubuntu system with `apt`, `dpkg`, and `bash` installed. Minimal or rescue shells may not support .deb installation.
 
-# Clone and build manually for testing
+### Clone and build manually for testing
 ```bash
 git clone https://github.com/OpenSource-For-Freedom/HARDN-XDR
 cd HARDN-XDR
 ```
-# Build the .deb
+### Build the .deb
 ```bash
 sudo apt install -y dpkg-dev devscripts fakeroot
 dpkg-buildpackage -us -uc
 ```
-# Install (adjust filename to your arch + version)
+### Install (adjust filename to your arch + version)
 ```bash
 sudo apt install ./hardn_1.1.X_amd64.deb
 ```
-# Run the program
+### Run the program
 ```bash
 sudo hardn-xdr
 
