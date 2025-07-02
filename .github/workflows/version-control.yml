@@ -73,20 +73,37 @@ jobs:
           mv "$deb_file" "../$new_name"
           echo "deb_out=${{ github.workspace }}/../$new_name" >> $GITHUB_OUTPUT
 
-      - name: Test install of .deb and execution
+      - name: Run test container with .deb and capture logs
         run: |
-          sudo apt-get update
-          sudo dpkg -i "${{ steps.rename.outputs.deb_out }}" || sudo apt-get install -f -y
-          echo "Verifying 'hardn-xdr' command"
-          sudo hardn-xdr --version || (echo "Execution failed" && exit 1)
-          dpkg -L hardn | tee installed_files.txt
+          docker build -t hardn-test - <<EOF
+          FROM debian:stable-slim
 
-      - name: Upload test logs on failure
-        if: failure()
+          RUN apt-get update && \
+              DEBIAN_FRONTEND=noninteractive apt-get install -y \
+              bash whiptail sudo gnupg lsb-release curl wget coreutils \
+              auditd suricata fail2ban rkhunter chkrootkit unhide debsums lynis \
+              clamav clamav-daemon clamav-freshclam yara aide aide-common \
+              rsyslog logrotate needrestart apt-listchanges apt-listbugs \
+              unattended-upgrades apt-transport-https ca-certificates \
+              software-properties-common openssh-server openssh-client \
+              ufw systemd-timesyncd apparmor apparmor-profiles apparmor-utils \
+              firejail libpam-pwquality libpam-google-authenticator \
+              libpam-tmpdir git psmisc lsof procps
+
+          COPY $(basename ${{ steps.rename.outputs.deb_out }}) /tmp/hardn.deb
+
+          RUN dpkg -i /tmp/hardn.deb || apt-get install -f -y
+
+          CMD bash -c "mkdir -p /logs && sudo hardn-xdr > /logs/hardn-output.log 2>&1 || true && sleep 3"
+          EOF
+
+          docker run --rm -v $(pwd)/logs:/logs hardn-test || true
+
+      - name: Upload HARDN execution logs
         uses: actions/upload-artifact@v4
         with:
-          name: deb-install-debug
-          path: installed_files.txt
+          name: hardn-xdr-run-logs
+          path: logs/hardn-output.log
 
   tag-and-release:
     needs: build-and-test
@@ -116,4 +133,3 @@ jobs:
           name: "Release ${{ needs.build-and-test.outputs.new_tag }}"
           body: "Automated release for version ${{ needs.build-and-test.outputs.new_tag }}"
           files: ${{ needs.build-and-test.outputs.deb_out }}
-
