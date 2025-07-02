@@ -16,10 +16,11 @@ permissions:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
+        os: [ubuntu-22.04, ubuntu-24.04, debian-12]
         arch: [amd64, arm64]
+    runs-on: ${{ matrix.os }}
 
     outputs:
       new_tag: ${{ steps.bump.outputs.new_tag }}
@@ -64,7 +65,8 @@ jobs:
       - name: Rename .deb to include arch and version
         id: rename
         run: |
-          version="${{ steps.bump.outputs.new_tag#v }}"
+          full_tag="${{ steps.bump.outputs.new_tag }}"
+          version="${full_tag#v}"
           arch="${{ matrix.arch }}"
           deb_file=$(ls ../*.deb | head -n 1)
           new_name="hardn_${version}_${arch}.deb"
@@ -126,4 +128,3 @@ jobs:
           name: "Release ${{ needs.build-and-test.outputs.new_tag }}"
           body: "Automated release for version ${{ needs.build-and-test.outputs.new_tag }}"
           files: ${{ needs.build-and-test.outputs.deb_out }}
-
