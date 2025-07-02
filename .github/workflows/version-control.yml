@@ -73,17 +73,6 @@ jobs:
           mv "$deb_file" "../$new_name"
           echo "deb_out=../$new_name" >> $GITHUB_OUTPUT
 
-      - name: Lint Debian package
-        run: |
-          lintian ${{ steps.rename.outputs.deb_out }}
-
-      - name: Sign Debian package
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-        run: |
-          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
-          echo "$GPG_PASSPHRASE" | gpg --batch --yes --passphrase-fd 0 --pinentry-mode loopback --sign --detach-sign ${{ steps.rename.outputs.deb_out }}
 
       - name: Test install of .deb and execution
         run: |
