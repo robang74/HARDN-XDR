@@ -1,2 +1,3 @@
 #!/bin/bash
+# entry point
 /usr/share/hardn-xdr/hardn-main.sh
