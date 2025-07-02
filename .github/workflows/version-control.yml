@@ -55,7 +55,7 @@ jobs:
           echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
 
       - name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install -y dpkg-dev debhelper fakeroot build-essential devscripts lintian gnupg
+        run: sudo apt-get update && sudo apt-get install -y dpkg-dev debhelper fakeroot build-essential devscripts lintian gnupg whiptail
 
       - name: Build Debian package
         run: |
@@ -75,35 +75,22 @@ jobs:
 
       - name: Run test container with .deb and capture logs
         run: |
-          docker build -t hardn-test - <<EOF
-          FROM debian:stable-slim
+          docker run --rm -v "${{ steps.rename.outputs.deb_out }}:/tmp/hardn.deb" debian:stable-slim bash -c '
+            apt-get update &&
+            apt-get install -y whiptail sudo gnupg &&
+            dpkg -i /tmp/hardn.deb || apt-get install -f -y &&
+            echo "--- Installed Package Contents ---" &&
+            dpkg -L hardn &&
+            echo "--- Running hardn-xdr ---" &&
+            sudo hardn-xdr || echo "hardn-xdr run failed"
+          ' | tee hardn-execution.log
 
-          RUN apt-get update && \
-              DEBIAN_FRONTEND=noninteractive apt-get install -y \
-              bash whiptail sudo gnupg lsb-release curl wget coreutils \
-              auditd suricata fail2ban rkhunter chkrootkit unhide debsums lynis \
-              clamav clamav-daemon clamav-freshclam yara aide aide-common \
-              rsyslog logrotate needrestart apt-listchanges apt-listbugs \
-              unattended-upgrades apt-transport-https ca-certificates \
-              software-properties-common openssh-server openssh-client \
-              ufw systemd-timesyncd apparmor apparmor-profiles apparmor-utils \
-              firejail libpam-pwquality libpam-google-authenticator \
-              libpam-tmpdir git psmisc lsof procps
-
-          COPY $(basename ${{ steps.rename.outputs.deb_out }}) /tmp/hardn.deb
-
-          RUN dpkg -i /tmp/hardn.deb || apt-get install -f -y
-
-          CMD bash -c "mkdir -p /logs && sudo hardn-xdr > /logs/hardn-output.log 2>&1 || true && sleep 3"
-          EOF
-
-          docker run --rm -v $(pwd)/logs:/logs hardn-test || true
-
-      - name: Upload HARDN execution logs
+      - name: Upload HARDN execution log
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: hardn-xdr-run-logs
-          path: logs/hardn-output.log
+          name: hardn-test-log
+          path: hardn-execution.log
 
   tag-and-release:
     needs: build-and-test
