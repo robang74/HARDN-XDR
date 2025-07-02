@@ -19,7 +19,7 @@ jobs:
   build-and-test:
     strategy:
       matrix:
-        os: [debian-12]
+        os: [ubuntu 24.04]
         arch: [amd64]
     runs-on: ${{ matrix.os }}
 
