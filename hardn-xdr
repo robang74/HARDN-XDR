@@ -1,4 +1,4 @@
 #!/bin/bash
 # Entry point 
 
-exec /usr/share/hardn-xdr/install.sh "$@"
+exec /usr/share/hardn-xdr/src/setup/hardn-main.sh "$@"
