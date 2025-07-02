@@ -1,6 +1,5 @@
 #!/usr/bin/make -f
 
 %:
-
+	chmod +x src/setup/hardn-main.sh src/setup/modules/*.sh install.sh hardn-xdr
 	dh $@
-
