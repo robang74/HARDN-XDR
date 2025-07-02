@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -19,7 +20,7 @@ jobs:
     strategy:
       matrix:
         os: [debian-12]
-        arch: [amd64, arm64]
+        arch: [amd64]
     runs-on: ${{ matrix.os }}
 
     outputs:
@@ -31,8 +32,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          
       - name: ensure postinst is exe
         run: chmod +x debian/postinst
+        
       - name: Fetch all tags
         run: git fetch --tags
 
