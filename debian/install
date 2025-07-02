@@ -1,8 +1,3 @@
-chmod +x src/setup/hardn-main.sh
-chmod +x src/setup/modules/*.sh
-chmod +x install.sh
-chmod +x hardn-xdr
-
 src/setup/hardn-main.sh        usr/share/hardn-xdr/hardn-main.sh
 src/setup/modules/*            usr/share/hardn-xdr/modules/
 install.sh                     usr/share/hardn-xdr/install.sh
