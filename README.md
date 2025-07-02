@@ -68,33 +68,13 @@
 ```bash
 git clone https://github.com/OpenSource-For-Freedom/HARDN-XDR
 cd HARDN-XDR
+dpkg-buildpackage -us -uc
+sudo apt install ../hardn_1.1.0_amd64.deb
 ```
-
-### 2. Make scripts executable
-```bash
-chmod +x install.sh
-chmod +x src/setup/hardn-main.sh
-chmod +x src/setup/modules/*.sh
-
-```
-
-### 3. Run manually
-```bash
-sudo ./install.sh
-```
-
-## Usage
-
-After installation:
+# Run
 ```bash
 sudo hardn-xdr
 ```
-Options:
-```bash
-hardn-xdr --help
-hardn-xdr --version
-```
-
 For detailed info and command-line options, consult the man page:
 ```bash
 man hardn-xdr
