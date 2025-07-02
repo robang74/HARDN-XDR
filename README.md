@@ -73,9 +73,9 @@ cd HARDN-XDR
 sudo apt install -y dpkg-dev devscripts fakeroot
 dpkg-buildpackage -us -uc
 ```
-### Install (adjust filename to your arch + version)
+### Install 
 ```bash
-sudo apt install ./hardn_1.1.0_amd64.deb
+sudo apt install ./hardn_1.1.0_all.deb
 ```
 ### Run the program
 ```bash
