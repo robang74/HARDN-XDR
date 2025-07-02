@@ -66,6 +66,7 @@
 ### Clone and build manually for testing
 ```bash
 git clone https://github.com/OpenSource-For-Freedom/HARDN-XDR
+cd HARDN-XDR
 ```
 ### Build the .deb
 ```bash
@@ -74,6 +75,7 @@ dpkg-buildpackage -us -uc
 ```
 ### Install 
 ```bash
+cd ..
 sudo dpkg -i ./hardn_1.1.0_all.deb
 sudo apt-get install -f
 ```
