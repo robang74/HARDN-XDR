@@ -1,4 +1,10 @@
-src/setup/hardn-main.sh usr/share/hardn-xdr/hardn-main.sh
-src/setup/modules/* usr/share/hardn-xdr/modules/
-install.sh usr/share/hardn-xdr/install.sh
+chmod +x src/setup/hardn-main.sh
+chmod +x src/setup/modules/*.sh
+chmod +x install.sh
+chmod +x hardn-xdr
+
+# Then include:
+src/setup/hardn-main.sh usr/share/hardn/hardn-main.sh
+src/setup/modules/* usr/share/hardn/modules/
+install.sh usr/share/hardn/install.sh
 hardn-xdr usr/bin/
