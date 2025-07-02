@@ -2,8 +2,7 @@ name: Build and Release Debian Package
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -17,25 +16,22 @@ permissions:
 
 jobs:
   build-and-test:
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [ubuntu 24.04]
         arch: [amd64]
-    runs-on: ${{ matrix.os }}
-
+      max-parallel: 1
     outputs:
       new_tag: ${{ steps.bump.outputs.new_tag }}
       deb_out: ${{ steps.rename.outputs.deb_out }}
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          
-      - name: ensure postinst is exe
-        run: chmod +x debian/postinst
-        
+
+      - name: Setup architecture
+        run: echo "Building for ${{ matrix.arch }}"
+
       - name: Fetch all tags
         run: git fetch --tags
 
@@ -75,15 +71,12 @@ jobs:
           deb_file=$(ls ../*.deb | head -n 1)
           new_name="hardn_${version}_${arch}.deb"
           mv "$deb_file" "../$new_name"
-          echo "deb_out=../$new_name" >> $GITHUB_OUTPUT
-
+          echo "deb_out=${{ github.workspace }}/../$new_name" >> $GITHUB_OUTPUT
 
       - name: Test install of .deb and execution
         run: |
-          mv ${{ steps.rename.outputs.deb_out }} .
           sudo apt-get update
-          sudo dpkg -i $(basename ${{ steps.rename.outputs.deb_out }}) || sudo apt-get install -f -y
-          sudo apt-get install -y $(basename ${{ steps.rename.outputs.deb_out }})
+          sudo dpkg -i $(basename "${{ steps.rename.outputs.deb_out }}") || sudo apt-get install -f -y
           echo "Verifying 'hardn-xdr' command"
           sudo hardn-xdr --version || (echo "Execution failed" && exit 1)
           dpkg -L hardn | tee installed_files.txt
@@ -123,3 +116,4 @@ jobs:
           name: "Release ${{ needs.build-and-test.outputs.new_tag }}"
           body: "Automated release for version ${{ needs.build-and-test.outputs.new_tag }}"
           files: ${{ needs.build-and-test.outputs.deb_out }}
+
