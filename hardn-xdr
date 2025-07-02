@@ -1,2 +1,2 @@
 #!/bin/bash
-SCRIPT_PATH="/usr/share/hardn-xdr/hardn-main.sh"
+/usr/share/hardn-xdr/hardn-main.sh
