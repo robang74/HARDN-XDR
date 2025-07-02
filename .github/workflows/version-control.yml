@@ -7,25 +7,43 @@ on:
 
 permissions:
   contents: write
+  issues: write
+  pull-requests: write
+  statuses: write
+  checks: write
+  deployments: write
+  discussions: write
 
 jobs:
-  bump-version:
+  build-and-test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+
     outputs:
       new_tag: ${{ steps.bump.outputs.new_tag }}
+      deb_out: ${{ steps.rename.outputs.deb_out }}
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Fetch all tags
+        run: git fetch --tags
 
       - name: Get latest v1.1.x tag
         id: get_tag
         run: |
           latest_tag=$(git tag -l "v1.1.*" --sort=-v:refname | head -n 1)
-          if [ -z "$latest_tag" ]; then latest_tag="v1.1.0"; fi
+          if [ -z "$latest_tag" ]; then
+            latest_tag="v1.1.0"
+          fi
           echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
 
-      - name: Bump patch version
+      - name: Extract patch version and bump
         id: bump
         run: |
           tag="${{ steps.get_tag.outputs.latest_tag }}"
@@ -35,52 +53,77 @@ jobs:
           echo "new_tag=$new_tag"
           echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
 
-  build-and-release:
-    needs: bump-version
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        arch: [amd64, arm64]
-    permissions:
-      contents: write
-
-    steps:
-      - uses: actions/checkout@v4
-
       - name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install -y dpkg-dev debhelper fakeroot build-essential devscripts
-
-      - name: Inject version + arch into control if needed
-        run: |
-          echo "Using version: ${{ needs.bump-version.outputs.new_tag }}"
+        run: sudo apt-get update && sudo apt-get install -y dpkg-dev debhelper fakeroot build-essential devscripts lintian gnupg
 
       - name: Build Debian package
         run: |
           export DEB_BUILD_ARCH=${{ matrix.arch }}
           dpkg-buildpackage -us -uc
 
-      - name: Rename .deb with version and arch
+      - name: Rename .deb to include arch and version
         id: rename
         run: |
-          full_tag="${{ needs.bump-version.outputs.new_tag }}"
-          version="${full_tag#v}"  # remove leading 'v'
+          version="${{ steps.bump.outputs.new_tag#v }}"
           arch="${{ matrix.arch }}"
           deb_file=$(ls ../*.deb | head -n 1)
           new_name="hardn_${version}_${arch}.deb"
           mv "$deb_file" "../$new_name"
           echo "deb_out=../$new_name" >> $GITHUB_OUTPUT
 
-      - name: Upload GitHub release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ needs.bump-version.outputs.new_tag }}
-          name: "Release ${{ needs.bump-version.outputs.new_tag }}"
-          body: "Automated release for version ${{ needs.bump-version.outputs.new_tag }}"
-          files: "${{ steps.rename.outputs.deb_out }}"
+      - name: Lint Debian package
+        run: |
+          lintian ${{ steps.rename.outputs.deb_out }}
 
-      - name: Push Git tag only if build succeeds
+      - name: Sign Debian package
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+          echo "$GPG_PASSPHRASE" | gpg --batch --yes --passphrase-fd 0 --pinentry-mode loopback --sign --detach-sign ${{ steps.rename.outputs.deb_out }}
+
+      - name: Test install of .deb and execution
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ./$(basename ${{ steps.rename.outputs.deb_out }})
+          echo "Verifying 'hardn-xdr' command"
+          sudo hardn-xdr --version || (echo "Execution failed" && exit 1)
+          dpkg -L hardn | tee installed_files.txt
+
+      - name: Upload test logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deb-install-debug
+          path: installed_files.txt
+
+  tag-and-release:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: success()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch all tags
+        run: git fetch --tags
+
+      - name: Create and push new tag
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "${{ needs.bump-version.outputs.new_tag }}" -m "Release ${{ needs.bump-version.outputs.new_tag }}"
-          git push origin "${{ needs.bump-version.outputs.new_tag }}"
+          git tag "${{ needs.build-and-test.outputs.new_tag }}" -m "Release ${{ needs.build-and-test.outputs.new_tag }}"
+          git push origin "${{ needs.build-and-test.outputs.new_tag }}"
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.build-and-test.outputs.new_tag }}
+          name: "Release ${{ needs.build-and-test.outputs.new_tag }}"
+          body: "Automated release for version ${{ needs.build-and-test.outputs.new_tag }}"
+          files: ${{ needs.build-and-test.outputs.deb_out }}
+
