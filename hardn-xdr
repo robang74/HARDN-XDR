@@ -1,3 +1,4 @@
 #!/bin/bash
-# entry point
-/usr/share/hardn-xdr/hardn-main.sh
+# Entry point 
+
+exec /usr/share/hardn-xdr/hardn-main.sh "$@"
