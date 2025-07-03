@@ -54,26 +54,59 @@
   <img src="https://img.shields.io/badge/INSTALLATION-white?style=for-the-badge&labelColor=black" alt="INSTALLATION"><br><br>
 </p>
 
+## Quick Start
 
-## Quick Start: 
+### Installation Options
 
-### Installation
+#### Option 1: Download from GitHub Releases
 
-### 1. Clone the repo
+1. Go to the [Releases](https://github.com/OpenSource-For-Freedom/HARDN-XDR/releases) page.
+2. Download the latest `.deb` file (e.g., `hardn_1.1.94_amd64.deb`).
+3. Install it using:
+
+```bash
+sudo dpkg -i hardn_1.1.94_amd64.deb || sudo apt-get install -f -y
+```
+
+---
+
+#### Option 2: Build from Source
+
+1. Clone the repository:
+
 ```bash
 git clone https://github.com/OpenSource-For-Freedom/HARDN-XDR
 cd HARDN-XDR
-dpkg-buildpackage -us -uc
-sudo apt install ../hardn_1.1.0_amd64.deb
 ```
-# Run
+
+2. Build the package:
+
+```bash
+dpkg-buildpackage -us -uc
+```
+
+3. Install the generated `.deb`:
+
+```bash
+sudo apt install ../hardn_1.1.94_amd64.deb
+```
+
+---
+
+### Run the Program
+
+Launch the HARDN-XDR interactive interface:
+
 ```bash
 sudo hardn-xdr
 ```
+
 For detailed info and command-line options, consult the man page:
+
 ```bash
 man hardn-xdr
 ```
+---
 
 ### How the Interactive Menu Works
 The interactive menu is the core of the `HARDN-XDR` script's flexibility, and it's powered by a standard Linux utility called `whiptail`. Here’s a breakdown of how it works inside the `setup_security` function in `hardn-main.sh`:
