@@ -76,17 +76,15 @@ jobs:
           version="${full_tag#v}"
           arch="${{ matrix.arch }}"
           deb_file=$(ls ../*.deb | head -n 1)
-          new_name="hardn_${version}_${arch}.deb"
-          if [ -f "$deb_file" ]; then
-            mv "$deb_file" "./$new_name"
-            echo "deb_out=${{ github.workspace }}/${new_name}" >> $GITHUB_OUTPUT
-          else
-            echo "deb_out=" >> $GITHUB_OUTPUT
-            echo "::warning file=rename::No .deb file found to rename."
+          if [ ! -f "$deb_file" ]; then
+            echo "::error ::No .deb file found. Package build may have failed."
+            exit 1
           fi
+          new_name="hardn_${version}_${arch}.deb"
+          mv "$deb_file" "./$new_name"
+          echo "deb_out=${{ github.workspace }}/${new_name}" >> $GITHUB_OUTPUT
 
       - name: Run test container with .deb and capture logs
-        if: steps.rename.outputs.deb_out != ''
         run: |
           docker run --rm -v "${{ steps.rename.outputs.deb_out }}:/tmp/hardn.deb" debian:stable-slim bash -c '
             apt-get update &&
