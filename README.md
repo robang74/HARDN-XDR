@@ -56,18 +56,12 @@
 
 ## Quick Start
 
-### Installation Options
-
-#### Option 1: Download from GitHub Releases
-
-1. Go to the [Releases](https://github.com/OpenSource-For-Freedom/HARDN-XDR/releases) page.
-2. Download the latest `.deb` file (e.g., `hardn_1.1.94_amd64.deb`).
-3. Install it using:
+## Download and Install
 
 ```bash
-sudo dpkg -i hardn_1.1.94_amd64.deb || sudo apt-get install -f -y
-```
-
+wget https://github.com/OpenSource-For-Freedom/HARDN-XDR/releases/download/v1.1.97/hardn_1.1.97_amd64.deb
+sudo apt install ./hardn_1.1.97_amd64.deb
+sudo hardn-xdr
 ---
 
 #### Option 2: Build from Source
