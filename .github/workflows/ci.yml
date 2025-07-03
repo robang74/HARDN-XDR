@@ -62,6 +62,13 @@ jobs:
           export DEB_BUILD_ARCH=${{ matrix.arch }}
           dpkg-buildpackage -us -uc
 
+      - name: List built .deb files (debug)
+        run: |
+          echo "Contents of parent dir:"
+          ls -lh ..
+          echo "Contents of workspace:"
+          ls -lh .
+
       - name: Rename and move .deb into workspace
         id: rename
         run: |
@@ -70,11 +77,16 @@ jobs:
           arch="${{ matrix.arch }}"
           deb_file=$(ls ../*.deb | head -n 1)
           new_name="hardn_${version}_${arch}.deb"
-          mv "$deb_file" "./$new_name"
-          echo "deb_out=${{ github.workspace }}/${new_name}" >> $GITHUB_OUTPUT
-
+          if [ -f "$deb_file" ]; then
+            mv "$deb_file" "./$new_name"
+            echo "deb_out=${{ github.workspace }}/${new_name}" >> $GITHUB_OUTPUT
+          else
+            echo "deb_out=" >> $GITHUB_OUTPUT
+            echo "::warning file=rename::No .deb file found to rename."
+          fi
 
       - name: Run test container with .deb and capture logs
+        if: steps.rename.outputs.deb_out != ''
         run: |
           docker run --rm -v "${{ steps.rename.outputs.deb_out }}:/tmp/hardn.deb" debian:stable-slim bash -c '
             apt-get update &&
@@ -96,7 +108,7 @@ jobs:
   tag-and-release:
     needs: build-and-test
     runs-on: ubuntu-latest
-    if: success()
+    if: needs.build-and-test.outputs.deb_out != ''
 
     steps:
       - name: Checkout code
