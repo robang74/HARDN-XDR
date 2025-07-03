@@ -60,7 +60,7 @@
 
 ### Clone the Repo
 ```bash
-git clone https://github.com/OpenSource-For-Freedom/HARDN-XDR.git
+git clone https://github.com/OpenSource-For-Freedom/HARDN-XDR
 cd HARDN-XDR
 ```
 ### Build the Package
