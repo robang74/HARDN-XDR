@@ -56,46 +56,24 @@
 
 ## Quick Start
 
-## Download and Install
+# HARDN-XDR Manual Install (Tarball → .deb)
 
-```bash
-wget https://github.com/OpenSource-For-Freedom/HARDN-XDR/releases/download/v1.1.97/hardn_1.1.97_amd64.deb
-sudo apt install ./hardn_1.1.97_amd64.deb
-sudo hardn-xdr
----
-
-#### Option 2: Build from Source
-
-1. Clone the repository:
-
-```bash
-git clone https://github.com/OpenSource-For-Freedom/HARDN-XDR
-cd HARDN-XDR
-```
-
-2. Build the package:
-
-```bash
-dpkg-buildpackage -us -uc
-```
-
-3. Install the generated `.deb`:
-
-```bash
-sudo apt install ../hardn_1.1.94_amd64.deb
-```
+This guide explains how to install HARDN-XDR using the `.tar.xz` source archive from the GitHub release.
 
 ---
 
-### Run the Program
-
-Launch the HARDN-XDR interactive interface:
+## Single Command install 
 
 ```bash
+sudo apt update && sudo apt install -y dpkg-dev debhelper fakeroot build-essential devscripts && \
+wget https://github.com/OpenSource-For-Freedom/HARDN-XDR/releases/download/v1.1.97/hardn_1.1.97.tar.xz && \
+tar -xf hardn_1.1.97.tar.xz && cd hardn-1.1.97 && \
+dpkg-buildpackage -us -uc && \
+cd .. && sudo apt install -y ./hardn_1.1.97_amd64.deb && \
 sudo hardn-xdr
 ```
 
-For detailed info and command-line options, consult the man page:
+## To access the man page 
 
 ```bash
 man hardn-xdr
