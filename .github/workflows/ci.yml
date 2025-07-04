@@ -62,6 +62,7 @@ jobs:
         run: |
           export DEB_BUILD_ARCH=${{ matrix.arch }}
           dpkg-buildpackage -us -uc
+          sudo apt install -f
       - name: Inspect built .deb contents
         run: |
           deb=$(ls ../*.deb | head -n 1)
