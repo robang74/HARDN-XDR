@@ -88,17 +88,20 @@ jobs:
 
       - name: Run test container with .deb
         run: |
-           docker run --rm -e DEBIAN_FRONTEND=noninteractive -e SKIP_WHIPTAIL=true \
-           -v "$(pwd)/${{ steps.rename.outputs.deb_file }}:/tmp/hardn.deb" debian:stable-slim bash -c '
-           set -euo pipefail
-           apt-get update &&
-           apt-get install -y whiptail sudo gnupg &&
-           dpkg -i /tmp/hardn.deb || (apt-get install -f -y && dpkg -i /tmp/hardn.deb) &&
-           echo "--- Installed Package Contents ---" &&
-           dpkg -L hardn &&
-           echo "--- Running hardn-xdr ---" &&
-           DEBIAN_FRONTEND=noninteractive SKIP_WHIPTAIL=true sudo hardn-xdr || echo "hardn-xdr run failed"
-           ' | tee hardn-execution.log
+          docker run --rm \
+          -e SKIP_WHIPTAIL=1 \
+          -v "$(pwd)/${{ steps.rename.outputs.deb_file }}:/tmp/hardn.deb" \
+          debian:stable-slim bash -c '
+          set -euo pipefail
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update
+          apt-get install -y sudo gnupg
+          dpkg -i /tmp/hardn.deb || (apt-get install -f -y && dpkg -i /tmp/hardn.deb)
+          echo "--- Installed Package Contents ---"
+          dpkg -L hardn
+          echo "--- Running hardn-xdr ---"
+          sudo SKIP_WHIPTAIL=1 hardn-xdr || echo "hardn-xdr run failed"
+          ' | tee hardn-execution.log
 
       - name: Upload test log
         if: always()
