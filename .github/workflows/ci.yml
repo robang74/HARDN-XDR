@@ -51,11 +51,22 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y dpkg-dev debhelper fakeroot build-essential devscripts lintian gnupg whiptail
-
+      - name: Confirm install sources exist
+        run: |
+          for file in install.sh src/setup/hardn-main.sh hardn-xdr man/hardn-xdr.1; do
+          [ -f "$file" ] || { echo "::error ::Missing file: $file"; exit 1; }
+          done
+          [ -d src/setup/modules ] || { echo "::error ::Missing dir: src/setup/modules"; exit 1; }
+          echo "All install targets are present."
       - name: Build Debian package
         run: |
           export DEB_BUILD_ARCH=${{ matrix.arch }}
           dpkg-buildpackage -us -uc
+      - name: Inspect built .deb contents
+        run: |
+          deb=$(ls ../*.deb | head -n 1)
+          echo "Package contents of $deb:"
+          dpkg-deb -c "$deb"
 
       - name: Rename and move .deb
         id: rename
