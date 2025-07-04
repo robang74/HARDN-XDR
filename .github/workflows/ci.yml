@@ -60,7 +60,8 @@ jobs:
       - name: Rename and move .deb
         id: rename
         run: |
-          version="${{ steps.bump.outputs.new_tag#v }}"
+          version="${{ steps.bump.outputs.new_tag }}"
+          version="${version#v}"  # strip 'v'
           arch="${{ matrix.arch }}"
           deb_file=$(ls ../*.deb | head -n 1)
           [ ! -f "$deb_file" ] && echo "::error ::No .deb file found." && exit 1
