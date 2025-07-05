@@ -58,6 +58,12 @@ jobs:
           done
           [ -d src/setup/modules ] || { echo "::error ::Missing dir: src/setup/modules"; exit 1; }
           echo "All install targets are present."
+
+      - name: Set executable permissions
+        run: |
+          chmod +x install.sh
+          chmod +x hardn-xdr
+
       - name: Build Debian package
         run: |
           export DEB_BUILD_ARCH=${{ matrix.arch }}
