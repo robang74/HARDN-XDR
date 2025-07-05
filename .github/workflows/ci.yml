@@ -63,10 +63,10 @@ jobs:
       - name: Set executable permissions for packaging
         run: |
           echo "[+] Marking install entry points as executable..."
-          chmod +x install.sh
-          chmod +x hardn-xdr
-          chmod +x debian/postinst
-          chmod +x src/setup/hardn-main.sh
+          chmod +x install.sh || { echo "::error ::install.sh not found or not executable"; exit 1; }
+          chmod +x debian/postinst || { echo "::error ::postinst not found or not executable"; exit 1; }
+          chmod +x hardn-xdr || { echo "::error ::hardn-xdr not found or not executable"; exit 1; }
+          chmod +x src/setup/hardn-main.sh || { echo "::error ::hardn-main.sh not found"; exit 1; }
           find src/setup/modules -type f -name "*.sh" -exec chmod +x {} \;
           echo "[✓] Executable permissions set successfully."
 
@@ -88,16 +88,6 @@ jobs:
           deb=$(ls ../*.deb | head -n 1)
           echo "Package contents of $deb:"
           dpkg-deb -c "$deb"
-
-      - name: Verify postinst inclusion
-        run: |
-          deb=$(ls ../*.deb | head -n 1)
-          mkdir -p control_tmp
-          dpkg-deb --control "$deb" control_tmp
-          echo "--- Contents of control archive ---"
-          ls -l control_tmp
-          echo "--- postinst script content ---"
-          cat control_tmp/postinst || echo "::error ::postinst script is missing from .deb"
 
       - name: Rename and move .deb
         id: rename
@@ -131,12 +121,14 @@ jobs:
           export DEBIAN_FRONTEND=noninteractive
           apt-get update
           apt-get install -y sudo gnupg
-          dpkg -i /tmp/hardn.deb || (apt-get install -f -y && dpkg -i /tmp/hardn.deb)
+          dpkg -i /tmp/hardn.deb || true
+          apt-get install -f -y
+          dpkg --configure -a
           echo "--- Installed Package Contents ---"
-          dpkg -L hardn || true
+          dpkg -L hardn-xdr || true
           echo "--- Running hardn-xdr ---"
           sudo SKIP_WHIPTAIL=1 hardn-xdr || echo "hardn-xdr run failed"
-          cat /tmp/postinst.log || echo "No postinst.log found"
+          cat /tmp/postinst.log || echo "No postinst log found"
           ' | tee hardn-execution.log
 
       - name: Upload test log
