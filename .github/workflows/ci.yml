@@ -63,6 +63,8 @@ jobs:
         run: |
           chmod +x install.sh
           chmod +x hardn-xdr
+          chmod +x src/setup/modules/*.sh
+
       - name: Show contents expected for packaging
         run: |
           echo "Checking install.sh:"
