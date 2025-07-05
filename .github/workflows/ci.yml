@@ -87,6 +87,10 @@ jobs:
           mv "$deb_file" "./$new_name"
           echo "deb_file=$new_name" >> $GITHUB_OUTPUT
 
+      - name: Validate package with lintian
+        run: |
+          lintian ${{ steps.rename.outputs.deb_file }} || echo "::info ::Lintian discovered issues"
+
       - name: Upload .deb artifact
         uses: actions/upload-artifact@v4
         with:
