@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+echo "[postinst] Executed on $(date)" >> /tmp/postinst.log
+
 case "$1" in
   configure)
     echo "[postinst] Running install.sh to finalize setup..."
