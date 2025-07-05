@@ -63,6 +63,16 @@ jobs:
         run: |
           chmod +x install.sh
           chmod +x hardn-xdr
+      - name: Show contents expected for packaging
+        run: |
+          echo "Checking install.sh:"
+          ls -lh install.sh
+          echo "Checking hardn-xdr:"
+          ls -lh hardn-xdr
+          echo "Checking hardn-main.sh:"
+          ls -lh src/setup/hardn-main.sh
+          echo "Checking modules:"
+          ls -l src/setup/modules
 
       - name: Build Debian package
         run: |
