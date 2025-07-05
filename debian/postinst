@@ -1,17 +1,17 @@
 #!/bin/bash
 set -e
 
-echo "[postinst] Executed on $(date)" >> /tmp/postinst.log
+logfile="$(mktemp /var/log/hardn-postinst.XXXXXX)"
+echo "[postinst] Executed on $(date)" >> "$logfile"
 
 case "$1" in
   configure)
-    echo "[postinst] Running install.sh to finalize setup..."
+    echo "[postinst] Running install.sh to finalize setup..." >> "$logfile"
 
-    # entry point
     if [ -x /usr/lib/hardn-xdr/install.sh ]; then
-      /usr/lib/hardn-xdr/install.sh
+      /usr/lib/hardn-xdr/install.sh >> "$logfile" 2>&1
     else
-      echo "[postinst] Warning: install.sh not found or not executable."
+      echo "[postinst] Warning: install.sh not found or not executable." >> "$logfile"
     fi
 
     echo "HARDN-XDR installation complete."
