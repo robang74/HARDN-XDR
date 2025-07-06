@@ -160,10 +160,6 @@ graph TD
   <img src="docs/assets/cybersynapse.png" alt="CyberSynapse Logo" />
 </p>
 
-<p align="center">
-  <img src="docs/assets/securejump.jpg" alt="SecureJump Logo" />
-</p>
-
 <br>
 
 <p align="center">
@@ -177,9 +173,3 @@ This project is licensed under the MIT License.
 <p align="center">
   <img src="https://img.shields.io/badge/CONTACT-white?style=for-the-badge&labelColor=black" alt="CONTACT"><br><br>
 office@cybersynapse.ro
-<br>
-contacto@securejump.cl
-</p>
-
-
-
