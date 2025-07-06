@@ -54,23 +54,46 @@
   <img src="https://img.shields.io/badge/INSTALLATION-white?style=for-the-badge&labelColor=black" alt="INSTALLATION"><br><br>
 </p>
 
-## Quick Start
+## Quick Start 
 
-## HARDN-XDR Install
+### Install from GitHub
 
-### Clone the Repo
+- HARDN-XDR is being tested for "Multi-Arch" deployments, specify your architecture from the releases page and change the install commands accordingly. 
+
+1. Download the latest `.deb` package: [amd64:arm64]
+   Visit: https://github.com/OpenSource-For-Freedom/HARDN-XDR/releases
+
+2. Install the package:
+```bash
+sudo apt install ./hardn_*_amd64.deb
+```
+
+3. Run the tool:
+```bash
+sudo hardn-xdr
+```
+
+### Build from Source:
+
+1. Clone the repository:
 ```bash
 git clone https://github.com/OpenSource-For-Freedom/HARDN-XDR
 cd HARDN-XDR
 ```
-### Build the Package
+
+2. Build the Debian package:
 ```bash
 dpkg-buildpackage -us -uc
 sudo apt install -f
 cd ..
+```
+
+3. Install the package: (specify the arch) 
+```bash
 sudo apt install ./hardn_*_amd64.deb
 ```
-### Launch the Tool
+
+4. Run the tool:
 ```bash
 sudo hardn-xdr
 ```
