@@ -126,7 +126,7 @@ jobs:
           path: result.log
 
   test-deployment:
-    needs: build-and-test
+    needs: test-modules
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -160,7 +160,7 @@ jobs:
           path: full-run.log
 
   tag-and-release:
-    needs: [build-and-test, test-modules, test-deployment]
+    needs: test-deployment
     runs-on: ubuntu-latest
     if: success()
     steps:
@@ -199,7 +199,7 @@ jobs:
           tag_name: ${{ needs.build-and-test.outputs.new_tag }}
           name: "Release ${{ needs.build-and-test.outputs.new_tag }}"
           body: |
-            ![HARDN Logo](https://raw.githubusercontent.com/OpenSource-For-Freedom/HARDN/main/docs/assets/logo.png)
+            ![HARDN Logo](https://raw.githubusercontent.com/OpenSource-For-Freedom/HARDN-XDR/main/docs/assets/HARDN(1).png)
 
             **HARDN-XDR Automated Release**
 
@@ -207,5 +207,5 @@ jobs:
             - **Architectures:** `amd64`, `arm64`
             - **Timestamp:** $(date -R)
 
-            All modules tested in parallel. Full system test executed. Lintian validated.
+            All modules tested. Deployment verified. Lintian validated.
           files: ./hardn_*.deb
