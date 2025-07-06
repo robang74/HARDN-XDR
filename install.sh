@@ -17,7 +17,6 @@ check_root() {
 update_system() {
     log "[+] Updating system..."
     DEBIAN_FRONTEND=noninteractive apt-get update -y
-    DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
 }
 
 install_man_page() {
