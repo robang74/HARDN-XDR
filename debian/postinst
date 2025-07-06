@@ -1,6 +1,8 @@
 #!/bin/bash
 set -ex
 
+TMP_LOG=$(mktemp /tmp/postinst.XXXXXX.log)
+
 {
   echo "[postinst] Executed on $(date)"
   echo "[postinst] Checking install.sh..."
@@ -15,4 +17,4 @@ set -ex
 
   echo "[postinst] HARDN-XDR installation complete."
   echo "Run with: sudo hardn-xdr"
-} >> /tmp/postinst.log 2>&1
+} >> "$TMP_LOG" 2>&1
