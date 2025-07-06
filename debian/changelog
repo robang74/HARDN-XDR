@@ -1,5 +1,6 @@
-hardn (1.1.0) unstable; urgency=medium
+hardn (1.1.121) unstable; urgency=medium
 
-  * Initial release.
+  * Automated release 1.1.121
+  * Includes STIG compliance modules and multi-architecture improvements.
 
- -- Tim Burns <cyborgcreations01@gmail.com>  Tue, 01 Jul 2025 00:00:00 +0000
+ -- Tim Burns <cyborgcreations01@gmail.com>  Sun, 07 Jul 2025 14:30:00 -0400
