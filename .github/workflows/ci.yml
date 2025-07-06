@@ -52,11 +52,9 @@ jobs:
       - name: Update changelog with real datetime
         run: |
           version="${{ steps.bump.outputs.new_tag }}"
-          version="${version#v}"
-          export DEBFULLNAME="Tim Burns"
-          export DEBEMAIL="cyborgcreations01@gmail.com"
-          export SOURCE_DATE_EPOCH=$(date +%s)
-          dch --newversion "$version" "Automated release $version" --distribution unstable --force-distribution --force-bad-date
+          version="${version#v}"  # Strip 'v'
+          export DEBCHANGE_RELEASE_DATE="$(date -R)"
+          dch --newversion "$version" "Automated release $version" --distribution unstable --force-distribution
           dch --release --force-distribution ""
 
       - name: Build package
