@@ -121,7 +121,6 @@ jobs:
 
   tag-and-release:
     needs: [build-and-test, test-modules]
-    if: ${{ always() && needs.test-modules.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -129,28 +128,39 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download artifacts
+      - name: Fetch tags
+        run: git fetch --tags
+
+      - name: Download amd64 artifact
         uses: actions/download-artifact@v4
         with:
-          name: deb-package
+          name: deb-amd64
           path: .
 
-      - name: Push new tag
+      - name: Download arm64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: deb-arm64
+          path: .
+
+      - name: Create and push new tag
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           tag="${{ needs.build-and-test.outputs.new_tag }}"
           if git rev-parse "$tag" >/dev/null 2>&1; then
-            echo "Tag exists"
+            echo "Tag already exists, skipping"
           else
             git tag "$tag" -m "Release $tag"
             git push origin "$tag"
           fi
 
-      - name: Create GitHub Release
+      - name: Create GitHub Release and upload .deb
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ needs.build-and-test.outputs.new_tag }}
           name: "Release ${{ needs.build-and-test.outputs.new_tag }}"
           body: "Automated release for version ${{ needs.build-and-test.outputs.new_tag }}"
-          files: ./hardn_*.deb
+          files: |
+            ./hardn_*_amd64.deb
+            ./hardn_*_arm64.deb
