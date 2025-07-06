@@ -121,30 +121,26 @@ man hardn-xdr
 
 ## File Structure
 
+``mermaid
+graph TD
+    A[HARDN-XDR root]
+    A --> B[install.sh]
+    A --> C[hardn-xdr]
+    A --> D[man/]
+    D --> D1[hardn-xdr.1]
+    A --> E[src/]
+    E --> E1[setup/]
+    E1 --> E1a[hardn-main.sh]
+    E1 --> E1b[modules/]
+    E1b --> M1[module1.sh]
+    E1b --> M2[module2.sh]
+    E1b --> M3[...]
 
-```bash
-HARDN-XDR/
-├── debian/                
-│   ├── changelog           
-│   ├── compat              
-│   ├── control             
-│   ├── copyright           
-│   ├── install   
-│   ├── postinst  
-│   └── rules               
-├── docs/                 
-│   ├── assets/            
-│   ├── HARDN.md            
-│   └── deb_stig.md        
-├── install.sh              # Main installation script for the application.
-├── LICENSE                 
-├── man/                    
-│   └── hardn-xdr.1         # Man page for the hardn-xdr command.
-├── README.md               
-└── src/                    
-  └── setup/             
-    ├── hardn-main.sh   # main script that launches the interactive menu.
-    └── modules/        
+    A --> F[debian/]
+    F --> F1[control]
+    F --> F2[postinst]
+    F --> F3[rules]
+    F --> F4[changelog]
 ```
 
 <br>
