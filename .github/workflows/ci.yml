@@ -102,13 +102,14 @@ jobs:
           path: .
 
       - name: Run module test for ${{ matrix.module }} on ${{ matrix.arch }}
+        timeout-minutes: 5
         run: |
           echo "Testing module: ${{ matrix.module }} on arch ${{ matrix.arch }}" > result.log
           docker run --rm \
             -e SKIP_WHIPTAIL=1 \
             -v "$(pwd)/hardn_*.deb:/tmp/hardn.deb" \
             debian:stable-slim bash -c '
-              set -e
+              set -ex
               export DEBIAN_FRONTEND=noninteractive
               apt-get update && apt-get install -y sudo gnupg bash
               dpkg -i /tmp/hardn.deb || true
@@ -146,33 +147,19 @@ jobs:
       - name: Run full system test and diagnostics on ${{ matrix.arch }}
         run: |
           echo "Running full HARDN system test on ${{ matrix.arch }}" > full-run.log
-
           docker run --rm \
-          -e SKIP_WHIPTAIL=1 \
-          -v "$(pwd)/hardn.deb:/tmp/hardn.deb" \
-          debian:stable-slim bash -c '
-          set -ex
-          export DEBIAN_FRONTEND=noninteractive
-          export SKIP_WHIPTAIL=1
-          apt-get update && apt-get install -y sudo gnupg bash coreutils findutils whiptail
-          dpkg -i /tmp/hardn.deb || true
-          apt-get install -f -y
-
-          echo "--- FILE: /usr/bin/hardn-xdr ---"
-          file /usr/bin/hardn-xdr
-
-          echo "--- PERMISSIONS: /usr/bin/hardn-xdr ---"
-          ls -l /usr/bin/hardn-xdr
-
-          echo "--- CONTENTS: /usr/bin/hardn-xdr ---"
-          cat /usr/bin/hardn-xdr || echo "[Unreadable]"
-
-          echo "--- INSTALLED FILES: /usr/lib/hardn-xdr ---"
-          find /usr/lib/hardn-xdr -type f || echo "[None]"
-
-          echo "--- LAUNCHING HARDN-XDR ---"
-          SKIP_WHIPTAIL=1 /usr/bin/hardn-xdr || echo "Startup failed"
-          ' >> full-run.log 2>&1 || echo "FAIL: full system run on ${{ matrix.arch }}" >> full-run.log
+            -e SKIP_WHIPTAIL=1 \
+            -v "$(pwd)/hardn.deb:/tmp/hardn.deb" \
+            debian:stable-slim bash -c '
+              set -ex
+              export DEBIAN_FRONTEND=noninteractive
+              export SKIP_WHIPTAIL=1
+              apt-get update && apt-get install -y sudo gnupg bash coreutils findutils whiptail
+              dpkg -i /tmp/hardn.deb || true
+              apt-get install -f -y
+              echo "--- Launching HARDN-XDR ---"
+              SKIP_WHIPTAIL=1 /usr/bin/hardn-xdr
+            ' >> full-run.log 2>&1
 
       - name: Upload full system test log
         uses: actions/upload-artifact@v4
@@ -182,8 +169,8 @@ jobs:
 
   tag-and-release:
     needs: [build-and-test, test-modules, test-deployment]
-    runs-on: ubuntu-latest
     if: success()
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
