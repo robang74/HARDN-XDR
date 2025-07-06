@@ -151,7 +151,7 @@ jobs:
           apt-get update && apt-get install -y sudo gnupg bash whiptail
           dpkg -i /tmp/hardn.deb || true
           apt-get install -f -y
-          SKIP_WHIPTAIL=1 /usr/bin/hardn-xdr start || echo "Startup failed"
+          SKIP_WHIPTAIL=1 /usr/bin/hardn-xdr || echo "Startup failed"
           ' >> full-run.log 2>&1 || echo "FAIL: full system run on ${{ matrix.arch }}" >> full-run.log
 
       - name: Upload full system test log
