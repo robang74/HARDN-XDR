@@ -1,22 +1,18 @@
-#!/bin/sh
-set -e
+#!/bin/bash
+set -ex  # trace 
 
-logfile="$(mktemp /var/log/hardn-postinst.XXXXXX)"
-echo "[postinst] Executed on $(date)" >> "$logfile"
+{
+  echo "[postinst] Executed on $(date)"
+  echo "[postinst] Checking install.sh..."
+  
+  if [ -x /usr/lib/hardn-xdr/install.sh ]; then
+    echo "[postinst] Found install.sh, executing..."
+    /usr/lib/hardn-xdr/install.sh
+  else
+    echo "[postinst] ERROR: install.sh not found or not executable."
+    exit 1
+  fi
 
-case "$1" in
-  configure)
-    echo "[postinst] Running install.sh to finalize setup..." >> "$logfile"
-
-    if [ -x /usr/lib/hardn-xdr/install.sh ]; then
-      /usr/lib/hardn-xdr/install.sh >> "$logfile" 2>&1
-    else
-      echo "[postinst] Warning: install.sh not found or not executable." >> "$logfile"
-    fi
-
-    echo "HARDN-XDR installation complete."
-    echo "Run with: sudo hardn-xdr"
-    ;;
-esac
-
-exit 0
+  echo "[postinst] HARDN-XDR installation complete."
+  echo "Run with: sudo hardn-xdr"
+} >> /tmp/postinst.log 2>&1
