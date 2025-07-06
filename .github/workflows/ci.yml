@@ -153,10 +153,16 @@ jobs:
       - name: Fetch tags
         run: git fetch --tags
 
-      - name: Download .deb artifact
+      - name: Download amd64 artifact
         uses: actions/download-artifact@v4
         with:
           name: deb-amd64
+          path: .
+
+      - name: Download arm64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: deb-arm64
           path: .
 
       - name: Create and push new tag
