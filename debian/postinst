@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 set -e
 
 logfile="$(mktemp /var/log/hardn-postinst.XXXXXX)"
