@@ -153,9 +153,27 @@ jobs:
               set -e
               export DEBIAN_FRONTEND=noninteractive
               export SKIP_WHIPTAIL=1
+
+              echo "--- SYSTEM INFO ---"
+              whoami
+              uname -a
+              echo "--- ENV ---"
+              env
+              echo "--- INSTALLING ---"
               apt-get update && apt-get install -y sudo gnupg bash whiptail
+
+              echo "--- INSTALLING DEB ---"
               dpkg -i /tmp/hardn.deb || true
               apt-get install -f -y
+
+              echo "--- VERIFYING INSTALL ---"
+              which hardn-xdr || echo "hardn-xdr not found"
+              ls -l /usr/bin/hardn-xdr || echo "Binary missing"
+              file /usr/bin/hardn-xdr || true
+              chmod +x /usr/bin/hardn-xdr
+
+              echo "--- EXECUTING ---"
+              echo "Command: SKIP_WHIPTAIL=1 /usr/bin/hardn-xdr"
               SKIP_WHIPTAIL=1 /usr/bin/hardn-xdr || echo "Startup failed"
             ' >> full-run.log 2>&1 || echo "FAIL: full system run on ${{ matrix.arch }}" >> full-run.log
 
