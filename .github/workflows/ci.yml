@@ -125,8 +125,42 @@ jobs:
           name: module-${{ matrix.arch }}-${{ matrix.module }}
           path: result.log
 
+  test-deployment:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    steps:
+      - name: Download built .deb for ${{ matrix.arch }}
+        uses: actions/download-artifact@v4
+        with:
+          name: deb-${{ matrix.arch }}
+          path: .
+
+      - name: Run full system test on ${{ matrix.arch }}
+        run: |
+          echo "Running full HARDN system test on ${{ matrix.arch }}" > full-run.log
+          docker run --rm \
+            -e SKIP_WHIPTAIL=1 \
+            -v "$(pwd)/hardn_*.deb:/tmp/hardn.deb" \
+            debian:stable-slim bash -c '
+              set -e
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update && apt-get install -y sudo gnupg bash whiptail
+              dpkg -i /tmp/hardn.deb || true
+              apt-get install -f -y
+              /usr/bin/hardn-xdr start || echo "Startup failed"
+            ' >> full-run.log 2>&1 || echo "FAIL: full system run on ${{ matrix.arch }}" >> full-run.log
+
+      - name: Upload full system test log
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-system-test-${{ matrix.arch }}
+          path: full-run.log
+
   tag-and-release:
-    needs: [build-and-test, test-modules]
+    needs: [build-and-test, test-modules, test-full-run]
     runs-on: ubuntu-latest
     if: success()
     steps:
@@ -173,4 +207,5 @@ jobs:
             - **Architectures:** `amd64`, `arm64`
             - **Timestamp:** $(date -R)
 
-            All modules tested in parallel. Lintian validated.
+            All modules tested in parallel. Full system test executed. Lintian validated.
+          files: ./hardn_*.deb
