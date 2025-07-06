@@ -13,6 +13,9 @@ permissions:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
     outputs:
       new_tag: ${{ steps.bump.outputs.new_tag }}
     steps:
@@ -68,14 +71,14 @@ jobs:
           version="${{ steps.bump.outputs.new_tag }}"
           version="${version#v}"
           deb_file=$(ls ../*.deb | head -n 1)
-          new_name="hardn_${version}_amd64.deb"
+          new_name="hardn_${version}_${{ matrix.arch }}.deb"
           mv "$deb_file" "$new_name"
           echo "deb_file=$new_name" >> $GITHUB_OUTPUT
 
       - name: Upload .deb
         uses: actions/upload-artifact@v4
         with:
-          name: deb-package
+          name: deb-${{ matrix.arch }}
           path: ${{ steps.rename.outputs.deb_file }}
 
   test-modules:
@@ -89,7 +92,7 @@ jobs:
       - name: Download .deb package
         uses: actions/download-artifact@v4
         with:
-          name: deb-package
+          name: deb-amd64
           path: .
 
       - name: Run module test in container
@@ -129,10 +132,16 @@ jobs:
       - name: Fetch tags
         run: git fetch --tags
 
-      - name: Download .deb artifact
+      - name: Download amd64 artifact
         uses: actions/download-artifact@v4
         with:
-          name: deb-package
+          name: deb-amd64
+          path: .
+
+      - name: Download arm64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: deb-arm64
           path: .
 
       - name: Create and push new tag
@@ -155,3 +164,4 @@ jobs:
           body: "Automated release for version ${{ needs.build-and-test.outputs.new_tag }}"
           files: |
             ./hardn_*_amd64.deb
+            ./hardn_*_arm64.deb
