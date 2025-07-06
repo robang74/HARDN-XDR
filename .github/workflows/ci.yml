@@ -160,23 +160,6 @@ jobs:
       - name: Fetch tags
         run: git fetch --tags
 
-      - name: Update changelog with new version
-        run: |
-          export DEBFULLNAME="Tim Burns"
-          export DEBEMAIL="cyborgcreations01@gmail.com"
-          version="${{ steps.bump.outputs.new_tag }}"
-          version="${version#v}"
-          now=$(date -R)  # RFC-2822 format like: Sun, 06 Jul 2025 12:45:00 -0400
-          dch --newversion "$version" "Automated release $version" --distribution unstable --force-distribution --date "$now"
-          dch --release --force-distribution ""
-
-      - name: Commit updated changelog
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add debian/changelog
-          git commit -m "chore: update debian changelog for ${{ needs.build-and-test.outputs.new_tag }}" || echo "No changes to commit"
-          git push origin main
 
       - name: Download amd64 artifact
         uses: actions/download-artifact@v4
