@@ -138,29 +138,26 @@ jobs:
           name: deb-${{ matrix.arch }}
           path: .
 
+      - name: Rename downloaded .deb
+        run: |
+          file=$(find . -name "hardn_*.deb" | head -n 1)
+          cp "$file" ./hardn.deb
+
       - name: Run full system test on ${{ matrix.arch }}
         run: |
           echo "Running full HARDN system test on ${{ matrix.arch }}" > full-run.log
           docker run --rm \
-          -e SKIP_WHIPTAIL=1 \
-          -v "$(pwd)/hardn_*.deb:/tmp/hardn.deb" \
-          debian:stable-slim bash -c '
-          set -e
-          export DEBIAN_FRONTEND=noninteractive
-          export SKIP_WHIPTAIL=1
-          apt-get update && apt-get install -y sudo gnupg bash whiptail
-          dpkg -i /tmp/hardn.deb || true
-          apt-get install -f -y
-
-          echo "### Installed Files:" >> /full-run.log
-          dpkg -L hardn-xdr >> /full-run.log || true
-
-          echo "### Permissions on hardn-xdr:" >> /full-run.log
-          ls -l /usr/bin/hardn-xdr >> /full-run.log || echo "/usr/bin/hardn-xdr missing" >> /full-run.log
-
-          echo "### Running hardn-xdr manually:" >> /full-run.log
-          SKIP_WHIPTAIL=1 bash /usr/bin/hardn-xdr start >> /full-run.log 2>&1 || echo "Startup failed" >> /full-run.log
-          ' >> full-run.log 2>&1 || echo "FAIL: full system run on ${{ matrix.arch }}" >> full-run.log
+            -e SKIP_WHIPTAIL=1 \
+            -v "$(pwd)/hardn.deb:/tmp/hardn.deb" \
+            debian:stable-slim bash -c '
+              set -e
+              export DEBIAN_FRONTEND=noninteractive
+              export SKIP_WHIPTAIL=1
+              apt-get update && apt-get install -y sudo gnupg bash whiptail
+              dpkg -i /tmp/hardn.deb || true
+              apt-get install -f -y
+              SKIP_WHIPTAIL=1 /usr/bin/hardn-xdr || echo "Startup failed"
+            ' >> full-run.log 2>&1 || echo "FAIL: full system run on ${{ matrix.arch }}" >> full-run.log
 
       - name: Upload full system test log
         uses: actions/upload-artifact@v4
