@@ -1,10 +1,10 @@
 #!/bin/bash
-set -ex  # trace 
+set -ex
 
 {
   echo "[postinst] Executed on $(date)"
   echo "[postinst] Checking install.sh..."
-  
+
   if [ -x /usr/lib/hardn-xdr/install.sh ]; then
     echo "[postinst] Found install.sh, executing..."
     /usr/lib/hardn-xdr/install.sh
