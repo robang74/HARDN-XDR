@@ -183,13 +183,10 @@ jobs:
         with:
           path: .
 
-      - name: Verify tag value
+      - name: Move .deb files to root for release
         run: |
-          echo "Resolved tag: '${{ needs.build-and-test.outputs.new_tag }}'"
-          if [ -z "${{ needs.build-and-test.outputs.new_tag }}" ]; then
-            echo "ERROR: new_tag output from build-and-test is empty."
-            exit 1
-          fi
+          mkdir -p release
+          find . -name "*.deb" -exec mv {} release/ \;
 
       - name: Create and push new tag
         run: |
@@ -202,10 +199,6 @@ jobs:
             git tag "$tag" -m "Release $tag"
             git push origin "$tag"
           fi
-
-      - name: Move downloaded .debs to root for release
-        run: |
-          find . -type f -name "*.deb" -exec mv {} . \;
 
       - name: Create GitHub Release and upload .deb
         uses: softprops/action-gh-release@v1
@@ -224,3 +217,5 @@ jobs:
             - All modules tested in parallel  
             - XDR deployment verified  
             - Lintian run validated
+          files: |
+            release/*.deb
