@@ -2,6 +2,12 @@
   <img src="https://img.shields.io/badge/OS: Debian Systems-red?style=for-the-badge&labelColor=grey" alt="OS: DEBIAN 12"><br><br>
 </p>
 
+<div align="center">
+
+![arch](https://img.shields.io/badge/arch-amd64:arm64-blue?style=flat-square&logo=linux)
+
+</div>
+
 <p align="center">
   <img src="https://github.com/OpenSource-For-Freedom/HARDN-XDR/blob/main/docs/assets/HARDN%20(1).png" /><br><br>
   <img src="https://img.shields.io/badge/The_Linux_Security_Project-red?style=for-the-badge&labelColor=black" alt="The Linux Security Project"><br><br>
