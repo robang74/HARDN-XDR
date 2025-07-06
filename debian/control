@@ -8,6 +8,7 @@ Build-Depends: debhelper-compat (= 13),
                fakeroot,
                build-essential,
                python3,
+               bash (>= 5.0)
                whiptail,
                debconf
 Standards-Version: 4.6.2
@@ -18,7 +19,7 @@ Vcs-Browser: https://github.com/OpenSource-For-Freedom/HARDN-XDR
 
 Package: hardn
 Architecture: any
-Depends: ${misc:Depends}, bash, whiptail, debconf, gnupg
+Depends: ${misc:Depends}, bash (>= 5.0), whiptail, debconf, gnupg
 Recommends: auditd, audispd-plugins, suricata, fail2ban, rkhunter, chkrootkit,
  unhide, debsums, lynis, clamav, clamav-daemon, clamav-freshclam, yara, aide,
  aide-common, rsyslog, logrotate, needrestart, apt-listchanges, apt-listbugs,
