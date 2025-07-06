@@ -160,52 +160,61 @@ jobs:
           path: full-run.log
 
   tag-and-release:
-    needs: test-deployment
-    runs-on: ubuntu-latest
-    if: success()
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+  needs: [build-and-test, test-modules, test-deployment]
+  runs-on: ubuntu-latest
+  if: success()
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
-      - name: Fetch tags
-        run: git fetch --tags
+    - name: Fetch tags
+      run: git fetch --tags
 
-      - name: Download all .deb artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: .
+    - name: Download all .deb artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: .
 
-      - name: Create and push new tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          tag="${{ needs.build-and-test.outputs.new_tag }}"
-          if git rev-parse "$tag" >/dev/null 2>&1; then
-            echo "Tag already exists, skipping"
-          else
-            git tag "$tag" -m "Release $tag"
-            git push origin "$tag"
-          fi
+    - name: Verify tag value
+      run: |
+        echo "Resolved tag: '${{ needs.build-and-test.outputs.new_tag }}'"
+        if [ -z "${{ needs.build-and-test.outputs.new_tag }}" ]; then
+          echo "ERROR: new_tag output from build-and-test is empty."
+          exit 1
+        fi
 
-      - name: Move downloaded .debs to root for release
-        run: |
-          find . -type f -name "*.deb" -exec mv {} . \;
+    - name: Create and push new tag
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        tag="${{ needs.build-and-test.outputs.new_tag }}"
+        if git rev-parse "$tag" >/dev/null 2>&1; then
+          echo "Tag $tag already exists. Skipping tag creation."
+        else
+          git tag "$tag" -m "Release $tag"
+          git push origin "$tag"
+        fi
 
-      - name: Create GitHub Release and upload .deb
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ needs.build-and-test.outputs.new_tag }}
-          name: "Release ${{ needs.build-and-test.outputs.new_tag }}"
-          body: |
-            ![HARDN Logo](https://raw.githubusercontent.com/OpenSource-For-Freedom/HARDN-XDR/main/docs/assets/HARDN(1).png)
+    - name: Move downloaded .debs to root for release
+      run: |
+        find . -type f -name "*.deb" -exec mv {} . \;
 
-            **HARDN-XDR Automated Release**
+    - name: Create GitHub Release and upload .deb
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ needs.build-and-test.outputs.new_tag }}
+        name: "Release ${{ needs.build-and-test.outputs.new_tag }}"
+        body: |
+          ![HARDN-XDR Logo](https://raw.githubusercontent.com/OpenSource-For-Freedom/HARDN-XDR/main/docs/assets/HARDN%20(1).png)
 
-            - **Version:** `${{ needs.build-and-test.outputs.new_tag }}`
-            - **Architectures:** `amd64`, `arm64`
-            - **Timestamp:** $(date -R)
+          **HARDN-XDR Automated Release**
 
-            All modules tested. Deployment verified. Lintian validated.
-          files: ./hardn_*.deb
+          - **Version:** `${{ needs.build-and-test.outputs.new_tag }}`
+          - **Architectures:** `amd64`, `arm64`
+          - **Timestamp:** $(date -R)
+
+          - All modules tested in parallel  
+          - XDR deployment verified  
+          - Lintian run validated  
