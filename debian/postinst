@@ -1,7 +1,7 @@
 #!/bin/bash
 set -ex
 
-TMP_LOG=$(mktemp /tmp/postinst.XXXXXX.log)
+LOG_FILE="/tmp/postinst.log"
 
 {
   echo "[postinst] Executed on $(date)"
@@ -10,11 +10,12 @@ TMP_LOG=$(mktemp /tmp/postinst.XXXXXX.log)
   if [ -x /usr/lib/hardn-xdr/install.sh ]; then
     echo "[postinst] Found install.sh, executing..."
     /usr/lib/hardn-xdr/install.sh
+    echo "[postinst] HARDN-XDR installation complete."
+    echo "Run with: sudo hardn-xdr"
   else
     echo "[postinst] ERROR: install.sh not found or not executable."
     exit 1
   fi
+} | tee "$LOG_FILE"
 
-  echo "[postinst] HARDN-XDR installation complete."
-  echo "Run with: sudo hardn-xdr"
-} >> "$TMP_LOG" 2>&1
+exit 0
