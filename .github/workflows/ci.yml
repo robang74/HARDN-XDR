@@ -165,11 +165,13 @@ jobs:
           tag_name: ${{ needs.build-and-test.outputs.new_tag }}
           name: "Release ${{ needs.build-and-test.outputs.new_tag }}"
           body: |
-            HARDN-XDR Automated Release
+            ![HARDN Logo](https://raw.githubusercontent.com/OpenSource-For-Freedom/HARDN/main/docs/assets/HARDN.png)
 
-            - Version: `${{ needs.build-and-test.outputs.new_tag }}`
-            - Architectures: `amd64`, `arm64`
-            - Timestamp: $(date -R)
+            **HARDN-XDR Automated Release**
+
+            - **Version:** `${{ needs.build-and-test.outputs.new_tag }}`
+            - **Architectures:** `amd64`, `arm64`
+            - **Timestamp:** $(date -R)
 
             All modules tested in parallel. Lintian validated.
           files: ./hardn_*.deb
