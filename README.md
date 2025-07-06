@@ -121,7 +121,7 @@ man hardn-xdr
 
 ## File Structure
 
-``
+```mermaid
 graph TD
     A[HARDN-XDR root]
     A --> B[install.sh]
