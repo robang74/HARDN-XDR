@@ -52,7 +52,7 @@ jobs:
       - name: Update changelog with real datetime
         run: |
           version="${{ steps.bump.outputs.new_tag }}"
-          version="${version#v}"  # Strip 'v'
+          version="${version#v}"
           export DEBCHANGE_RELEASE_DATE="$(date -R)"
           dch --newversion "$version" "Automated release $version" --distribution unstable --force-distribution
           dch --release --force-distribution ""
@@ -85,8 +85,6 @@ jobs:
       matrix:
         module: [aide, auditd, audit_system, auto_updates, banner, binfmt, central_logging, chkrootkit, compilers, coredumps, debsums, deleted_files, dns_config, file_perms, firewire, grub, kernel_sec, network_protocols, ntp, pentest, process_accounting, purge_old_pkgs, rkhunter, secure_net, service_disable, shared_mem, stig_pwquality, suricata, ufw, unhide, unnecesary_services, usb]
       fail-fast: false
-    outputs:
-      failed: ${{ steps.set-failure.outputs.failed }}
     steps:
       - name: Download .deb package
         uses: actions/download-artifact@v4
@@ -131,16 +129,10 @@ jobs:
       - name: Fetch tags
         run: git fetch --tags
 
-      - name: Download amd64 artifact
+      - name: Download .deb artifact
         uses: actions/download-artifact@v4
         with:
-          name: deb-amd64
-          path: .
-
-      - name: Download arm64 artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: deb-arm64
+          name: deb-package
           path: .
 
       - name: Create and push new tag
@@ -163,4 +155,3 @@ jobs:
           body: "Automated release for version ${{ needs.build-and-test.outputs.new_tag }}"
           files: |
             ./hardn_*_amd64.deb
-            ./hardn_*_arm64.deb
