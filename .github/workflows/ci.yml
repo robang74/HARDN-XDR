@@ -140,7 +140,7 @@ jobs:
 
       - name: Run full system test on ${{ matrix.arch }}
         run: |
-          echo "Running full HARDN system test on ${{ matrix.arch }}" > full-run.log
+          echo "Running full HARDN-XDR system test on ${{ matrix.arch }}" > full-run.log
           docker run --rm \
             -e SKIP_WHIPTAIL=1 \
             -v "$(pwd)/hardn_*.deb:/tmp/hardn.deb" \
@@ -160,61 +160,61 @@ jobs:
           path: full-run.log
 
   tag-and-release:
-  needs: [build-and-test, test-modules, test-deployment]
-  runs-on: ubuntu-latest
-  if: success()
-  steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+    needs: [build-and-test, test-modules, test-deployment]
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Fetch tags
-      run: git fetch --tags
+      - name: Fetch tags
+        run: git fetch --tags
 
-    - name: Download all .deb artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: .
+      - name: Download all .deb artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: .
 
-    - name: Verify tag value
-      run: |
-        echo "Resolved tag: '${{ needs.build-and-test.outputs.new_tag }}'"
-        if [ -z "${{ needs.build-and-test.outputs.new_tag }}" ]; then
-          echo "ERROR: new_tag output from build-and-test is empty."
-          exit 1
-        fi
+      - name: Verify tag value
+        run: |
+          echo "Resolved tag: '${{ needs.build-and-test.outputs.new_tag }}'"
+          if [ -z "${{ needs.build-and-test.outputs.new_tag }}" ]; then
+            echo "ERROR: new_tag output from build-and-test is empty."
+            exit 1
+          fi
 
-    - name: Create and push new tag
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        tag="${{ needs.build-and-test.outputs.new_tag }}"
-        if git rev-parse "$tag" >/dev/null 2>&1; then
-          echo "Tag $tag already exists. Skipping tag creation."
-        else
-          git tag "$tag" -m "Release $tag"
-          git push origin "$tag"
-        fi
+      - name: Create and push new tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          tag="${{ needs.build-and-test.outputs.new_tag }}"
+          if git rev-parse "$tag" >/dev/null 2>&1; then
+            echo "Tag $tag already exists. Skipping tag creation."
+          else
+            git tag "$tag" -m "Release $tag"
+            git push origin "$tag"
+          fi
 
-    - name: Move downloaded .debs to root for release
-      run: |
-        find . -type f -name "*.deb" -exec mv {} . \;
+      - name: Move downloaded .debs to root for release
+        run: |
+          find . -type f -name "*.deb" -exec mv {} . \;
 
-    - name: Create GitHub Release and upload .deb
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: ${{ needs.build-and-test.outputs.new_tag }}
-        name: "Release ${{ needs.build-and-test.outputs.new_tag }}"
-        body: |
-          ![HARDN-XDR Logo](https://raw.githubusercontent.com/OpenSource-For-Freedom/HARDN-XDR/main/docs/assets/HARDN%20(1).png)
+      - name: Create GitHub Release and upload .deb
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.build-and-test.outputs.new_tag }}
+          name: "Release ${{ needs.build-and-test.outputs.new_tag }}"
+          body: |
+            ![HARDN-XDR Logo](https://raw.githubusercontent.com/OpenSource-For-Freedom/HARDN-XDR/main/docs/assets/HARDN%20(1).png)
 
-          **HARDN-XDR Automated Release**
+            **HARDN-XDR Automated Release**
 
-          - **Version:** `${{ needs.build-and-test.outputs.new_tag }}`
-          - **Architectures:** `amd64`, `arm64`
-          - **Timestamp:** $(date -R)
+            - **Version:** `${{ needs.build-and-test.outputs.new_tag }}`
+            - **Architectures:** `amd64`, `arm64`
+            - **Timestamp:** $(date -R)
 
-          - All modules tested in parallel  
-          - XDR deployment verified  
-          - Lintian run validated  
+            - All modules tested in parallel  
+            - XDR deployment verified  
+            - Lintian run validated
