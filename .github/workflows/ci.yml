@@ -160,7 +160,7 @@ jobs:
           path: full-run.log
 
   tag-and-release:
-    needs: [build-and-test, test-modules, test-full-run]
+    needs: [build-and-test, test-modules, test-deployment]
     runs-on: ubuntu-latest
     if: success()
     steps:
