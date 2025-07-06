@@ -155,12 +155,12 @@ jobs:
 
       - name: Update changelog with new version
         run: |
-          version="${{ needs.build-and-test.outputs.new_tag }}"
-          version="${version#v}"
           export DEBFULLNAME="Tim Burns"
           export DEBEMAIL="cyborgcreations01@gmail.com"
-          export SOURCE_DATE_EPOCH=$(date +%s)
-          dch --newversion "$version" "Automated release $version" --distribution unstable --force-distribution
+          version="${{ steps.bump.outputs.new_tag }}"
+          version="${version#v}"
+          now=$(date -R)  # RFC-2822 format required by changelog
+          dch --newversion "$version" "Automated release $version" --distribution unstable --force-distribution --date "$now"
           dch --release --force-distribution ""
 
       - name: Commit updated changelog
