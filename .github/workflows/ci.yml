@@ -109,7 +109,7 @@ jobs:
             -e SKIP_WHIPTAIL=1 \
             -v "$(pwd)/hardn_*.deb:/tmp/hardn.deb" \
             debian:stable-slim bash -c '
-              set -ex
+              set -e
               export DEBIAN_FRONTEND=noninteractive
               apt-get update && apt-get install -y sudo gnupg bash
               dpkg -i /tmp/hardn.deb || true
@@ -121,6 +121,7 @@ jobs:
             ' >> result.log 2>&1 || echo "FAIL: ${{ matrix.module }}" >> result.log
 
       - name: Upload result
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: module-${{ matrix.arch }}-${{ matrix.module }}
