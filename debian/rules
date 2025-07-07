@@ -7,5 +7,5 @@ override_dh_install:
 	chmod +x hardn-xdr
 	chmod +x src/setup/hardn-main.sh
 	chmod +x src/setup/modules/*
-  ls -l src/setup/modules/
+	ls -l src/setup/modules/
 	dh_install
