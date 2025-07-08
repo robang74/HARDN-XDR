@@ -144,7 +144,9 @@ jobs:
         run: |
           file=$(find . -name "hardn_*.deb" | head -n 1)
           cp "$file" ./hardn.deb
-
+      - name: Debug check modules
+        run: |
+          ls -lR src/setup/modules
       - name: Run full system test and diagnostics on ${{ matrix.arch }}
         run: |
           echo "Running full HARDN system test on ${{ matrix.arch }}" > full-run.log
