@@ -1,5 +1,3 @@
-This isn’t reporting all failures anymore with an artifact:
-
 name: ci
 
 on:
