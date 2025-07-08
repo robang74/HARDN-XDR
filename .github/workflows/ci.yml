@@ -36,7 +36,7 @@ jobs:
         id: bump
         run: |
           tag="${{ steps.get_tag.outputs.latest_tag }}"
-          patch=$(echo "$tag" | sed 's/.*\.//')
+          patch=${tag##*.}
           new_patch=$((patch + 1))
           new_tag="v1.1.$new_patch"
           echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
@@ -53,7 +53,8 @@ jobs:
 
       - name: Update changelog for ${{ matrix.arch }}
         run: |
-          version="${{ steps.bump.outputs.new_tag#v }}"
+          raw_tag="${{ steps.bump.outputs.new_tag }}"      # e.g. v1.1.5
+          version="${raw_tag#v}"                           # strip leading 'v'
           export DEBCHANGE_RELEASE_DATE="$(date -R)"
           arch="${{ matrix.arch }}"
           if [ ! -f debian/changelog ]; then touch debian/changelog; fi
@@ -71,7 +72,8 @@ jobs:
       - name: Rename .deb
         id: rename
         run: |
-          version="${{ steps.bump.outputs.new_tag#v }}"
+          raw_tag="${{ steps.bump.outputs.new_tag }}"
+          version="${raw_tag#v}"
           deb_file=$(ls ../*.deb | head -n 1)
           new_name="hardn_${version}_${{ matrix.arch }}.deb"
           mv "$deb_file" "$new_name"
@@ -89,12 +91,39 @@ jobs:
     strategy:
       matrix:
         arch: [amd64, arm64]
-        module: [aide, auditd, audit_system, auto_updates, banner, binfmt,
-          central_logging, chkrootkit, compilers, coredumps, debsums,
-          deleted_files, dns_config, file_perms, firewire, grub, kernel_sec,
-          network_protocols, ntp, pentest, process_accounting, purge_old_pkgs,
-          rkhunter, secure_net, service_disable, shared_mem, stig_pwquality,
-          suricata, ufw, unhide, unnecesary_services, usb]
+        module:
+          - aide
+          - auditd
+          - audit_system
+          - auto_updates
+          - banner
+          - binfmt
+          - central_logging
+          - chkrootkit
+          - compilers
+          - coredumps
+          - debsums
+          - deleted_files
+          - dns_config
+          - file_perms
+          - firewire
+          - grub
+          - kernel_sec
+          - network_protocols
+          - ntp
+          - pentest
+          - process_accounting
+          - purge_old_pkgs
+          - rkhunter
+          - secure_net
+          - service_disable
+          - shared_mem
+          - stig_pwquality
+          - suricata
+          - ufw
+          - unhide
+          - unnecesary_services
+          - usb
       fail-fast: false
     steps:
       - name: Download .deb for ${{ matrix.arch }}
@@ -158,7 +187,7 @@ jobs:
               dpkg -i /tmp/hardn.deb || true
               apt-get install -f -y
               echo "--- Launching HARDN-XDR ---"
-              SKIP_WHIPTAIL=1 /usr/bin/hardn-xdr 
+              SKIP_WHIPTAIL=1 /usr/bin/hardn-xdr --help
             EOF
 
       - name: Upload full system test log
