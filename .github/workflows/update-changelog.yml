@@ -4,7 +4,7 @@ on:
   push:
     tags:
       - 'v*'  # Trigger on version tags like v1.2.3
-
+  permissions: write 
 jobs:
   update-changelog:
     runs-on: ubuntu-latest
