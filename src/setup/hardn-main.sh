@@ -27,8 +27,6 @@ check_root() {
     [ $EUID -eq 0 ] || { echo "Please run as root." >&2; exit 1; }
 }
 
-detect_os_details
-
 show_system_info() {
     echo "HARDN-XDR v${HARDN_VERSION} - System Information"
     echo "================================================"
