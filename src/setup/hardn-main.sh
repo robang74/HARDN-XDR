@@ -23,12 +23,8 @@ HARDN_STATUS() {
     esac
 }
 
-detect_os_details() {
-    if [[ -r /etc/os-release ]]; then
-        source /etc/os-release
-        CURRENT_DEBIAN_CODENAME="${VERSION_CODENAME}"
-        CURRENT_DEBIAN_VERSION_ID="${VERSION_ID}"
-    fi
+check_root() {
+    [ $EUID -eq 0 ] || { echo "Please run as root." >&2; exit 1; }
 }
 
 detect_os_details
@@ -295,7 +291,6 @@ main() {
     HARDN_STATUS "info" "Please reboot your system to complete the configuration."
 }
 
-# Command line argument handling
 if [[ $# -gt 0 ]]; then
     case "$1" in
         --version|-v)
