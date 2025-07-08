@@ -1,33 +1,36 @@
- #!/bin/bash
- set -ex
+#!/bin/bash
+set -ex
 
- LOG_FILE="/tmp/postinst.log"
+LOG_FILE="/tmp/postinst.log"
 
- {
-   echo "[postinst] Executed on $(date)"
--  echo "[postinst] No install.sh — performing manual setup..."
-+  echo "[postinst] Performing manual setup..."
+{
+  echo "[postinst] Executed on $(date)"
+  echo "[postinst] Performing manual setup..."
 
--  chmod +x /usr/bin/hardn-xdr
-+  if [ -f /usr/lib/hardn-xdr/src/setup/hardn-main.sh ]; then
-+    ln -sf /usr/lib/hardn-xdr/src/setup/hardn-main.sh /usr/bin/hardn-xdr
-+    chmod +x /usr/bin/hardn-xdr
-+    echo "[postinst] Installed /usr/bin/hardn-xdr → hardn-main.sh"
-+  else
-+    echo "[postinst] ERROR: hardn-main.sh not found under /usr/lib/hardn-xdr/src/setup"
-+  fi
+  if [ -f /usr/lib/hardn-xdr/src/setup/hardn-main.sh ]; then
+    ln -sf /usr/lib/hardn-xdr/src/setup/hardn-main.sh /usr/bin/hardn-xdr
+    chmod +x /usr/bin/hardn-xdr
+    echo "[postinst] Installed /usr/bin/hardn-xdr → hardn-main.sh"
+  else
+    echo "[postinst] ERROR: hardn-main.sh not found under /usr/lib/hardn-xdr/src/setup"
+  fi
 
-   chmod +x /usr/lib/hardn-xdr/src/setup/hardn-main.sh
+  chmod +x /usr/lib/hardn-xdr/src/setup/hardn-main.sh
 
-   if [ -d /usr/lib/hardn-xdr/src/setup/modules ]; then
-     find /usr/lib/hardn-xdr/src/setup/modules -type f -name "*.sh" -exec chmod +x {} \;
-     echo "[postinst] Module permissions set."
-   else
-     echo "[postinst] WARNING: Modules directory not found."
-   fi
+  if [ -d /usr/lib/hardn-xdr/src/setup/modules ]; then
+    find /usr/lib/hardn-xdr/src/setup/modules -type f -name "*.sh" -exec chmod +x {} \;
+    echo "[postinst] Module permissions set."
+  else
+    echo "[postinst] WARNING: Modules directory not found."
+  fi
 
-   echo "[postinst] HARDN-XDR installed successfully."
-   echo "Run with: sudo hardn-xdr"
- } | tee "$LOG_FILE"
+  # Create necessary directories for HARDN modules
+  mkdir -p /var/log/debsums
+  mkdir -p /usr/local/var/log/suricata
+  echo "[postinst] Created log directories for HARDN modules."
 
- exit 0
+  echo "[postinst] HARDN-XDR installed successfully."
+  echo "Run with: sudo hardn-xdr"
+} | tee "$LOG_FILE"
+
+exit 0
