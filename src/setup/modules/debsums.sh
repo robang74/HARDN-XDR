@@ -170,7 +170,10 @@ setup_debsums() {
 }
 
 # Call setup function and exit if it fails
-setup_debsums || exit $?
+if ! setup_debsums; then
+  HARDN_STATUS "warning" "Skipping debsums module due to setup failure."
+  return 0
+fi
 
 # Function to create systemd service if available, otherwise use cron
 create_scheduled_task() {
