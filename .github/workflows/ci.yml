@@ -39,7 +39,6 @@ jobs:
           patch=$(echo "$tag" | sed 's/.*\.//')
           new_patch=$((patch + 1))
           new_tag="v1.1.$new_patch"
-          echo "new_tag=$new_tag"
           echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
 
       - name: Install deps and tools
@@ -54,8 +53,7 @@ jobs:
 
       - name: Update changelog for ${{ matrix.arch }}
         run: |
-          version="${{ steps.bump.outputs.new_tag }}"
-          version="${version#v}"
+          version="${{ steps.bump.outputs.new_tag#v }}"
           export DEBCHANGE_RELEASE_DATE="$(date -R)"
           arch="${{ matrix.arch }}"
           if [ ! -f debian/changelog ]; then touch debian/changelog; fi
@@ -73,8 +71,7 @@ jobs:
       - name: Rename .deb
         id: rename
         run: |
-          version="${{ steps.bump.outputs.new_tag }}"
-          version="${version#v}"
+          version="${{ steps.bump.outputs.new_tag#v }}"
           deb_file=$(ls ../*.deb | head -n 1)
           new_name="hardn_${version}_${{ matrix.arch }}.deb"
           mv "$deb_file" "$new_name"
@@ -92,7 +89,12 @@ jobs:
     strategy:
       matrix:
         arch: [amd64, arm64]
-        module: [aide, auditd, audit_system, auto_updates, banner, binfmt, central_logging, chkrootkit, compilers, coredumps, debsums, deleted_files, dns_config, file_perms, firewire, grub, kernel_sec, network_protocols, ntp, pentest, process_accounting, purge_old_pkgs, rkhunter, secure_net, service_disable, shared_mem, stig_pwquality, suricata, ufw, unhide, unnecesary_services, usb]
+        module: [aide, auditd, audit_system, auto_updates, banner, binfmt,
+          central_logging, chkrootkit, compilers, coredumps, debsums,
+          deleted_files, dns_config, file_perms, firewire, grub, kernel_sec,
+          network_protocols, ntp, pentest, process_accounting, purge_old_pkgs,
+          rkhunter, secure_net, service_disable, shared_mem, stig_pwquality,
+          suricata, ufw, unhide, unnecesary_services, usb]
       fail-fast: false
     steps:
       - name: Download .deb for ${{ matrix.arch }}
@@ -111,7 +113,7 @@ jobs:
             debian:stable-slim bash -c '
               set -e
               export DEBIAN_FRONTEND=noninteractive
-              apt-get update && apt-get install -y sudo gnupg bash
+              apt-get update && apt-get install -y sudo gnupg bash debconf coreutils findutils whiptail
               dpkg -i /tmp/hardn.deb || true
               apt-get install -f -y
               module="/usr/lib/hardn-xdr/src/setup/modules/${{ matrix.module }}.sh"
@@ -133,39 +135,31 @@ jobs:
     strategy:
       matrix:
         arch: [amd64, arm64]
+
     steps:
+      - name: Register QEMU emulation
+        uses: docker/setup-qemu-action@v2
+
       - name: Download built .deb for ${{ matrix.arch }}
         uses: actions/download-artifact@v4
         with:
           name: deb-${{ matrix.arch }}
           path: .
 
-      - name: Rename downloaded .deb
+      - name: Smoke-test HARDN in container
         run: |
-          file=$(find . -name "hardn_*.deb" | head -n 1)
-          cp "$file" ./hardn.deb
-
-      - name: Inspect installed modules
-        run: |
-          dpkg-deb -x ./hardn.deb unpacked
-          ls -lR unpacked/usr/lib/hardn-xdr/src/setup/modules
-
-      - name: Run full system test and diagnostics on ${{ matrix.arch }}
-        run: |
-          echo "Running full HARDN system test on ${{ matrix.arch }}" > full-run.log
-          docker run --rm \
+          echo "Running HARDN deployment test on ${{ matrix.arch }}" > full-run.log
+          docker run --rm --platform linux/${{ matrix.arch }} \
             -e SKIP_WHIPTAIL=1 \
-            -v "$(pwd)/hardn.deb:/tmp/hardn.deb" \
-            debian:stable-slim bash -c '
-              set -ex
+            -v "$(pwd)/hardn_${{ matrix.arch }}.deb:/tmp/hardn.deb" \
+            debian:stable-slim bash -ex << 'EOF' >> full-run.log 2>&1
               export DEBIAN_FRONTEND=noninteractive
-              export SKIP_WHIPTAIL=1
               apt-get update && apt-get install -y sudo gnupg bash coreutils findutils whiptail
               dpkg -i /tmp/hardn.deb || true
               apt-get install -f -y
               echo "--- Launching HARDN-XDR ---"
-              SKIP_WHIPTAIL=1 /usr/bin/hardn-xdr
-            ' >> full-run.log 2>&1
+              SKIP_WHIPTAIL=1 /usr/bin/hardn-xdr 
+            EOF
 
       - name: Upload full system test log
         uses: actions/upload-artifact@v4
@@ -223,7 +217,7 @@ jobs:
             - **Timestamp:** $(date -R)
 
             - All modules tested in parallel  
-            - XDR deployment verified  
+            - Deployment verified under QEMU emulation  
             - Lintian run validated
           files: |
             release/*.deb
