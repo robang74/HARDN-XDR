@@ -4,7 +4,10 @@ on:
   push:
     tags:
       - 'v*'  # Trigger on version tags like v1.2.3
-  permissions: write 
+
+permissions:
+  contents: write
+
 jobs:
   update-changelog:
     runs-on: ubuntu-latest
@@ -38,7 +41,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
           git add debian/changelog.md
           git commit -m "chore: update changelog for $VERSION" || echo "No changes to commit"
           git push origin HEAD
