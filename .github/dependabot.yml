@@ -5,8 +5,6 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
-    labels:
-      - "github-actions"
     commit-message:
       prefix: "github-actions"
       include: "scope"
