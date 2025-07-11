@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Auto-detect CI environment and skip whiptail
+if [[ -n "$CI" || -n "$GITHUB_ACTIONS" || -n "$GITLAB_CI" || -n "$JENKINS_URL" || ! -t 0 ]]; then
+    export SKIP_WHIPTAIL=1
+fi
+
 
 HARDN_STATUS() {
     local status="$1"
@@ -37,37 +42,84 @@ HARDN_WHIPTAIL_WIDTH=70
 HARDN_WHIPTAIL_HEIGHT=15
 HARDN_WHIPTAIL_MENU_HEIGHT=8
 
-# Standardized whiptail msgbox
+# Standardized whiptail msgbox with CI detection
 hardn_msgbox() {
     local message="$1"
     local height="${2:-$HARDN_WHIPTAIL_HEIGHT}"
     local width="${3:-$HARDN_WHIPTAIL_WIDTH}"
+
+    if [[ "$SKIP_WHIPTAIL" == "1" ]]; then
+        HARDN_STATUS "info" "$message"
+        return 0
+    fi
+
+    if ! command -v whiptail >/dev/null 2>&1; then
+        HARDN_STATUS "warning" "whiptail not available: $message"
+        return 0
+    fi
+
     whiptail --title "$HARDN_WHIPTAIL_TITLE" --msgbox "$message" "$height" "$width"
 }
 
-# Standardized whiptail infobox
+# Standardized whiptail infobox with CI detection
 hardn_infobox() {
     local message="$1"
     local height="${2:-$HARDN_WHIPTAIL_HEIGHT}"
     local width="${3:-$HARDN_WHIPTAIL_WIDTH}"
+
+    if [[ "$SKIP_WHIPTAIL" == "1" ]]; then
+        HARDN_STATUS "info" "$message"
+        return 0
+    fi
+
+    if ! command -v whiptail >/dev/null 2>&1; then
+        HARDN_STATUS "warning" "whiptail not available: $message"
+        return 0
+    fi
+
     whiptail --title "$HARDN_WHIPTAIL_TITLE" --infobox "$message" "$height" "$width"
 }
 
-# Standardized whiptail menu
+# Standardized whiptail menu with CI detection
 hardn_menu() {
     local message="$1"
     local height="${2:-$HARDN_WHIPTAIL_HEIGHT}"
     local width="${3:-$HARDN_WHIPTAIL_WIDTH}"
     local menu_height="${4:-$HARDN_WHIPTAIL_MENU_HEIGHT}"
     shift 4
-    whiptail --title "$HARDN_WHIPTAIL_TITLE" --menu "$message" "$height" "$width" "$menu_height" "$@"
+    local options=("$@")
+
+    if [[ "$SKIP_WHIPTAIL" == "1" ]]; then
+        HARDN_STATUS "info" "Auto-selecting first option for: $message"
+        echo "${options[1]}"  # Return first option value
+        return 0
+    fi
+
+    if ! command -v whiptail >/dev/null 2>&1; then
+        HARDN_STATUS "warning" "whiptail not available, auto-selecting first option for: $message"
+        echo "${options[1]}"
+        return 0
+    fi
+
+    whiptail --title "$HARDN_WHIPTAIL_TITLE" --menu "$message" "$height" "$width" "$menu_height" "${options[@]}"
 }
 
-# Standardized whiptail
+# Standardized whiptail yesno with CI detection
 hardn_yesno() {
     local message="$1"
     local height="${2:-$HARDN_WHIPTAIL_HEIGHT}"
     local width="${3:-$HARDN_WHIPTAIL_WIDTH}"
+
+    if [[ "$SKIP_WHIPTAIL" == "1" ]]; then
+        HARDN_STATUS "info" "Auto-confirming: $message"
+        return 0  # Default to "yes" in CI
+    fi
+
+    if ! command -v whiptail >/dev/null 2>&1; then
+        HARDN_STATUS "warning" "whiptail not available, auto-confirming: $message"
+        return 0
+    fi
+
     whiptail --title "$HARDN_WHIPTAIL_TITLE" --yesno "$message" "$height" "$width"
 }
 
