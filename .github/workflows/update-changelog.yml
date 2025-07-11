@@ -32,7 +32,7 @@ jobs:
       - name: Update changelog with new version
         run: |
           export DEBFULLNAME="Tim Burns"
-          export DEBEMAIL="cyborgcreations01@gmail.com"
+          export DEBEMAIL="control@cybersynapse.ro"
           dch --newversion "$VERSION" "Automated release $VERSION" \
               --distribution unstable --force-distribution
           dch --release --force-distribution ""
