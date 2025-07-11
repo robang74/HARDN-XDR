@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-# HARDN-XDR - The Linux Security Hardening Sentinel
-# Version 2.0.0
-# About this script:
-# STIG Compliance: Security Technical Implementation Guide.
 
 HARDN_VERSION="1.1.50"
 export APT_LISTBUGS_FRONTEND=none
@@ -10,9 +6,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CURRENT_DEBIAN_VERSION_ID=""
 CURRENT_DEBIAN_CODENAME=""
 
-# Source common functions for standardized whiptail usage
+# standardized whiptail usage
 source "${SCRIPT_DIR}/hardn-common.sh" 2>/dev/null || {
-    # Keep local HARDN_STATUS as fallback
+
     echo "Warning: Could not source hardn-common.sh, using local functions"
 }
 
@@ -200,20 +196,35 @@ main_menu() {
     esac
 }
 
+# Auto-detect CI environment
+if [[ -n "$CI" || -n "$GITHUB_ACTIONS" || -n "$GITLAB_CI" || -n "$JENKINS_URL" || ! -t 0 ]]; then
+    export SKIP_WHIPTAIL=1
+    echo "[INFO] CI environment detected, running in non-interactive mode"
+fi
+
 main() {
     print_ascii_banner
     show_system_info
     check_root
+
     if [[ "$SKIP_WHIPTAIL" == "1" ]]; then
-        HARDN_STATUS "info" "Non-interactive mode: installing all modules."
+        HARDN_STATUS "info" "Running in non-interactive mode (SKIP_WHIPTAIL=1)"
+        # Run default hardening without user interaction
         update_system_packages
         install_package_dependencies
         setup_security_modules
         cleanup
-    else
-        welcomemsg
-        main_menu
+
+        print_ascii_banner
+        HARDN_STATUS "pass" "HARDN-XDR v${HARDN_VERSION} installation completed successfully!"
+        HARDN_STATUS "info" "Your system has been hardened with STIG compliance and security tools."
+        HARDN_STATUS "info" "Please reboot your system to complete the configuration."
+        return 0
     fi
+
+    # Interactive mode continues...
+    welcomemsg
+    main_menu
 
     print_ascii_banner
 
