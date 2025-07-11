@@ -10,6 +10,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CURRENT_DEBIAN_VERSION_ID=""
 CURRENT_DEBIAN_CODENAME=""
 
+# Source common functions for standardized whiptail usage
+source "${SCRIPT_DIR}/hardn-common.sh" 2>/dev/null || {
+    # Keep local HARDN_STATUS as fallback
+    echo "Warning: Could not source hardn-common.sh, using local functions"
+}
+
 HARDN_STATUS() {
     local status="$1"
     local message="$2"
@@ -134,7 +140,7 @@ run_module() {
     fi
 }
 
-setup_all_security_modules() {
+setup_security_modules() {
     HARDN_STATUS "info" "Installing security modules..."
     local modules=(
         "ufw.sh" "fail2ban.sh" "sshd.sh" "auditd.sh" "kernel_sec.sh"
@@ -165,7 +171,7 @@ cleanup() {
 
 main_menu() {
     local choice
-    choice=$(whiptail --title "HARDN-XDR Main Menu" --menu "Choose an option:" 15 60 3 \
+    choice=$(whiptail --title "HARDN-XDR v${HARDN_VERSION}" --menu "Choose an option:" 15 60 3 \
         "1" "Install all security modules" \
         "2" "Select specific security modules" \
         "3" "Exit" 3>&1 1>&2 2>&3)
@@ -174,13 +180,13 @@ main_menu() {
         1)
             update_system_packages
             install_package_dependencies
-            setup_all_security_modules
+            setup_security_modules
             cleanup
             ;;
         2)
             update_system_packages
             install_package_dependencies
-            setup_security
+            setup_security_modules
             cleanup
             ;;
         3)
@@ -202,7 +208,7 @@ main() {
         HARDN_STATUS "info" "Non-interactive mode: installing all modules."
         update_system_packages
         install_package_dependencies
-        setup_all_security_modules
+        setup_security_modules
         cleanup
     else
         welcomemsg

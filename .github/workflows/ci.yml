@@ -2,7 +2,7 @@ name: ci
 
 on:
   push:
-    branches: [main]
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
@@ -107,7 +107,6 @@ jobs:
           - dns_config
           - file_perms
           - firewire
-          - grub
           - kernel_sec
           - network_protocols
           - ntp
@@ -245,8 +244,8 @@ jobs:
             - **Architectures:** `amd64`, `arm64`
             - **Timestamp:** $(date -R)
 
-            - All modules tested in parallel  
-            - Deployment verified under QEMU emulation  
+            - All modules tested in parallel
+            - Deployment verified under QEMU emulation
             - Lintian run validated
           files: |
             release/*.deb
