@@ -138,7 +138,7 @@ setup_all_security_modules() {
     HARDN_STATUS "info" "Installing security modules..."
     local modules=(
         "ufw.sh" "fail2ban.sh" "sshd.sh" "auditd.sh" "kernel_sec.sh"
-        "stig_pwquality.sh" "grub.sh" "aide.sh" "rkhunter.sh" "chkrootkit.sh"
+        "stig_pwquality.sh" "aide.sh" "rkhunter.sh" "chkrootkit.sh"
         "auto_updates.sh" "central_logging.sh" "audit_system.sh" "ntp.sh"
         "debsums.sh" "yara.sh" "suricata.sh" "firejail.sh" "selinux.sh"
         "unhide.sh" "pentest.sh" "compilers.sh" "purge_old_pkgs.sh" "dns_config.sh"
