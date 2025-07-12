@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Auto-detect CI environment and skip whiptail
-if [[ -n "$CI" || -n "$GITHUB_ACTIONS" || -n "$GITLAB_CI" || -n "$JENKINS_URL" || ! -t 0 ]]; then
+if [[ -n "$CI" || -n "$GITHUB_ACTIONS" || ! -t 0 ]]; then
     export SKIP_WHIPTAIL=1
 fi
 
