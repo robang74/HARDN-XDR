@@ -7,15 +7,24 @@ LOG_FILE="/tmp/postinst.log"
   echo "[postinst] Executed on $(date)"
   echo "[postinst] Performing manual setup..."
 
+  # Symlink launcher
   if [ -f /usr/lib/hardn-xdr/src/setup/hardn-main.sh ]; then
     ln -sf /usr/lib/hardn-xdr/src/setup/hardn-main.sh /usr/bin/hardn-xdr
     chmod +x /usr/bin/hardn-xdr
+    chmod +x /usr/lib/hardn-xdr/src/setup/hardn-main.sh
     echo "[postinst] Installed /usr/bin/hardn-xdr → hardn-main.sh"
   else
     echo "[postinst] ERROR: hardn-main.sh not found under /usr/lib/hardn-xdr/src/setup"
   fi
 
-  chmod +x /usr/lib/hardn-xdr/src/setup/hardn-main.sh
+
+  if [ -f /usr/lib/hardn-xdr/src/setup/hardn-common.sh ]; then
+    chmod +x /usr/lib/hardn-xdr/src/setup/hardn-common.sh
+    echo "[postinst] Verified hardn-common.sh is present and executable."
+  else
+    echo "[postinst] ERROR: hardn-common.sh not found. Modules will fail without it."
+  fi
+
 
   if [ -d /usr/lib/hardn-xdr/src/setup/modules ]; then
     find /usr/lib/hardn-xdr/src/setup/modules -type f -name "*.sh" -exec chmod +x {} \;
@@ -24,7 +33,7 @@ LOG_FILE="/tmp/postinst.log"
     echo "[postinst] WARNING: Modules directory not found."
   fi
 
-  # Create necessary directories for HARDN modules
+
   mkdir -p /var/log/debsums
   mkdir -p /usr/local/var/log/suricata
   echo "[postinst] Created log directories for HARDN modules."
