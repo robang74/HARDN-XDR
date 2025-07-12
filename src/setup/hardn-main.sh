@@ -2,27 +2,24 @@
 
 HARDN_VERSION="1.1.50"
 export APT_LISTBUGS_FRONTEND=none
+
+# Auto-detect CI or headless environment
+if [[ -n "$CI" || -n "$GITHUB_ACTIONS" || -n "$GITLAB_CI" || ! -t 0 ]]; then
+    export SKIP_WHIPTAIL=1
+    echo "[INFO] CI environment detected, running in non-interactive mode"
+fi
+
+
+if [ -f /usr/lib/hardn-xdr/src/setup/hardn-common.sh ]; then
+    source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
+else
+    echo "[ERROR] hardn-common.sh not found at expected path!"
+    exit 1
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CURRENT_DEBIAN_VERSION_ID=""
 CURRENT_DEBIAN_CODENAME=""
-
-# standard whiptail
-source "${SCRIPT_DIR}/hardn-common.sh" 2>/dev/null || {
-
-    echo "Warning: Could not source hardn-common.sh, using local functions"
-}
-
-HARDN_STATUS() {
-    local status="$1"
-    local message="$2"
-    case "$status" in
-        "pass")    echo -e "\033[1;32m[PASS]\033[0m $message" ;;
-        "warning") echo -e "\033[1;33m[WARNING]\033[0m $message" ;;
-        "error")   echo -e "\033[1;31m[ERROR]\033[0m $message" ;;
-        "info")    echo -e "\033[1;34m[INFO]\033[0m $message" ;;
-        *)          echo -e "\033[1;37m[UNKNOWN]\033[0m $message" ;;
-    esac
-}
 
 check_root() {
     [[ $EUID -eq 0 ]] || { HARDN_STATUS "error" "Please run as root."; exit 1; }
@@ -55,12 +52,6 @@ welcomemsg() {
         HARDN_STATUS "error" "Installation cancelled by user."
         exit 1
     fi
-}
-
-preinstallmsg() {
-    HARDN_STATUS "info" ""
-    hardn_msgbox "Welcome to HARDN-XDR. A Linux Security Hardening program." 10 60
-    HARDN_STATUS "info" "The system will be configured to ensure STIG and Security compliance."
 }
 
 update_system_packages() {
@@ -127,8 +118,6 @@ run_module() {
     local module_paths=(
         "/usr/lib/hardn-xdr/src/setup/modules/$module_file"
         "${SCRIPT_DIR}/modules/$module_file"
-        "$(dirname "$0")/modules/$module_file"
-        "./modules/$module_file"
     )
 
     for module_path in "${module_paths[@]}"; do
@@ -140,7 +129,6 @@ run_module() {
     done
 
     HARDN_STATUS "error" "Module not found in any expected location: $module_file"
-    HARDN_STATUS "error" "Searched paths:"
     for path in "${module_paths[@]}"; do
         HARDN_STATUS "error" "  - $path"
     done
@@ -170,48 +158,7 @@ cleanup() {
     HARDN_STATUS "info" "Performing final system cleanup..."
     apt-get autoremove -y &>/dev/null
     apt-get clean &>/dev/null
-    apt-get autoclean &>/dev/null
-    HARDN_STATUS "pass" "System cleanup completed. Unused packages and cache cleared."
-    whiptail --infobox "HARDN-XDR v${HARDN_VERSION} setup complete! Please reboot your system." 8 75
-    sleep 3
-}
-
-main_menu() {
-    local choice
-    choice=$(hardn_menu "Choose an option:" 15 60 3 \
-        "1" "Install all security modules" \
-        "2" "Select specific security modules" \
-        "3" "Exit")
-
-    case "$choice" in
-        1)
-            update_system_packages
-            install_package_dependencies
-            setup_security_modules
-            cleanup
-            ;;
-        2)
-            update_system_packages
-            install_package_dependencies
-            setup_security_modules
-            cleanup
-            ;;
-        3)
-            HARDN_STATUS "info" "Exiting HARDN-XDR."
-            exit 0
-            ;;
-        *)
-            HARDN_STATUS "info" "No option selected. Exiting."
-            exit 1
-            ;;
-    esac
-}
-
-cleanup() {
-    HARDN_STATUS "info" "Performing final system cleanup..."
-    apt-get autoremove -y &>/dev/null
-    apt-get clean &>/dev/null
-    apt-get autoclean &>/dev/null
+    apt-get autoclean -y &>/dev/null
     HARDN_STATUS "pass" "System cleanup completed. Unused packages and cache cleared."
 
     if [[ "$SKIP_WHIPTAIL" != "1" ]]; then
@@ -222,11 +169,29 @@ cleanup() {
     fi
 }
 
-# Auto-detect CI environment
-if [[ -n "$CI" || -n "$GITHUB_ACTIONS" || ! -t 0 ]]; then
-    export SKIP_WHIPTAIL=1
-    echo "[INFO] CI environment detected, running in non-interactive mode"
-fi
+main_menu() {
+    local choice
+    choice=$(hardn_menu "Choose an option:" 15 60 3 \
+        "1" "Install all security modules" \
+        "2" "Exit")
+
+    case "$choice" in
+        1)
+            update_system_packages
+            install_package_dependencies
+            setup_security_modules
+            cleanup
+            ;;
+        2)
+            HARDN_STATUS "info" "Exiting HARDN-XDR."
+            exit 0
+            ;;
+        *)
+            HARDN_STATUS "info" "No option selected. Exiting."
+            exit 1
+            ;;
+    esac
+}
 
 main() {
     print_ascii_banner
@@ -234,45 +199,23 @@ main() {
     check_root
 
     if [[ "$SKIP_WHIPTAIL" == "1" ]]; then
-        HARDN_STATUS "info" "Running in non-interactive mode (SKIP_WHIPTAIL=1)"
-        # Run default without user interaction
         update_system_packages
         install_package_dependencies
         setup_security_modules
         cleanup
-
-        print_ascii_banner
-        HARDN_STATUS "pass" "HARDN-XDR v${HARDN_VERSION} installation completed successfully!"
-        HARDN_STATUS "info" "Your system has been hardened with STIG compliance and security tools."
-        HARDN_STATUS "info" "Please reboot your system to complete the configuration."
         return 0
     fi
 
-    # Interactive mode continues...
     welcomemsg
     main_menu
-
-    print_ascii_banner
-
-    HARDN_STATUS "pass" "HARDN-XDR v${HARDN_VERSION} installation completed successfully!"
-    HARDN_STATUS "info" "Your system has been hardened with STIG compliance and security tools."
-    HARDN_STATUS "info" "Please reboot your system to complete the configuration."
 }
 
+# Entry 
 if [[ $# -gt 0 ]]; then
     case "$1" in
-        --version|-v)
-            HARDN_STATUS "info" "HARDN-XDR v${HARDN_VERSION}"
-            exit 0
-            ;;
-        --help|-h)
-            HARDN_STATUS "info" "Usage: \$0 [--version]|[--help]"
-            exit 0
-            ;;
-        *)
-            HARDN_STATUS "error" "Unknown option '$1'"
-            exit 1
-            ;;
+        --version|-v) HARDN_STATUS "info" "HARDN-XDR v${HARDN_VERSION}"; exit 0 ;;
+        --help|-h)    HARDN_STATUS "info" "Usage: $0 [--version] [--help]"; exit 0 ;;
+        *)            HARDN_STATUS "error" "Unknown option '$1'"; exit 1 ;;
     esac
 fi
 
