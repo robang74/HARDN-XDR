@@ -2,7 +2,7 @@ name: ci
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main" , "opensource-for-freedom-patch-1"]
   workflow_dispatch:
 
 permissions:
