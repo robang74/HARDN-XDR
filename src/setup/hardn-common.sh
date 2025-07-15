@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Auto-detect CI environment and skip whiptail
-if [[ -n "$CI" || -n "$GITHUB_ACTIONS" || -n "$GITLAB_CI" || -n "$JENKINS_URL" || ! -t 0 ]]; then
+# Auto-detect CI or headless environments and skip whiptail
+if [[ -n "$CI" || -n "$GITHUB_ACTIONS" || -n "$GITLAB_CI" || -n "$JENKINS_URL" || -n "$BUILDKITE" || ! -t 0 ]]; then
     export SKIP_WHIPTAIL=1
 fi
 
-
+# Color-coded CLI status output
 HARDN_STATUS() {
     local status="$1"
     local message="$2"
@@ -18,7 +18,7 @@ HARDN_STATUS() {
     esac
 }
 
-# Universal package
+# Package presence checker across multiple distros
 is_installed() {
     local pkg="$1"
     if command -v dpkg >/dev/null 2>&1; then
@@ -34,53 +34,51 @@ is_installed() {
     fi
 }
 
-# Standardized whiptail helper functions
+# Default whiptail UI dimensions
 HARDN_WHIPTAIL_TITLE="HARDN-XDR v${HARDN_VERSION:-1.1.50}"
-
-
 HARDN_WHIPTAIL_WIDTH=70
 HARDN_WHIPTAIL_HEIGHT=15
 HARDN_WHIPTAIL_MENU_HEIGHT=8
 
-# Standardized whiptail msgbox with CI detection
+# Whiptail message box or fallback
 hardn_msgbox() {
     local message="$1"
     local height="${2:-$HARDN_WHIPTAIL_HEIGHT}"
     local width="${3:-$HARDN_WHIPTAIL_WIDTH}"
 
     if [[ "$SKIP_WHIPTAIL" == "1" ]]; then
-        HARDN_STATUS "info" "$message"
+        HARDN_STATUS "info" "[fallback] $message"
         return 0
     fi
 
     if ! command -v whiptail >/dev/null 2>&1; then
-        HARDN_STATUS "warning" "whiptail not available: $message"
+        HARDN_STATUS "warning" "[fallback] whiptail not available: $message"
         return 0
     fi
 
     whiptail --title "$HARDN_WHIPTAIL_TITLE" --msgbox "$message" "$height" "$width"
 }
 
-# Standardized whiptail infobox with CI detection
+# Whiptail info box or fallback
 hardn_infobox() {
     local message="$1"
     local height="${2:-$HARDN_WHIPTAIL_HEIGHT}"
     local width="${3:-$HARDN_WHIPTAIL_WIDTH}"
 
     if [[ "$SKIP_WHIPTAIL" == "1" ]]; then
-        HARDN_STATUS "info" "$message"
+        HARDN_STATUS "info" "[fallback] $message"
         return 0
     fi
 
     if ! command -v whiptail >/dev/null 2>&1; then
-        HARDN_STATUS "warning" "whiptail not available: $message"
+        HARDN_STATUS "warning" "[fallback] whiptail not available: $message"
         return 0
     fi
 
     whiptail --title "$HARDN_WHIPTAIL_TITLE" --infobox "$message" "$height" "$width"
 }
 
-# Standardized whiptail menu with CI detection
+# Whiptail menu or fallback to first option
 hardn_menu() {
     local message="$1"
     local height="${2:-$HARDN_WHIPTAIL_HEIGHT}"
@@ -89,41 +87,46 @@ hardn_menu() {
     shift 4
     local options=("$@")
 
+    if [[ "${#options[@]}" -lt 2 ]]; then
+        HARDN_STATUS "error" "No menu options provided to hardn_menu"
+        return 1
+    fi
+
     if [[ "$SKIP_WHIPTAIL" == "1" ]]; then
-        HARDN_STATUS "info" "Auto-selecting first option for: $message"
-        echo "${options[1]}"  # Return first option value
+        HARDN_STATUS "info" "[fallback] Auto-selecting first option for: $message"
+        echo "${options[0]}"  # Return first option value
         return 0
     fi
 
     if ! command -v whiptail >/dev/null 2>&1; then
-        HARDN_STATUS "warning" "whiptail not available, auto-selecting first option for: $message"
-        echo "${options[1]}"
+        HARDN_STATUS "warning" "[fallback] whiptail not available, auto-selecting first option for: $message"
+        echo "${options[0]}"
         return 0
     fi
 
     whiptail --title "$HARDN_WHIPTAIL_TITLE" --menu "$message" "$height" "$width" "$menu_height" "${options[@]}"
 }
 
-# Standardized whiptail yesno with CI detection
+# Whiptail yes/no dialog or fallback to "yes"
 hardn_yesno() {
     local message="$1"
     local height="${2:-$HARDN_WHIPTAIL_HEIGHT}"
     local width="${3:-$HARDN_WHIPTAIL_WIDTH}"
 
     if [[ "$SKIP_WHIPTAIL" == "1" ]]; then
-        HARDN_STATUS "info" "Auto-confirming: $message"
-        return 0  # Default to "yes" in CI
+        HARDN_STATUS "info" "[fallback] Auto-confirming: $message"
+        return 0
     fi
 
     if ! command -v whiptail >/dev/null 2>&1; then
-        HARDN_STATUS "warning" "whiptail not available, auto-confirming: $message"
+        HARDN_STATUS "warning" "[fallback] whiptail not available, auto-confirming: $message"
         return 0
     fi
 
     whiptail --title "$HARDN_WHIPTAIL_TITLE" --yesno "$message" "$height" "$width"
 }
 
-# Export variables for all files
+# Export functions so they’re available in sourced module scripts
 export -f HARDN_STATUS
 export -f is_installed
 export -f hardn_msgbox
