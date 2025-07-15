@@ -182,25 +182,31 @@ jobs:
           name: deb-${{ matrix.arch }}
           path: .
 
-      - name: Smoke-test HARDN in container
+      - name: Simulate full HARDN deployment
         run: |
-          echo "Running HARDN deployment test on ${{ matrix.arch }}" > full-run.log
+          echo "Simulating real user deployment on ${{ matrix.arch }}" > full-run.log
           docker run --rm --platform linux/${{ matrix.arch }} \
             -e SKIP_WHIPTAIL=1 \
             -e DEBIAN_FRONTEND=noninteractive \
             -e CI=true \
             -v "$(pwd)/hardn_*.deb:/tmp/hardn.deb" \
             debian:stable-slim bash -ex << 'EOF' >> full-run.log 2>&1
-              export DEBIAN_FRONTEND=noninteractive
-              export SKIP_WHIPTAIL=1
-              export CI=true
-              apt-get update && apt-get install -y sudo gnupg bash coreutils findutils whiptail debconf-utils
-              echo "debconf debconf/frontend select Noninteractive" | debconf-set-selections
-              dpkg -i /tmp/hardn.deb || true
-              apt-get install -f -y
-              echo "--- Launching HARDN-XDR ---"
-              SKIP_WHIPTAIL=1 /usr/bin/hardn-xdr --help
-            EOF
+             export DEBIAN_FRONTEND=noninteractive
+             export SKIP_WHIPTAIL=1
+             export CI=true
+
+            apt-get update
+            apt-get install -y sudo gnupg bash whiptail coreutils findutils debconf-utils
+
+            echo "debconf debconf/frontend select Noninteractive" | debconf-set-selections
+
+            dpkg -i /tmp/hardn.deb || true
+            apt-get install -f -y
+
+            echo "--- Simulated user is launching HARDN-XDR ---"
+            chmod +x /usr/bin/hardn-xdr
+            sudo -E /usr/bin/hardn-xdr --no-daemon --auto
+           EOF
 
       - name: Upload full system test log
         uses: actions/upload-artifact@v4
