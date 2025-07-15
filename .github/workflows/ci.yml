@@ -181,39 +181,43 @@ jobs:
           name: deb-${{ matrix.arch }}
           path: .
 
-      - name: deployment
+      - name: Simulate full HARDN deployment
         run: |
-          echo "Simulating real user deployment on ${{ matrix.arch }}" > full-run.log
-          docker run --rm --platform linux/${{ matrix.arch }} \
-           -e SKIP_WHIPTAIL=1 \
-           -e DEBIAN_FRONTEND=noninteractive \
-           -e CI=true \
-           -v "$(pwd)/hardn_*.deb:/tmp/hardn.deb" \
-           debian:stable-slim bash -ex <<EOF >> full-run.log 2>&1
-             set -euxo pipefail
-             echo "--- INSTALLING PREREQS ---"
-             apt-get update
-             apt-get install -y sudo gnupg bash whiptail coreutils findutils debconf-utils systemd systemd-sysv procps
+         echo "Simulating real user deployment on ${{ matrix.arch }}" > full-run.log
+         docker run --rm --platform linux/${{ matrix.arch }} \
+          -e SKIP_WHIPTAIL=1 \
+          -e DEBIAN_FRONTEND=noninteractive \
+          -e CI=true \
+          debian:stable-slim bash -ex <<EOF >> full-run.log 2>&1
+            set -euxo pipefail
 
-             echo "debconf debconf/frontend select Noninteractive" | debconf-set-selections
+            echo "--- INSTALLING PREREQUISITES ---"
+            apt-get update
+            apt-get install -y sudo gnupg bash git curl whiptail coreutils findutils \
+               build-essential dpkg-dev devscripts fakeroot lintian debhelper
 
-             echo "--- INSTALLING HARDN-XDR PACKAGE ---"
-             dpkg -i /tmp/hardn.deb || true
-             apt-get install -f -y
+            echo "--- CLONING REPO ---"
+            git clone https://github.com/OpenSource-For-Freedom/HARDN-XDR.git
+            cd HARDN-XDR
 
-             echo "--- VERIFYING EXECUTABLE ---"
-             chmod +x /usr/bin/hardn-xdr
-             [ -f /usr/bin/hardn-xdr ] && echo "Launcher present."
+            echo "--- FIXING EXECUTABLE PERMISSIONS ---"
+            chmod +x debian/postinst hardn-xdr src/setup/hardn-main.sh
+            find src/setup/modules -type f -name "*.sh" -exec chmod +x {} \;
 
-             echo "--- STARTING FULL DEPLOYMENT ---"
-             export SKIP_WHIPTAIL=1
-             export DEBIAN_FRONTEND=noninteractive
-             sudo -E /usr/bin/hardn-xdr --no-daemon --auto
+            echo "--- BUILDING DEB PACKAGE ---"
+            dpkg-buildpackage -us -uc
+            cd ..
 
-             echo "--- INSTALLATION COMPLETE ---"
-             echo "Reboot would normally occur here..."
-             sleep 3
-            echo "[TEST MODE] Simulated reboot step complete."
+            echo "--- INSTALLING DEB PACKAGE ---"
+            dpkg -i hardn_*.deb || true
+            apt-get install -f -y
+
+            echo "--- RUNNING HARDN-XDR DEPLOYMENT ---"
+            SKIP_WHIPTAIL=1 /usr/bin/hardn-xdr --no-daemon --auto
+
+            echo "--- END OF DEPLOYMENT ---"
+            sleep 2
+            echo "[TEST MODE] Simulated reboot complete"
           EOF
 
       - name: Upload full system test log
