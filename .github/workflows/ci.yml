@@ -2,7 +2,7 @@ name: ci
 
 on:
   push:
-    branches: ["main" , "opensource-for-freedom-patch-1"]
+    branches: ["main", "main-patch"]
   workflow_dispatch:
 
 permissions:
@@ -53,8 +53,8 @@ jobs:
 
       - name: Update changelog for ${{ matrix.arch }}
         run: |
-          raw_tag="${{ steps.bump.outputs.new_tag }}"      # e.g. v1.1.5
-          version="${raw_tag#v}"                           # strip leading 'v'
+          raw_tag="${{ steps.bump.outputs.new_tag }}"
+          version="${raw_tag#v}"
           export DEBCHANGE_RELEASE_DATE="$(date -R)"
           arch="${{ matrix.arch }}"
           if [ ! -f debian/changelog ]; then touch debian/changelog; fi
@@ -137,33 +137,33 @@ jobs:
       - name: Run module test for ${{ matrix.module }} on ${{ matrix.arch }}
         timeout-minutes: 15
         run: |
-          echo "Testing module: ${{ matrix.module }} on arch ${{ matrix.arch }}" > result.log
+          log_file="module-${{ matrix.arch }}-${{ matrix.module }}.log"
+          echo "Testing module: ${{ matrix.module }} on arch ${{ matrix.arch }}" | tee "$log_file"
+
           docker run --rm \
             -e SKIP_WHIPTAIL=1 \
             -e DEBIAN_FRONTEND=noninteractive \
             -e CI=true \
             -v "$(pwd)/hardn_*.deb:/tmp/hardn.deb" \
-            debian:stable-slim bash -c '
-              set -e
-              export DEBIAN_FRONTEND=noninteractive
-              export SKIP_WHIPTAIL=1
-              export CI=true
-              apt-get update && apt-get install -y sudo gnupg bash debconf-utils coreutils findutils whiptail
+            debian:stable-slim bash -ex <<EOF | tee -a "$log_file"
+              apt-get update
+              apt-get install -y sudo gnupg bash debconf-utils coreutils findutils whiptail
               echo "debconf debconf/frontend select Noninteractive" | debconf-set-selections
               dpkg -i /tmp/hardn.deb || true
               apt-get install -f -y
               module="/usr/lib/hardn-xdr/src/setup/modules/${{ matrix.module }}.sh"
-              if [ ! -f "$module" ]; then echo "Missing $module" && exit 1; fi
-              chmod +x "$module"
-              bash "$module"
-            ' >> result.log 2>&1 || echo "FAIL: ${{ matrix.module }}" >> result.log
+              echo "--- Running \$module ---"
+              if [ ! -f "\$module" ]; then echo "Missing \$module" && exit 1; fi
+              chmod +x "\$module"
+              bash "\$module"
+           EOF
 
-      - name: Upload result
+      - name: Upload module log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: module-${{ matrix.arch }}-${{ matrix.module }}
-          path: result.log
+          path: module-${{ matrix.arch }}-${{ matrix.module }}.log
 
   test-deployment:
     needs: test-modules
@@ -171,7 +171,6 @@ jobs:
     strategy:
       matrix:
         arch: [amd64, arm64]
-
     steps:
       - name: Register QEMU emulation
         uses: docker/setup-qemu-action@v3
@@ -182,7 +181,7 @@ jobs:
           name: deb-${{ matrix.arch }}
           path: .
 
-      - name: Simulate full HARDN deployment
+      - name: deployment
         run: |
           echo "Simulating real user deployment on ${{ matrix.arch }}" > full-run.log
           docker run --rm --platform linux/${{ matrix.arch }} \
@@ -191,22 +190,18 @@ jobs:
             -e CI=true \
             -v "$(pwd)/hardn_*.deb:/tmp/hardn.deb" \
             debian:stable-slim bash -ex << 'EOF' >> full-run.log 2>&1
-             export DEBIAN_FRONTEND=noninteractive
-             export SKIP_WHIPTAIL=1
-             export CI=true
-
-            apt-get update
-            apt-get install -y sudo gnupg bash whiptail coreutils findutils debconf-utils
-
-            echo "debconf debconf/frontend select Noninteractive" | debconf-set-selections
-
-            dpkg -i /tmp/hardn.deb || true
-            apt-get install -f -y
-
-            echo "--- Simulated user is launching HARDN-XDR ---"
-            chmod +x /usr/bin/hardn-xdr
-            sudo -E /usr/bin/hardn-xdr --no-daemon --auto
-           EOF
+              export DEBIAN_FRONTEND=noninteractive
+              export SKIP_WHIPTAIL=1
+              export CI=true
+              apt-get update
+              apt-get install -y sudo gnupg bash whiptail coreutils findutils debconf-utils
+              echo "debconf debconf/frontend select Noninteractive" | debconf-set-selections
+              dpkg -i /tmp/hardn.deb || true
+              apt-get install -f -y
+              echo "--- Simulated user is launching HARDN-XDR ---"
+              chmod +x /usr/bin/hardn-xdr
+              sudo -E /usr/bin/hardn-xdr --no-daemon --auto
+          EOF
 
       - name: Upload full system test log
         uses: actions/upload-artifact@v4
@@ -237,6 +232,10 @@ jobs:
           mkdir -p release
           find . -name "*.deb" -exec mv {} release/ \;
 
+      - name: Set formatted release date
+        id: release_date
+        run: echo "value=$(date -R)" >> $GITHUB_OUTPUT
+
       - name: Create and push new tag
         run: |
           git config user.name "github-actions[bot]"
@@ -261,7 +260,7 @@ jobs:
 
             - **Version:** `${{ needs.build-and-test.outputs.new_tag }}`
             - **Architectures:** `amd64`, `arm64`
-            - **Timestamp:** $(date -R)
+            - **Timestamp:** ${{ steps.release_date.outputs.value }}
 
             - All modules tested in parallel
             - Deployment verified under QEMU emulation
