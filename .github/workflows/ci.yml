@@ -119,11 +119,12 @@ jobs:
               dpkg -i /tmp/hardn.deb || true
               apt-get install -f -y
               echo "--- RUNNING HARDN DEPLOYMENT ---"
-              /usr/bin/hardn-xdr --no-daemon --auto || echo "Launch failed"
+              /usr/bin/hardn-xdr --no-daemon --auto 2>&1 | tee /tmp/full-run.log
             ' > full-run.log 2>&1
 
       - name: Upload full system test log
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: full-system-test-${{ matrix.arch }}
-          path: full-run.log
+         name: full-system-test-${{ matrix.arch }}
+         path: ./full-run.log
