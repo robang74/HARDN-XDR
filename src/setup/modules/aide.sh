@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# AIDE Module for HARDN-XDR
+# Installs and configures a basic AIDE setup
+
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 set -e
 
@@ -24,23 +27,24 @@ if ! is_installed aide; then
         apt update -y || HARDN_STATUS "warning" "apt update failed, continuing anyway"
         apt install -y aide || {
             HARDN_STATUS "error" "Failed to install AIDE via apt"
-            exit 1
+            return 1
         }
     elif command -v dnf >/dev/null 2>&1; then
         dnf install -y aide || {
             HARDN_STATUS "error" "Failed to install AIDE via dnf"
-            exit 1
+            return 1
         }
     elif command -v yum >/dev/null 2>&1; then
         yum install -y aide || {
             HARDN_STATUS "error" "Failed to install AIDE via yum"
-            exit 1
+            return 1
         }
     fi
 fi
 
 if [[ -f "/etc/aide/aide.conf" ]]; then
     cp /etc/aide/aide.conf /etc/aide/aide.conf.bak
+
     cat > /etc/aide/aide.conf <<EOF
 database=file:/var/lib/aide/aide.db
 database_out=file:/var/lib/aide/aide.db.new
@@ -61,6 +65,5 @@ EOF
     HARDN_STATUS "pass" "AIDE installed and configured for a quick scan (only /etc, /bin, /usr/bin)."
     HARDN_STATUS "info" "For a deeper scan, edit /etc/aide/aide.conf and add more directories."
 else
-    HARDN_STATUS "error" "AIDE install may have failed: /etc/aide/aide.conf not found"
-    exit 1
+    HARDN_STATUS "warning" "Skipping: /etc/aide/aide.conf not found after install"
 fi
