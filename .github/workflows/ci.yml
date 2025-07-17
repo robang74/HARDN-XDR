@@ -105,9 +105,11 @@ jobs:
           path: .
 
       - name: Simulate full HARDN deployment inside container
+        id: simulate
         run: |
           echo "Simulating full install for ${{ matrix.arch }}"
           cp hardn_*.deb ./hardn.deb
+
           docker run --rm -i --platform linux/${{ matrix.arch }} \
             -e SKIP_WHIPTAIL=1 \
             -e DEBIAN_FRONTEND=noninteractive \
@@ -119,12 +121,77 @@ jobs:
               dpkg -i /tmp/hardn.deb || true
               apt-get install -f -y
               echo "--- RUNNING HARDN DEPLOYMENT ---"
-              /usr/bin/hardn-xdr --no-daemon --auto 2>&1 | tee /tmp/full-run.log
-            ' > full-run.log 2>&1
+              /usr/bin/hardn-xdr --no-daemon --auto
+            ' | tee full-run.log
 
       - name: Upload full system test log
         if: always()
         uses: actions/upload-artifact@v4
         with:
-         name: full-system-test-${{ matrix.arch }}
-         path: ./full-run.log
+          name: full-system-test-${{ matrix.arch }}
+          path: ./full-run.log
+
+      - name: Print condensed output to job log
+        if: always()
+        run: |
+          echo "=== HARDN-XDR Full Output (last 100 lines) ==="
+          tail -n 100 full-run.log || true
+
+  tag-and-release:
+    needs: [build-and-test, test-deployment]
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch tags
+        run: git fetch --tags
+
+      - name: Download all .deb artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: .
+
+      - name: Move .deb files to root for release
+        run: |
+          mkdir -p release
+          find . -name "*.deb" -exec mv {} release/ \;
+
+      - name: Set formatted release date
+        id: release_date
+        run: echo "value=$(date -R)" >> $GITHUB_OUTPUT
+
+      - name: Create and push new tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          tag="${{ needs.build-and-test.outputs.new_tag }}"
+          if git rev-parse "$tag" >/dev/null 2>&1; then
+            echo "Tag $tag already exists. Skipping tag creation."
+          else
+            git tag "$tag" -m "Release $tag"
+            git push origin "$tag"
+          fi
+
+      - name: Create GitHub Release and upload .deb
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.build-and-test.outputs.new_tag }}
+          name: "Release ${{ needs.build-and-test.outputs.new_tag }}"
+          body: |
+            ![HARDN-XDR Logo](https://raw.githubusercontent.com/OpenSource-For-Freedom/HARDN-XDR/main/docs/assets/HARDN%20(1).png)
+
+            **HARDN-XDR Automated Release**
+
+            - **Version:** `${{ needs.build-and-test.outputs.new_tag }}`
+            - **Architectures:** `amd64`, `arm64`
+            - **Timestamp:** ${{ steps.release_date.outputs.value }}
+
+            - All modules tested
+            - Deployment verified in container
+            - Lintian passed
+          files: |
+            release/*.deb
