@@ -85,6 +85,7 @@ install_package_dependencies() {
 }
 
 print_ascii_banner() {
+    export TERM=xterm
     local terminal_width=$(tput cols)
     local banner=$(cat << "EOF"
 
