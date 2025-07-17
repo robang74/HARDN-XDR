@@ -121,7 +121,7 @@ jobs:
               dpkg -i /tmp/hardn.deb || true
               apt-get install -f -y
               echo "--- RUNNING HARDN DEPLOYMENT ---"
-              /usr/bin/hardn-xdr --auto
+              /usr/bin/hardn-xdr 
             ' | tee full-run.log
 
       - name: Upload full system test log
