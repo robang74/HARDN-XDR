@@ -79,33 +79,7 @@ sudo apt install ./hardn_*_amd64.deb
 sudo hardn-xdr
 ```
 
-### Build from Source:
-
-1. Clone the repository:
-```bash
-git clone https://github.com/OpenSource-For-Freedom/HARDN-XDR
-cd HARDN-XDR
-```
-
-2. Build the Debian package:
-```bash
-sudo apt update && sudo apt install dpkg-dev build-essential -y
-dpkg-buildpackage -us -uc
-sudo apt install -f
-cd ..
-```
-
-3. Install the package: (specify the arch) 
-```bash
-sudo apt install ./hardn_*_amd64.deb
-```
-
-4. Run the tool:
-```bash
-sudo hardn-xdr
-```
-
-### To access the man page 
+### To access the man page
 
 ```bash
 man hardn-xdr
@@ -113,9 +87,9 @@ man hardn-xdr
 ---
 
 ### Installation Notes
-- HARDN-XDR is currently being developed and tested for **BARE-METAL installs of Debian based distributions and Virtual Machines**.
+- HARDN-XDR is currently being developed and tested for **BARE-METAL installs of Debian based distributions and Containers**.
 - Ensure you have the latest version of **Debian 12**.
-- By installing HARDN-XDR with the command listed in the installation, the following changes will be made to your system:
+- By installing HARDN-XDR the following changes will be made to your system:
 > - A collection of security focused packages will be installed.
 > - Security tools and services will be enabled.
 > - System hardening and STIG settings will be applied.
