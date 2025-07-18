@@ -13,6 +13,11 @@ The script provides a menu-driven interface to select which security modules to 
 \fB--version, -v\fR
 Displays the version of HARDN-XDR.
 .TP
+\fB--auto\fR
+Runs in automatic mode without user prompts.
+.TP
+\fB--ci\fR
+Runs in CI environment mode (implies --auto).
 \fB--help, -h\fR
 Displays the help message.
 .SH MODULES
@@ -128,8 +133,6 @@ Blocks USB storage devices while allowing keyboards and mice, securing the syste
 .TP
 \fByara.sh\fR
 Installs and runs YARA to scan for malware and suspicious files using pattern-matching rules.
-
-
 .SH FILES
 .TP
 \fI/etc/hardn-xdr/\fR
