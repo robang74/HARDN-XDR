@@ -141,11 +141,11 @@ jobs:
           name: full-system-test-${{ matrix.arch }}
           path: ./full-run.log
 
-      - name: Print condensed output to job log
+      - name: Print full output to job log
         if: always()
         run: |
-          echo "=== HARDN-XDR Full Output (last 100 lines) ==="
-          tail -n 100 full-run.log || true
+          echo "=== HARDN-XDR Full Output ==="
+          cat full-run.log || true
 
   tag-and-release:
     needs: [build-and-test, test-deployment]
