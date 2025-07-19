@@ -129,3 +129,5 @@ fi
 } > /etc/modprobe.d/blacklist-rare-network.conf
 
 HARDN_STATUS "pass" "Network protocol hardening complete: Disabled $(echo $selected | wc -w) protocols."
+#Safe return or exit
+return 0 2>/dev/null || exit 0
