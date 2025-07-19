@@ -43,3 +43,6 @@ configure_stig_banner "/etc/issue.net" "remote logins (/etc/issue.net)"
 configure_stig_banner "/etc/motd" "message of the day (/etc/motd)"
 
 HARDN_STATUS "pass" "All HARDN-XDR banners configured successfully."
+
+#Safe return or exit
+return 0 2>/dev/null || exit 0
