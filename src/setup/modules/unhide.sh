@@ -20,4 +20,5 @@ fi
 HARDN_STATUS "[*] Usage example:"
 HARDN_STATUS "    sudo unhide proc"
 HARDN_STATUS "    sudo unhide sys"
-return 1
+# Safe return
+return 0 2>/dev/null || exit 0
