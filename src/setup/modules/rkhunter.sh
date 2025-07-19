@@ -81,3 +81,6 @@ rkhunter --version || {
 }
 
 HARDN_STATUS "pass" "rkhunter installed and configured successfully on $ARCH."
+
+#Safe return or exit
+return 0 2>/dev/null || exit 0
