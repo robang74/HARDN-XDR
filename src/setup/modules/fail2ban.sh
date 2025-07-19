@@ -55,6 +55,8 @@ main() {
     harden_fail2ban_service
     enable_and_start_fail2ban
     HARDN_STATUS "pass" "Fail2ban installation and setup complete"
+    #Safe return or exit
+    return 0 2>/dev/null || exit 0
 }
 
 main
