@@ -99,4 +99,5 @@ else
 	HARDN_STATUS "pass" "Process accounting (acct) and sysstat already configured or no changes needed."
 fi
 #Safe return or exit
+
 return 0 2>/dev/null || exit 0
