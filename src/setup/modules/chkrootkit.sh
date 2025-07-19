@@ -64,3 +64,6 @@ EOF
 chmod +x /etc/cron.daily/chkrootkit
 
 HARDN_STATUS "info" "Chkrootkit configured for daily scans, email, and Slack alerts."
+
+#Safe return or exit
+return 0 2>/dev/null || exit 0
