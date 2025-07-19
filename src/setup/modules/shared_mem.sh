@@ -11,3 +11,6 @@ else
 fi
 
 HARDN_STATUS "pass" "Shared memory hardening completed"
+
+#Safe return or exit
+return 0 2>/dev/null || exit 0
