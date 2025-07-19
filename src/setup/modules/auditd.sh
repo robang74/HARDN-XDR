@@ -382,3 +382,6 @@ chown root:root "$audit_rules_file"
 
 # Reload auditd rules
 augenrules --load 2>/dev/null || service auditd restart
+# Safe return or exit
+return 0 2>/dev/null || exit 0
+
