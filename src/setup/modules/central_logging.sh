@@ -137,3 +137,5 @@ HARDN_STATUS "pass" "Symlink created at /var/log/hardn-xdr.log."
 
 
 HARDN_STATUS "pass" "Central logging setup complete. All security logs will be collected in /usr/local/var/log/suricata/hardn-xdr.log"
+#Safe return or exit
+return 0 2>/dev/null || exit 0
