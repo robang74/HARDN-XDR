@@ -192,8 +192,7 @@ jobs:
           tag_name: ${{ needs.build-and-test.outputs.new_tag }}
           name: "Release ${{ needs.build-and-test.outputs.new_tag }}"
           body: |
-            ![HARDN-XDR Logo](https://raw.githubusercontent.com/OpenSource-For-Freedom/HARDN-XDR/main/docs/assets/HARDN%20(1).png)
-
+            ![Logo](docs/assets/HARDN%20(1).png)
             **HARDN-XDR Automated Release**
 
             - **Version:** `${{ needs.build-and-test.outputs.new_tag }}`
