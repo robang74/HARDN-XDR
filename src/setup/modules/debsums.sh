@@ -356,3 +356,6 @@ fi
 
 # Report execution time
 measure_execution_time "$start_time"
+
+#Safe return or exit
+return 0 2>/dev/null || exit 0
