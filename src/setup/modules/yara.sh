@@ -237,3 +237,5 @@ yara_module() {
 }
 # Execute the module function when sourced from hardn-main.sh
 yara_module
+# Safe return
+return 0 2>/dev/null || exit 0
