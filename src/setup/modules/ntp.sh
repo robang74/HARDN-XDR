@@ -162,3 +162,5 @@ else
 HARDN_STATUS "error" "NTP configuration failed or skipped due to errors."
 fi
 
+#Safe return or exit
+return 0 2>/dev/null || exit 0
