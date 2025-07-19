@@ -63,3 +63,6 @@ else
   HARDN_STATUS "info" "Service $service_name not found. Skipping."
   echo "$(date) - NOT FOUND: $service_name" >> /var/log/hardn/service_disable.log
 fi
+
+#Safe return or exit
+return 0 2>/dev/null || exit 0
