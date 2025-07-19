@@ -115,3 +115,6 @@ if command -v selinux-activate >/dev/null 2>&1; then
 fi
 
 HARDN_STATUS info "SELinux installation and configuration complete. A reboot may be required for changes to take effect."
+
+#Safe return or exit
+return 0 2>/dev/null || exit 0
