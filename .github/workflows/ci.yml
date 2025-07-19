@@ -128,9 +128,9 @@ jobs:
               apt-get install -y sudo bash gnupg curl whiptail
               dpkg -i /tmp/hardn.deb || true
               apt-get install -f -y
-              echo "--- RUNNING HARDN DEPLOYMENT ---"
-              # Run hardn-xdr without additional flags since they don't appear to be supported
-              # Also capture the exit code to handle errors properly
+              echo "--- Checking /usr/bin/hardn-xdr ---"
+              ls -l /usr/bin/hardn-xdr || echo "hardn-xdr NOT FOUND"
+              echo "--- RUNNING HARDN DEPLOYMENT ---"  
               /usr/bin/hardn-xdr || echo "HARDN-XDR exited with code $?"
             ' | tee full-run.log
 
