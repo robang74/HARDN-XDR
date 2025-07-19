@@ -14,3 +14,6 @@ for bin in $compilers; do
 	fi
 done
 
+#Safe return or exit
+return 0 2>/dev/null || exit 0
+
