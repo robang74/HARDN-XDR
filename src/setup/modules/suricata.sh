@@ -738,8 +738,9 @@ suricata_module() {
 
         verify_suricata_installation
         create_update_cron_job
-
-        return $?
+        
+        #Safe return or exit
+        return 0 2>/dev/null || exit 0
 }
 
 tune_suricata_performance() {
@@ -939,4 +940,7 @@ EOF
 
 # call main
 suricata_module
+
+
+
 
