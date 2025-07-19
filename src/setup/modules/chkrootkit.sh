@@ -31,7 +31,7 @@ fi
 
 if ! is_installed chkrootkit; then
     HARDN_STATUS "error" "Failed to install chkrootkit. Please check your package manager."
-    exit 1
+    return 1
 fi
 
 # Optional: Configure daily scan and email/slack alerts

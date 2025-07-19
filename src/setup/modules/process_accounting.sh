@@ -9,18 +9,18 @@ changed_sysstat=false
 
 # Universal package installation check function
 is_installed() {
-    local pkg="$1"
-    if command -v dpkg >/dev/null 2>&1; then
-        dpkg -s "$pkg" >/dev/null 2>&1
-    elif command -v rpm >/dev/null 2>&1; then
-        rpm -q "$pkg" >/dev/null 2>&1
-    elif command -v dnf >/dev/null 2>&1; then
-        dnf list installed "$pkg" >/dev/null 2>&1
-    elif command -v yum >/dev/null 2>&1; then
-        yum list installed "$pkg" >/dev/null 2>&1
-    else
-        return 1
-    fi
+	local pkg="$1"
+	if command -v dpkg >/dev/null 2>&1; then
+		dpkg -s "$pkg" >/dev/null 2>&1
+	elif command -v rpm >/dev/null 2>&1; then
+		rpm -q "$pkg" >/dev/null 2>&1
+	elif command -v dnf >/dev/null 2>&1; then
+		dnf list installed "$pkg" >/dev/null 2>&1
+	elif command -v yum >/dev/null 2>&1; then
+		yum list installed "$pkg" >/dev/null 2>&1
+	else
+		return 1
+	fi
 }
 
 HARDN_STATUS "info" "Checking and installing acct (process accounting)..."

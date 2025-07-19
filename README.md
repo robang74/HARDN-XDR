@@ -134,10 +134,6 @@ graph TD
 <p align="center">
   <img src="docs/assets/cybersynapse.png" alt="CyberSynapse Logo" />
 </p>
-<p align="center">
-  <img src="docs/assets/securejump.jpg" alt="SecureJump Logo" />
-</p>
-
 <br>
 
 <p align="center">

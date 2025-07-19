@@ -58,3 +58,4 @@ Unattended-Upgrade::Allowed-Origins {
 EOF
 		;;
 esac
+return 0    
