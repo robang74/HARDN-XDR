@@ -57,4 +57,5 @@ else
 fi
 
 HARDN_STATUS "pass" "USB policy: storage blocked, HID enabled."
-return 0
+# Safe return
+return 0 2>/dev/null || exit 0
