@@ -62,3 +62,6 @@ fi
 sudo systemctl restart "$SERVICE_NAME"
 
 HARDN_STATUS "pass" "OpenSSH server installed with MINIMAL hardening for testing."
+
+#Safe return or exit
+return 0 2>/dev/null || exit 0
