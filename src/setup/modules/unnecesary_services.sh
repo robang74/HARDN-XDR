@@ -40,3 +40,6 @@ for pkg in $packages_to_remove; do
 done
 
 HARDN_STATUS "pass" "Unnecessary services checked and disabled/removed where applicable."
+# Safe return
+return 0 2>/dev/null || exit 0
+
