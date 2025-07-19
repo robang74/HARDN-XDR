@@ -41,3 +41,6 @@ disable_binfmt_misc() {
     fi
     hardn_infobox "Non-native binary format support (binfmt_misc) checked/disabled." 7 70
 }
+
+#Safe return or exit
+return 0 2>/dev/null || exit 0
