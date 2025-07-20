@@ -53,7 +53,7 @@ download_yara_rules() {
     HARDN_STATUS "info" "Cloning YARA rules from GitHub to ${temp_dir}..."
 
     # Clone the repository with YARA rules
-    if git clone --depth 1 https://github.com/Yara-Rules/rules"${temp_dir}"; then
+    if git clone --depth 1 https://github.com/Yara-Rules/rules "${temp_dir}"; then
         HARDN_STATUS "pass" "YARA rules cloned successfully."
 
         # Copy .yar files to the rules directory
