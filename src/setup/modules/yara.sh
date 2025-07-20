@@ -91,7 +91,7 @@ download_basic_rules() {
 
     if [ "$(ls -A /etc/yara/rules/)" ]; then
         HARDN_STATUS "pass" "Basic YARA rules downloaded successfully."
-        return 1
+        return 0
     fi
 }
 
