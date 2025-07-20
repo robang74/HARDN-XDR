@@ -7,7 +7,7 @@ service_name="$1"
 # Sanity 
 if [[ -z "$service_name" ]]; then
     HARDN_STATUS "error" "No service name provided. Usage: $0 <service-name>"
-    exit 1
+    return 1
 fi
 
 HARDN_STATUS "info" "Preparing to disable: $service_name"
@@ -38,7 +38,7 @@ for protected in "${protected_services[@]}"; do
   if [[ "$service_name" == "$protected" ]]; then
     HARDN_STATUS "warning" "Skipping protected system-critical service: $service_name"
     echo "$(date) - SKIPPED: $service_name (protected)" >> /var/log/hardn/service_disable.log
-    exit 0
+    return 0
   fi
 done
 
@@ -63,3 +63,6 @@ else
   HARDN_STATUS "info" "Service $service_name not found. Skipping."
   echo "$(date) - NOT FOUND: $service_name" >> /var/log/hardn/service_disable.log
 fi
+
+#Safe return or exit
+return 0 2>/dev/null || exit 0

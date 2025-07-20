@@ -19,10 +19,10 @@ install_fail2ban() {
         sudo apt install -y fail2ban
     elif command -v rpm &>/dev/null; then
         HARDN_STATUS "error" "Please use yum or dnf to install fail2ban on RPM-based systems."
-        exit 1
+        return 1
     else
         HARDN_STATUS "error" "No supported package manager found."
-        exit 1
+        return 1
     fi
     HARDN_STATUS "pass" "Fail2ban installed successfully"
 }
@@ -55,6 +55,8 @@ main() {
     harden_fail2ban_service
     enable_and_start_fail2ban
     HARDN_STATUS "pass" "Fail2ban installation and setup complete"
+    #Safe return or exit
+    return 0 2>/dev/null || exit 0
 }
 
 main

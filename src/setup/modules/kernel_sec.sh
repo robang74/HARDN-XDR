@@ -18,7 +18,7 @@ declare -A kernel_params=(
 	["kernel.ctrl-alt-del"]="0"
 	["kernel.dmesg_restrict"]="1"
 	["kernel.kptr_restrict"]="2"
-	["kernel.modules_disabled"]="1"
+	["kernel.modules_disabled"]="0" #changed from 1, 1 could break login.
 	["kernel.yama.ptrace_scope"]="1"
 
 	# === Performance & BPF ===
@@ -72,3 +72,6 @@ done
 
 sysctl --system >/dev/null 2>&1
 HARDN_STATUS "pass" "Kernel hardening applied successfully."
+#Safe return or exit
+return 0 2>/dev/null || exit 0
+

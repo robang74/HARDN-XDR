@@ -5,12 +5,17 @@ LOG_FILE="/tmp/postinst.log"
 echo "[postinst] Executed on $(date)" > "$LOG_FILE"
 echo "[postinst] Performing manual setup..." >> "$LOG_FILE"
 
-# Symlink launcher
-if [ -f /usr/lib/hardn-xdr/src/setup/hardn-main.sh ]; then
-  ln -sf /usr/lib/hardn-xdr/src/setup/hardn-main.sh /usr/bin/hardn-xdr
+# Set executable permissions for installed files
+if [ -f /usr/bin/hardn-xdr ]; then
   chmod +x /usr/bin/hardn-xdr
+  echo "[postinst] Set executable permissions for /usr/bin/hardn-xdr" >> "$LOG_FILE"
+else
+  echo "[postinst] ERROR: hardn-xdr not found in /usr/bin/" >> "$LOG_FILE"
+fi
+
+if [ -f /usr/lib/hardn-xdr/src/setup/hardn-main.sh ]; then
   chmod +x /usr/lib/hardn-xdr/src/setup/hardn-main.sh
-  echo "[postinst] Installed /usr/bin/hardn-xdr → hardn-main.sh" >> "$LOG_FILE"
+  echo "[postinst] Set executable permissions for hardn-main.sh" >> "$LOG_FILE"
 else
   echo "[postinst] ERROR: hardn-main.sh not found." >> "$LOG_FILE"
 fi
