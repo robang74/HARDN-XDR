@@ -2,7 +2,7 @@
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 set -e
 
-
+# Written by Chris Bingham
 # Debsums Optimization Improvements for performance:
 # 1. Process Prioritization: Using nice/ionice to reduce system impact during checks
 #    - Set CPU priority to lowest (nice 19) to minimize impact on other processes
@@ -356,3 +356,6 @@ fi
 
 # Report execution time
 measure_execution_time "$start_time"
+
+#Safe return or exit
+return 0 2>/dev/null || exit 0

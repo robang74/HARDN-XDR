@@ -16,7 +16,7 @@ is_installed() {
     elif command -v rpm >/dev/null 2>&1; then
         rpm -q "$1" >/dev/null 2>&1
     else
-        return 1
+       return 1
     fi
 }
 
@@ -67,3 +67,5 @@ EOF
 else
     HARDN_STATUS "warning" "Skipping: /etc/aide/aide.conf not found after install"
 fi
+
+return 0 2>/dev/null || exit 0

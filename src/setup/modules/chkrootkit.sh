@@ -31,7 +31,7 @@ fi
 
 if ! is_installed chkrootkit; then
     HARDN_STATUS "error" "Failed to install chkrootkit. Please check your package manager."
-    exit 1
+    return 1
 fi
 
 # Optional: Configure daily scan and email/slack alerts
@@ -64,3 +64,6 @@ EOF
 chmod +x /etc/cron.daily/chkrootkit
 
 HARDN_STATUS "info" "Chkrootkit configured for daily scans, email, and Slack alerts."
+
+#Safe return or exit
+return 0 2>/dev/null || exit 0

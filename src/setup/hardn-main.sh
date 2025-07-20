@@ -178,27 +178,45 @@ cleanup() {
 }
 
 main_menu() {
-    local choice
-    choice=$(hardn_menu "Choose an option:" 15 60 3 \
-        "1" "Install all security modules" \
-        "2" "Exit" 3>&1 1>&2 2>&3)
+    local modules=(
+        "ufw.sh" "fail2ban.sh" "sshd.sh" "auditd.sh" "kernel_sec.sh"
+        "stig_pwquality.sh" "aide.sh" "rkhunter.sh" "chkrootkit.sh"
+        "auto_updates.sh" "central_logging.sh" "audit_system.sh" "ntp.sh"
+        "debsums.sh" "yara.sh" "suricata.sh" "firejail.sh" "selinux.sh"
+        "unhide.sh" "pentest.sh" "compilers.sh" "purge_old_pkgs.sh" "dns_config.sh"
+        "file_perms.sh" "shared_mem.sh" "coredumps.sh" "secure_net.sh"
+        "network_protocols.sh" "usb.sh" "firewire.sh" "binfmt.sh"
+        "process_accounting.sh" "unnecesary_services.sh" "banner.sh"
+        "deleted_files.sh"
+    )
+    local checklist_args=()
+    for module in "${modules[@]}"; do
+        checklist_args+=("$module" "Install $module" "OFF")
+    done
+    checklist_args+=("ALL" "Install all modules" "OFF")
 
-    case "$choice" in
-        1)
-            update_system_packages
-            install_package_dependencies
-            setup_security_modules
-            cleanup
-            ;;
-        2)
-            HARDN_STATUS "info" "Exiting HARDN-XDR."
-            exit 0
-            ;;
-        *)
-            HARDN_STATUS "info" "No option selected. Exiting."
-            exit 1
-            ;;
-    esac
+    local selected
+    selected=$(whiptail --title "HARDN-XDR Module Selection" --checklist "Select modules to install (SPACE to select, TAB to move):" 25 80 15 "${checklist_args[@]}" 3>&1 1>&2 2>&3)
+
+    if [[ $? -ne 0 ]]; then
+        HARDN_STATUS "info" "No modules selected. Exiting."
+        exit 1
+    fi
+
+    update_system_packages
+    install_package_dependencies
+
+    if [[ "$selected" == *"ALL"* ]]; then
+        setup_security_modules
+    else
+        # Remove quotes from whiptail output
+        selected=$(echo $selected | tr -d '"')
+        for module in $selected; do
+            run_module "$module"
+        done
+        HARDN_STATUS "pass" "Selected security modules have been applied."
+    fi
+    cleanup
 }
 
 # main

@@ -21,7 +21,7 @@ elif is_installed dnf; then
     sudo dnf install -y openssh-server
 else
     HARDN_STATUS "error" "Unsupported package manager. Please install OpenSSH server manually."
-    exit 1
+    return 1
 fi
 
 # Define the service name
@@ -34,7 +34,7 @@ elif systemctl list-unit-files | grep -q -w "sshd.service"; then
     SERVICE_NAME="sshd.service"
 else
     HARDN_STATUS "error" "Could not find sshd or ssh service."
-    exit 1
+    return 1
 fi
 
 HARDN_STATUS "info" "Enabling and starting SSH service: $SERVICE_NAME"
@@ -62,3 +62,6 @@ fi
 sudo systemctl restart "$SERVICE_NAME"
 
 HARDN_STATUS "pass" "OpenSSH server installed with MINIMAL hardening for testing."
+
+#Safe return or exit
+return 0 2>/dev/null || exit 0

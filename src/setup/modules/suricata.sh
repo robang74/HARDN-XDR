@@ -1,11 +1,50 @@
 #!/bin/bash
+
+# Root/sudo detection
+if [ "$EUID" -ne 0 ]; then
+    if command -v whiptail >/dev/null 2>&1; then
+        whiptail --title "Root Privileges Required" --msgbox "This script must be run as root. Please re-run with sudo." 10 60
+    else
+        echo "[ERROR] This script must be run as root. Please re-run with sudo."
+    fi
+    return 1
+fi
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 set -e
 
 # Install and configure Suricata IDS/IPS
 # This script is designed to be sourced as a module from hardn-main.sh
 
+
+
 install_suricata() {
+    local install_mode="basic"
+    local rules_selected="etopen"
+
+    if command -v whiptail >/dev/null 2>&1; then
+        # Install mode selection
+        install_mode=$(whiptail --title "Suricata Install Mode" --radiolist "Choose install mode:" 12 60 2 \
+            "basic" "Minimal config, default rules only" ON \
+            "advanced" "Full config, custom rules, performance tuning" OFF 3>&1 1>&2 2>&3)
+        if [[ $? -ne 0 ]]; then
+            HARDN_STATUS "info" "User cancelled Suricata installation."
+            return 1
+        fi
+
+        # Ruleset selection (advanced)
+        if [[ "$install_mode" == "advanced" ]]; then
+            rules_selected=$(whiptail --title "Suricata Ruleset Selection" --checklist "Select rulesets to enable:" 14 70 3 \
+                "etopen" "Emerging Threats Open (recommended)" ON \
+                "etpro" "Emerging Threats Pro (requires subscription)" OFF \
+                "custom" "Custom rules (upload or specify path)" OFF 3>&1 1>&2 2>&3)
+            if [[ $? -ne 0 ]]; then
+                HARDN_STATUS "info" "User cancelled ruleset selection."
+                return 1
+            fi
+            rules_selected=$(echo $rules_selected | tr -d '"')
+        fi
+    fi
+
     HARDN_STATUS "info" "Installing Suricata and dependencies..."
 
     # Try to install both packages at once
@@ -31,8 +70,42 @@ install_suricata() {
     fi
 
     # After installing Suricata, update and validate the config
-    update_suricata_config
-    validate_suricata_yaml
+    local selected_interface=""
+    if command -v whiptail >/dev/null 2>&1; then
+        # Gather available interfaces
+        local interfaces_list
+        interfaces_list=$(ip -o link show | awk -F': ' '{print $2}' | grep -v "lo" | tr '\n' ' ')
+        selected_interface=$(whiptail --title "Select Network Interface" --menu "Choose the network interface for Suricata to monitor:" 15 60 4 $interfaces_list 3>&1 1>&2 2>&3)
+        if [[ $? -ne 0 || -z "$selected_interface" ]]; then
+            HARDN_STATUS "info" "User cancelled interface selection."
+            return 1
+        fi
+    else
+        selected_interface=$(ip route | grep default | awk '{print $5}' | head -n 1)
+        [ -z "$selected_interface" ] && selected_interface="eth0"
+    fi
+
+    if [[ "$install_mode" == "advanced" ]]; then
+        update_suricata_config "$selected_interface"
+        validate_suricata_yaml
+    fi
+
+    # Ruleset logic
+    if [[ "$install_mode" == "advanced" ]]; then
+        if [[ "$rules_selected" == *"etopen"* ]]; then
+            update_rules_with_suricata_update || download_rules_manually
+        fi
+        if [[ "$rules_selected" == *"etpro"* ]]; then
+            HARDN_STATUS "warning" "ET Pro selected. Please ensure you have a valid subscription and configure suricata-update accordingly."
+        fi
+        if [[ "$rules_selected" == *"custom"* ]]; then
+            HARDN_STATUS "info" "Custom rules selected. Please upload or specify your custom rules path."
+            # You can add logic here to prompt for a path or handle uploads
+        fi
+    else
+        # Basic mode: only ET Open rules
+        update_rules_with_suricata_update || download_rules_manually
+    fi
 
     return 0
 }
@@ -125,8 +198,17 @@ download_rules_manually() {
 }
 
 # Changes made to fix the issue with the YAML configuration
+
 update_suricata_config() {
     local config_file="/etc/suricata/suricata.yaml"
+    local selected_interface="$1"
+    if command -v whiptail >/dev/null 2>&1; then
+        if ! whiptail --title "Suricata Config Update" --yesno "This will update and overwrite Suricata configuration. Backup will be created. Proceed?" 10 60; then
+            HARDN_STATUS "info" "User cancelled Suricata config update."
+            return 1
+        fi
+    fi
+
     HARDN_STATUS "info" "Updating Suricata configuration..."
 
     # Create backup of original config
@@ -149,11 +231,10 @@ update_suricata_config() {
     # Fix pcap interface definitions
     sed -i '/pcap:/,/pcap-file:/ s/^  - interface: default$/  - interface: default/' "$config_file"
 
-    # Update network interface to match the system's primary interface
-    local primary_interface=$(ip route | grep default | awk '{print $5}' | head -n 1)
-    if [ -n "$primary_interface" ]; then
-        HARDN_STATUS "info" "Setting primary interface to $primary_interface"
-        sed -i "s/interface: enp0s3/interface: $primary_interface/g" "$config_file"
+    # Update network interface to match the selected interface
+    if [ -n "$selected_interface" ]; then
+        HARDN_STATUS "info" "Setting Suricata interface to $selected_interface"
+        sed -i "s/interface: enp0s3/interface: $selected_interface/g" "$config_file"
     fi
 
     # Validate the configuration after changes
@@ -219,28 +300,36 @@ validate_suricata_yaml() {
     return 0
 }
 
+
 manage_suricata_service() {
-        HARDN_STATUS "info" "Enabling and starting Suricata service..."
-
-        systemctl enable suricata.service || true
-
-        if systemctl is-active --quiet suricata.service; then
-            HARDN_STATUS "info" "Reloading Suricata service..."
-            systemctl reload-or-restart suricata.service
-        else
-            HARDN_STATUS "info" "Starting Suricata service..."
-            systemctl start suricata.service
+    if command -v whiptail >/dev/null 2>&1; then
+        if ! whiptail --title "Suricata Service" --yesno "This will enable and (re)start the Suricata service. Proceed?" 10 60; then
+            HARDN_STATUS "info" "User cancelled Suricata service start/restart."
+            return 1
         fi
+    fi
 
-        case $? in
-            0)
-                HARDN_STATUS "pass" "Suricata service started successfully."
-                return 0
-                ;;
-            *)
-                return 1
-                ;;
-        esac
+    HARDN_STATUS "info" "Enabling and starting Suricata service..."
+
+    systemctl enable suricata.service || true
+
+    if systemctl is-active --quiet suricata.service; then
+        HARDN_STATUS "info" "Reloading Suricata service..."
+        systemctl reload-or-restart suricata.service
+    else
+        HARDN_STATUS "info" "Starting Suricata service..."
+        systemctl start suricata.service
+    fi
+
+    case $? in
+        0)
+            HARDN_STATUS "pass" "Suricata service started successfully."
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
 }
 
 debug_suricata_config() {
@@ -457,7 +546,7 @@ else
 fi
 
 echo "$(date): Finished Suricata rule update" >> "$LOG_FILE"
-exit 0
+return 0
 EOF
     chmod +x /etc/cron.daily/update-suricata-rules
     HARDN_STATUS "pass" "Created daily cron job to update Suricata rules."
@@ -649,8 +738,9 @@ suricata_module() {
 
         verify_suricata_installation
         create_update_cron_job
-
-        return $?
+        
+        # Return success status
+        return 0
 }
 
 tune_suricata_performance() {
@@ -850,4 +940,7 @@ EOF
 
 # call main
 suricata_module
+
+
+
 

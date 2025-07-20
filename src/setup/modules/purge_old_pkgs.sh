@@ -20,7 +20,7 @@ HARDN_STATUS "error" "Purging configuration files of old/removed packages..."
 
 if ! command -v dpkg >/dev/null 2>&1; then
     HARDN_STATUS "warning" "This script is intended for Debian-based systems. Skipping."
-    exit 0
+    return 0
 fi
 
 if ! is_installed whiptail; then
@@ -60,3 +60,6 @@ HARDN_STATUS "error" "Running apt-get autoremove and clean to free up space..."
 apt-get autoremove -y >/dev/null 2>&1
 apt-get clean >/dev/null 2>&1
 hardn_infobox "Apt cache cleaned." 7 70
+
+#Safe return or exit
+return 0 2>/dev/null || exit 0

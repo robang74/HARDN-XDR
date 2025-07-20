@@ -46,6 +46,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y dpkg-dev debhelper fakeroot build-essential devscripts lintian gnupg whiptail
 
+      - name: Ensure hardn-xdr exists and is executable
+        run: |
+          if [ ! -f hardn-xdr ]; then
+            echo "ERROR: hardn-xdr not found in project root. Build or copy it before packaging."
+            exit 1
+          fi
+          chmod +x hardn-xdr
+
       - name: Set executable permissions
         run: |
           chmod +x debian/postinst hardn-xdr src/setup/hardn-main.sh
@@ -120,9 +128,9 @@ jobs:
               apt-get install -y sudo bash gnupg curl whiptail
               dpkg -i /tmp/hardn.deb || true
               apt-get install -f -y
-              echo "--- RUNNING HARDN DEPLOYMENT ---"
-              # Run hardn-xdr without additional flags since they don't appear to be supported
-              # Also capture the exit code to handle errors properly
+              echo "--- Checking /usr/bin/hardn-xdr ---"
+              ls -l /usr/bin/hardn-xdr || echo "hardn-xdr NOT FOUND"
+              echo "--- RUNNING HARDN DEPLOYMENT ---"  
               /usr/bin/hardn-xdr || echo "HARDN-XDR exited with code $?"
             ' | tee full-run.log
 
@@ -133,11 +141,11 @@ jobs:
           name: full-system-test-${{ matrix.arch }}
           path: ./full-run.log
 
-      - name: Print condensed output to job log
+      - name: Print full output to job log
         if: always()
         run: |
-          echo "=== HARDN-XDR Full Output (last 100 lines) ==="
-          tail -n 100 full-run.log || true
+          echo "=== HARDN-XDR Full Output ==="
+          cat full-run.log || true
 
   tag-and-release:
     needs: [build-and-test, test-deployment]
@@ -184,8 +192,7 @@ jobs:
           tag_name: ${{ needs.build-and-test.outputs.new_tag }}
           name: "Release ${{ needs.build-and-test.outputs.new_tag }}"
           body: |
-            ![HARDN-XDR Logo](https://raw.githubusercontent.com/OpenSource-For-Freedom/HARDN-XDR/main/docs/assets/HARDN%20(1).png)
-
+            ![Logo](docs/assets/HARDN%20(1).png)
             **HARDN-XDR Automated Release**
 
             - **Version:** `${{ needs.build-and-test.outputs.new_tag }}`

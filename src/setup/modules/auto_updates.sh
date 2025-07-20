@@ -58,3 +58,5 @@ Unattended-Upgrade::Allowed-Origins {
 EOF
 		;;
 esac
+#Safe return or exit
+return 0 2>/dev/null || exit 0
