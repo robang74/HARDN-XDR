@@ -7,7 +7,7 @@ HARDN_STATUS "info" "Initializing AppArmor security module..."
 # Check if AppArmor is installed
 if ! command -v aa-status &>/dev/null; then
     HARDN_STATUS "info" "AppArmor not found. Installing..."
-    apt update -y && apt install -y apparmor apparmor-utils || {
+    apt install -y apparmor apparmor-utils || {
         HARDN_STATUS "warning" "Failed to install AppArmor packages."
         return 0
     }
