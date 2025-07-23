@@ -1,120 +1,117 @@
-##!/bin/bash
-#source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
-#set -e
-#
-#is_installed() {
-#    if command -v apt >/dev/null 2>&1; then
-#        dpkg -s "$1" >/dev/null 2>&1
-#    elif command -v dnf >/dev/null 2>&1; then
-#        dnf list installed "$1" >/dev/null 2>&1
-#    elif command -v yum >/dev/null 2>&1; then
-#        yum list installed "$1" >/dev/null 2>&1
-#    elif command -v rpm >/dev/null 2>&1; then
-#        rpm -q "$1" >/dev/null 2>&1
-#    else
-#        return 1 # Cannot determine package manager
-#    fi
-#}
-#
-#
-## SELinux installation and setup script
-## Install SELinux packages (existing logic)
-#if command -v dnf >/dev/null 2>&1; then
-#    if ! is_installed selinux-policy; then
-#        HARDN_STATUS info "Installing SELinux packages with dnf..."
-#        sudo dnf install -y selinux-policy selinux-policy-targeted policycoreutils policycoreutils-python-utils
-#    fi
-#elif command -v yum >/dev/null 2>&1; then
-#    if ! is_installed selinux-policy; then
-#        HARDN_STATUS info "Installing SELinux packages with yum..."
-#        sudo yum install -y selinux-policy selinux-policy-targeted policycoreutils policycoreutils-python
-#    fi
-#elif command -v apt-get >/dev/null 2>&1; then
-#    if ! is_installed selinux-basics; then
-#        HARDN_STATUS info "Updating apt-get and installing SELinux packages..."
-#        sudo apt-get update
-#        sudo apt-get install -y selinux-basics selinux-policy-default auditd
-#    fi
-#else
-#    HARDN_STATUS error "Unsupported package manager. Please install SELinux manually."
-#fi
-#
-## Whiptail checklist for SELinux features/modes
-#checklist_args=(
-#    "enforcing" "SELinux Enforcing Mode (recommended for production)" "ON"
-#    "permissive" "SELinux Permissive Mode (log only, no enforcement)" "OFF"
-#    "targeted" "Targeted Policy (default, protects key services)" "ON"
-#    "strict" "Strict Policy (protects all processes)" "OFF"
-#    "audit" "Enable Audit Logging" "ON"
-#    "disable" "Disable SELinux (not recommended)" "OFF"
-#)
-#
-#selected=$(whiptail --title "SELinux Feature Selection" --checklist "Select SELinux features/modes to ENABLE (SPACE to select, TAB to move):" 20 80 8 "${checklist_args[@]}" 3>&1 1>&2 2>&3)
-#
-#if [[ $? -ne 0 ]]; then
-#    HARDN_STATUS info "SELinux configuration cancelled by user. Exiting."
-#    return 0
-#fi
-#
-## Remove quotes from whiptail output
-#selected=$(echo $selected | tr -d '"')
-#
-## Apply selected SELinux features/modes
-#if [[ "$selected" == *"disable"* ]]; then
-#    # Disable SELinux
-#    if [ -f /etc/selinux/config ]; then
-#        sudo sed -i 's/^SELINUX=.*/SELINUX=disabled/' /etc/selinux/config
-#    elif [ -f /etc/selinux/selinux.conf ]; then
-#        sudo sed -i 's/^SELINUX=.*/SELINUX=disabled/' /etc/selinux/selinux.conf
-#    fi
-#    HARDN_STATUS info "SELinux disabled. A reboot may be required."
-#    return 0
-#fi
-#
-#if [[ "$selected" == *"enforcing"* ]]; then
-#    if [ -f /etc/selinux/config ]; then
-#        sudo sed -i 's/^SELINUX=.*/SELINUX=enforcing/' /etc/selinux/config
-#    elif [ -f /etc/selinux/selinux.conf ]; then
-#        sudo sed -i 's/^SELINUX=.*/SELINUX=enforcing/' /etc/selinux/selinux.conf
-#    fi
-#    HARDN_STATUS info "SELinux set to enforcing mode."
-#elif [[ "$selected" == *"permissive"* ]]; then
-#    if [ -f /etc/selinux/config ]; then
-#        sudo sed -i 's/^SELINUX=.*/SELINUX=permissive/' /etc/selinux/config
-#    elif [ -f /etc/selinux/selinux.conf ]; then
-#        sudo sed -i 's/^SELINUX=.*/SELINUX=permissive/' /etc/selinux/selinux.conf
-#    fi
-#    HARDN_STATUS info "SELinux set to permissive mode."
-#fi
-#
-#if [[ "$selected" == *"targeted"* ]]; then
-#    if [ -f /etc/selinux/config ]; then
-#        sudo sed -i 's/^SELINUXTYPE=.*/SELINUXTYPE=targeted/' /etc/selinux/config
-#    elif [ -f /etc/selinux/selinux.conf ]; then
-#        sudo sed -i 's/^SELINUXTYPE=.*/SELINUXTYPE=targeted/' /etc/selinux/selinux.conf
-#    fi
-#    HARDN_STATUS info "SELinux policy set to targeted."
-#elif [[ "$selected" == *"strict"* ]]; then
-#    if [ -f /etc/selinux/config ]; then
-#        sudo sed -i 's/^SELINUXTYPE=.*/SELINUXTYPE=strict/' /etc/selinux/config
-#    elif [ -f /etc/selinux/selinux.conf ]; then
-#        sudo sed -i 's/^SELINUXTYPE=.*/SELINUXTYPE=strict/' /etc/selinux/selinux.conf
-#    fi
-#    HARDN_STATUS info "SELinux policy set to strict."
-#fi
-#
-#if [[ "$selected" == *"audit"* ]]; then
-#    sudo auditctl -e 1
-#    HARDN_STATUS info "SELinux audit logging enabled."
-#fi
-#
-## For Debian/Ubuntu, initialize SELinux if needed
-#if command -v selinux-activate >/dev/null 2>&1; then
-#    HARDN_STATUS info "Running selinux-activate..."
-#    sudo selinux-activate
-#fi
-#
-#HARDN_STATUS info "SELinux installation and configuration complete. A reboot may be required for changes to take effect."
-#
-##Safe return or exit
-#return 0 2>/dev/null || exit 0
+#!/bin/bash
+source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
+set -e
+
+# --------- is_installed ----------
+is_installed() {
+    if command -v apt >/dev/null 2>&1; then
+        dpkg -s "$1" >/dev/null 2>&1
+    elif command -v dnf >/dev/null 2>&1; then
+        dnf list installed "$1" >/dev/null 2>&1
+    elif command -v yum >/dev/null 2>&1; then
+        yum list installed "$1" >/dev/null 2>&1
+    elif command -v rpm >/dev/null 2>&1; then
+        rpm -q "$1" >/dev/null 2>&1
+    else
+        return 1
+    fi
+}
+
+# --------- OS Detection ----------
+get_os_id() {
+    awk -F= '/^ID=/{gsub("\"", "", $2); print $2}' /etc/os-release
+}
+
+OS_ID=$(get_os_id)
+
+# --------- Container Detection ----------
+if grep -qa container /proc/1/environ || systemd-detect-virt --quiet --container; then
+    HARDN_STATUS "info" "Container environment detected. Skipping SELinux setup."
+    return 0 2>/dev/null || exit 0
+fi
+
+# --------- Interactive Menu ---------
+DEFAULT_MODE="permissive"
+SHOW_MENU=false
+
+if [ -t 0 ] && command -v whiptail &>/dev/null; then
+    SHOW_MENU=true
+fi
+
+if $SHOW_MENU; then
+    CHOICE=$(whiptail --title "SELinux Mode" --radiolist "Choose SELinux setup level:" 15 70 3 \
+        "basic" "Install & set to permissive (safe)" ON \
+        "advanced" "Install & set to enforcing (hardened)" OFF \
+        "skip" "Skip SELinux setup on this system" OFF 3>&1 1>&2 2>&3)
+
+    EXIT_STATUS=$?
+    if [[ $EXIT_STATUS -ne 0 || "$CHOICE" == "skip" ]]; then
+        HARDN_STATUS "info" "User cancelled or skipped SELinux setup."
+        return 0 2>/dev/null || exit 0
+    fi
+else
+    CHOICE="basic"
+    HARDN_STATUS "info" "No terminal or whiptail. Defaulting to basic (permissive)."
+fi
+
+# --------- Package Installation ---------
+case "$OS_ID" in
+    debian|ubuntu)
+        HARDN_STATUS "info" "Installing SELinux for Debian/Ubuntu..."
+        apt-get update -y
+        DEBIAN_FRONTEND=noninteractive apt-get install -y selinux-basics selinux-policy-default auditd || {
+            HARDN_STATUS "warning" "Failed to install SELinux packages."
+            return 0 2>/dev/null || exit 0
+        }
+
+        if command -v selinux-activate &>/dev/null; then
+            HARDN_STATUS "info" "Running selinux-activate..."
+            selinux-activate || HARDN_STATUS "warning" "selinux-activate encountered an issue."
+        fi
+        ;;
+    rhel|centos|fedora|rocky|almalinux)
+        HARDN_STATUS "info" "Installing SELinux for $OS_ID..."
+        PKG_MGR=$(command -v dnf || command -v yum)
+        $PKG_MGR install -y selinux-policy selinux-policy-targeted policycoreutils policycoreutils-python-utils audit || {
+            HARDN_STATUS "warning" "Failed to install SELinux packages."
+            return 0 2>/dev/null || exit 0
+        }
+        ;;
+    *)
+        HARDN_STATUS "warning" "Unsupported OS ($OS_ID). Skipping SELinux setup."
+        return 0 2>/dev/null || exit 0
+        ;;
+esac
+
+# --------- Config File Setup ---------
+CONFIG_FILE=""
+[ -f /etc/selinux/config ] && CONFIG_FILE="/etc/selinux/config"
+[ -f /etc/selinux/selinux.conf ] && CONFIG_FILE="/etc/selinux/selinux.conf"
+
+if [[ -n "$CONFIG_FILE" ]]; then
+    sed -i 's/^SELINUX=.*/SELINUX='"$([[ "$CHOICE" == "advanced" ]] && echo "enforcing" || echo "permissive")"'/' "$CONFIG_FILE"
+    sed -i 's/^SELINUXTYPE=.*/SELINUXTYPE=targeted/' "$CONFIG_FILE"
+    HARDN_STATUS "info" "SELinux mode set to ${CHOICE^^}, policy set to targeted."
+else
+    HARDN_STATUS "warning" "SELinux config file not found."
+fi
+
+# --------- Auto Relabel If Enforcing + RHEL-based ---------
+if [[ "$CHOICE" == "advanced" && "$OS_ID" =~ ^(rhel|centos|fedora|rocky|almalinux)$ ]]; then
+    if command -v fixfiles >/dev/null 2>&1; then
+        HARDN_STATUS "info" "Scheduling full filesystem relabel on next boot..."
+        touch /.autorelabel
+        fixfiles onboot || HARDN_STATUS "warning" "fixfiles onboot failed or not supported."
+        HARDN_STATUS "info" "A reboot is required to complete SELinux enforcement."
+    fi
+fi
+
+# --------- Final Stat Check ---------
+if [ -d /sys/fs/selinux ]; then
+    MODE=$(getenforce 2>/dev/null || echo "Unknown")
+    HARDN_STATUS "pass" "SELinux present: Mode = $MODE"
+else
+    HARDN_STATUS "warning" "SELinux is not currently active."
+fi
+
+return 0 2>/dev/null || exit 0
