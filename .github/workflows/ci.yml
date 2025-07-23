@@ -112,7 +112,7 @@ jobs:
           name: deb-${{ matrix.arch }}
           path: .
 
-      - name: Simulate full HARDN deployment inside container
+      - name: Simulate full HARDN deployment
         id: simulate
         run: |
           echo "Simulating full install for ${{ matrix.arch }}"
@@ -125,21 +125,37 @@ jobs:
             -v "$(pwd)/hardn.deb:/tmp/hardn.deb" \
             debian:stable-slim bash -euxo pipefail -c '
               apt-get update
-              apt-get install -y sudo bash gnupg curl whiptail
+              apt-get install -y sudo bash gnupg curl whiptail coreutils
               dpkg -i /tmp/hardn.deb || true
               apt-get install -f -y
-              echo "--- Checking /usr/bin/hardn-xdr ---"
-              ls -l /usr/bin/hardn-xdr || echo "hardn-xdr NOT FOUND"
-              echo "--- RUNNING HARDN DEPLOYMENT ---"  
-              /usr/bin/hardn-xdr || echo "HARDN-XDR exited with code $?"
+
+              echo "--- RUNNING HARDN-XDR ---"
+              /usr/bin/hardn-xdr || echo "HARDN-XDR exited"
+
+              echo "--- SIMULATING MODULE EXECUTION ---"
+              fail_count=0
+              mkdir -p /var/log/hardn-ci
+              for script in /usr/lib/hardn-xdr/src/setup/modules/*.sh; do
+                name=$(basename "$script")
+                echo "---- RUNNING: $name ----" | tee -a /var/log/hardn-ci/modules.log
+                bash "$script" >> /var/log/hardn-ci/$name.log 2>&1 || {
+                  echo "[FAIL] $name failed" | tee -a /var/log/hardn-ci/modules.log
+                  fail_count=$((fail_count+1))
+                }
+              done
+              echo "Total failures: $fail_count" | tee -a /var/log/hardn-ci/modules.log
+              [ "$fail_count" -eq 0 ] || exit 1
             ' | tee full-run.log
 
-      - name: Upload full system test log
+      - name: Upload module logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: full-system-test-${{ matrix.arch }}
-          path: ./full-run.log
+          name: full-system-test-logs-${{ matrix.arch }}
+          path: |
+            ./full-run.log
+            /var/log/hardn-ci/modules.log
+            /var/log/hardn-ci/*.log
 
       - name: Print full output to job log
         if: always()
@@ -199,8 +215,9 @@ jobs:
             - **Architectures:** `amd64`, `arm64`
             - **Timestamp:** ${{ steps.release_date.outputs.value }}
 
-            - All modules tested
+            - All modules tested non-interactively
             - Deployment verified in container
+            - Logs uploaded if any module failed
             - Lintian passed
           files: |
             release/*.deb
