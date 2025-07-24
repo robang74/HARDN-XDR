@@ -103,7 +103,7 @@ jobs:
       matrix:
         arch: [amd64, arm64]
     outputs:
-      fail_log_path: ${{ steps.collect-logs.outputs.log_path }}
+      passed: ${{ steps.simulate.outputs.passed }}
     steps:
       - name: Register QEMU emulation
         uses: docker/setup-qemu-action@v3
@@ -119,20 +119,20 @@ jobs:
         run: |
           echo "Simulating full install for ${{ matrix.arch }}"
           cp hardn_*.deb ./hardn.deb
-          mkdir -p ./logbundle
+          mkdir -p ./logbundle/hardn-ci
 
           docker run --rm -i --platform linux/${{ matrix.arch }} \
             -e SKIP_WHIPTAIL=1 \
             -e DEBIAN_FRONTEND=noninteractive \
             -e CI=true \
             -v "$(pwd)/hardn.deb:/tmp/hardn.deb" \
+            -v "$(pwd)/logbundle:/var/log/" \
             debian:stable-slim bash -euxo pipefail -c '
               apt-get update
               apt-get install -y sudo bash gnupg curl whiptail coreutils
               dpkg -i /tmp/hardn.deb || true
               apt-get install -f -y
 
-              mkdir -p /var/log/hardn-ci
               echo "--- RUNNING HARDN-XDR ---"
               /usr/bin/hardn-xdr || echo "HARDN-XDR exited"
 
@@ -147,23 +147,19 @@ jobs:
                 }
               done
               echo "Total failures: $fail_count" | tee -a /var/log/hardn-ci/modules.log
-              cp -r /var/log/hardn-ci /tmp/
+              echo "$fail_count" > /var/log/hardn-ci/fail_count.txt
             '
-          mv ./hardn.deb logbundle/
-          echo "log_path=logbundle" >> $GITHUB_OUTPUT
 
-      - name: Upload logs and results
-        id: collect-logs
+          echo "passed=false" >> $GITHUB_OUTPUT
+          if [ ! -s logbundle/hardn-ci/fail_count.txt ] || grep -q '^0$' logbundle/hardn-ci/fail_count.txt; then
+            echo "passed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload logs
         uses: actions/upload-artifact@v4
         with:
           name: full-system-test-logs-${{ matrix.arch }}
-          path: |
-            logbundle
-
-      - name: Print main output to job log
-        if: always()
-        run: |
-          cat logbundle/hardn-ci/modules.log || true
+          path: logbundle
 
   report-failures:
     needs: test-deployment
@@ -189,8 +185,12 @@ jobs:
           for module in $fail_modules; do
             body+="### ❌ $module\n"
             body+="\`\`\`\n"
-            tail -n 20 logs/hardn-ci/$module.log >> temp.log || echo "No details" >> temp.log
-            body+="$(cat temp.log)\n"
+            if [ -f logs/hardn-ci/$module.log ]; then
+              tail -n 20 logs/hardn-ci/$module.log >> temp.log
+              body+="$(cat temp.log)\n"
+            else
+              body+="No log output found.\n"
+            fi
             body+="\`\`\`\n"
             count=$((count+1))
           done
@@ -204,4 +204,23 @@ jobs:
             fi
           else
             echo "No failed modules detected."
-          fi
+
+  release:
+    needs: [build-and-test, test-deployment]
+    if: needs.test-deployment.outputs.passed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download .deb
+        uses: actions/download-artifact@v4
+        with:
+          name: deb-amd64
+          path: .
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ needs.build-and-test.outputs.new_tag }}" \
+            ./hardn_*.deb \
+            --title "Release ${{ needs.build-and-test.outputs.new_tag }}" \
+            --notes "Automated release for HARDN-XDR"
