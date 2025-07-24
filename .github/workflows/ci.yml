@@ -156,6 +156,7 @@ jobs:
               echo "Total failures: $fail_count" | tee -a /var/log/hardn-ci/modules.log
               echo "$fail_count" > /var/log/hardn-ci/fail_count.txt
               chmod -R a+r /var/log/hardn-ci || true
+              chown -R 1000:1000 /var/log/hardn-ci || true
             '
 
           mkdir -p release_assets/hardn-logs-${{ matrix.arch }}
