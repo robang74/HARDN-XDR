@@ -10,9 +10,14 @@ permissions:
   issues: write
   pull-requests: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       matrix:
         arch: [amd64, arm64]
@@ -99,6 +104,7 @@ jobs:
   test-deployment:
     needs: build-and-test
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       matrix:
         arch: [amd64, arm64]
@@ -165,6 +171,7 @@ jobs:
     needs: test-deployment
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Download logs
         uses: actions/download-artifact@v4
@@ -176,14 +183,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          issue_title="❌ HARDN-XDR Module Failures Detected"
+          issue_title="HARDN-XDR Module Failures Detected"
           body="## Module Failures Report\n\nThe following modules failed:\n\n"
 
           fail_modules=$(grep "\[FAIL\]" logs/hardn-ci/modules.log | cut -d' ' -f2)
           count=0
 
           for module in $fail_modules; do
-            body+="### ❌ $module\n"
+            body+="### $module\n"
             body+="\`\`\`\n"
             if [ -f logs/hardn-ci/$module.log ]; then
               tail -n 20 logs/hardn-ci/$module.log >> temp.log
