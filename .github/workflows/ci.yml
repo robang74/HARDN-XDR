@@ -107,8 +107,15 @@ jobs:
     outputs:
       passed: ${{ steps.simulate.outputs.passed }}
     steps:
+      - name: Check raw binfmt version
+        run: |
+          echo "Raw binfmt version:"
+          docker run --rm --privileged tonistiigi/binfmt --version || echo "binfmt query failed"
+
       - name: Register QEMU emulation
         uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
 
       - name: Download built .deb for ${{ matrix.arch }}
         uses: actions/download-artifact@v4
