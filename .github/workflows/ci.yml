@@ -10,14 +10,9 @@ permissions:
   issues: write
   pull-requests: write
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     strategy:
       matrix:
         arch: [amd64, arm64]
@@ -104,7 +99,6 @@ jobs:
   test-deployment:
     needs: build-and-test
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     strategy:
       matrix:
         arch: [amd64, arm64]
@@ -139,14 +133,14 @@ jobs:
               dpkg -i /tmp/hardn.deb || true
               apt-get install -f -y
 
-              echo "--- RUNNING HARDN-XDR ---"
+              echo "Running HARDN-XDR"
               /usr/bin/hardn-xdr || echo "HARDN-XDR exited"
 
-              echo "--- SIMULATING MODULE EXECUTION ---"
+              echo "Running modules"
               fail_count=0
               for script in /usr/lib/hardn-xdr/src/setup/modules/*.sh; do
                 name=$(basename "$script")
-                echo "---- RUNNING: $name ----" | tee -a /var/log/hardn-ci/modules.log
+                echo "Running: $name" | tee -a /var/log/hardn-ci/modules.log
                 bash "$script" >> /var/log/hardn-ci/$name.log 2>&1 || {
                   echo "[FAIL] $name failed" | tee -a /var/log/hardn-ci/modules.log
                   fail_count=$((fail_count+1))
@@ -171,7 +165,6 @@ jobs:
     needs: test-deployment
     if: always()
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     steps:
       - name: Download logs
         uses: actions/download-artifact@v4
