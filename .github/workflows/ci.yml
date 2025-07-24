@@ -107,21 +107,18 @@ jobs:
     outputs:
       passed: ${{ steps.simulate.outputs.passed }}
     steps:
-      - name: Check raw binfmt version
-        run: |
-          echo "Raw binfmt version:"
-          docker run --rm --privileged tonistiigi/binfmt --version || echo "binfmt query failed"
-
       - name: Register QEMU emulation
         uses: docker/setup-qemu-action@v3
-        with:
-          platforms: all
+
+      - name: Check raw binfmt version
+        run: |
+          docker run --rm --privileged tonistiigi/binfmt:latest --version || true
 
       - name: Download built .deb for ${{ matrix.arch }}
         uses: actions/download-artifact@v4
         with:
           name: deb-${{ matrix.arch }}
-          path: .
+          path: release_assets/deb-${{ matrix.arch }}
 
       - name: Simulate full HARDN deployment
         id: simulate
@@ -131,6 +128,7 @@ jobs:
           mkdir -p ./logbundle/hardn-ci
 
           docker run --rm -i --platform linux/${{ matrix.arch }} \
+            --privileged \
             -e SKIP_WHIPTAIL=1 \
             -e DEBIAN_FRONTEND=noninteractive \
             -e CI=true \
@@ -170,13 +168,13 @@ jobs:
       - name: Zip logs
         run: |
           mkdir -p release_assets/hardn-logs-zip
-          zip -r release_assets/hardn-logs-zip/hardn_logs_bundle.zip release_assets/hardn-logs-*
+          zip -r release_assets/hardn-logs-zip/hardn_logs_bundle_${{ matrix.arch }}.zip release_assets/hardn-logs-${{ matrix.arch }}
 
       - name: Upload zipped logs
         uses: actions/upload-artifact@v4
         with:
-          name: hardn-logs-zip
-          path: release_assets/hardn-logs-zip/hardn_logs_bundle.zip
+          name: hardn-logs-zip-${{ matrix.arch }}
+          path: release_assets/hardn-logs-zip/hardn_logs_bundle_${{ matrix.arch }}.zip
 
   release:
     needs: [build-and-test, test-deployment]
@@ -199,7 +197,7 @@ jobs:
           gh release create "$tag" \
             release_assets/deb-amd64/*.deb \
             release_assets/deb-arm64/*.deb \
-            release_assets/hardn-logs-zip/hardn_logs_bundle.zip \
+            release_assets/hardn-logs-zip/hardn_logs_bundle_*.zip \
             release_assets/hardn_logo.png \
             --title "Release $tag" \
             --notes "![HARDN-XDR Logo](https://raw.githubusercontent.com/OpenSource-For-Freedom/HARDN-XDR/main/docs/assets/HARDN%20(1).png)\n\nAutomated release for HARDN-XDR"
