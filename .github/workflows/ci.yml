@@ -7,8 +7,10 @@ on:
 
 permissions:
   contents: write
+  packages: write
   issues: write
   pull-requests: write
+  workflows: write 
 
 jobs:
   build-and-test:
