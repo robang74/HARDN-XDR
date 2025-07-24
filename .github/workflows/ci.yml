@@ -136,7 +136,7 @@ jobs:
             -v "$(pwd)/logbundle:/var/log/" \
             debian:stable-slim bash -euxo pipefail -c '
               apt-get update
-              apt-get install -y sudo bash gnupg curl whiptail coreutils
+              apt-get install -y sudo bash gnupg curl whiptail coreutils zip
               dpkg -i /tmp/hardn.deb || true
               apt-get install -f -y
 
@@ -155,10 +155,11 @@ jobs:
               done
               echo "Total failures: $fail_count" | tee -a /var/log/hardn-ci/modules.log
               echo "$fail_count" > /var/log/hardn-ci/fail_count.txt
+              chmod -R a+r /var/log/hardn-ci || true
             '
 
           mkdir -p release_assets/hardn-logs-${{ matrix.arch }}
-          cp -r ./logbundle/* release_assets/hardn-logs-${{ matrix.arch }}/
+          cp -r ./logbundle/* release_assets/hardn-logs-${{ matrix.arch }}/ || true
 
           echo "passed=false" >> $GITHUB_OUTPUT
           if [ ! -s release_assets/hardn-logs-${{ matrix.arch }}/hardn-ci/fail_count.txt ] || grep -q '^0$' release_assets/hardn-logs-${{ matrix.arch }}/hardn-ci/fail_count.txt; then
