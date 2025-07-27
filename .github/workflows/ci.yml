@@ -202,4 +202,4 @@ jobs:
             release_assets/hardn-logs-zip/hardn_logs_bundle_*.zip \
             release_assets/hardn_logo.png \
             --title "Release $tag" \
-            --notes "![HARDN-XDR Logo](https://raw.githubusercontent.com/OpenSource-For-Freedom/HARDN-XDR/main/docs/assets/HARDN%20(1).png)\n\nAutomated release for HARDN-XDR"
+            --notes "![HARDN-XDR Logo](HARDN-XDR/docs/assets/HARDN(1).png)\n\nAutomated release for HARDN-XDR"
