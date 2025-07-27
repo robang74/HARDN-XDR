@@ -189,7 +189,7 @@ jobs:
           path: release_assets
 
       - name: Copy logo into release
-        run: cp "docs/assets/HARDN (1).png" release_assets/hardn_logo.png
+        run: cp "docs/assets/HARDN(1).png" release_assets/hardn_logo.png
 
       - name: Create GitHub Release
         env:
