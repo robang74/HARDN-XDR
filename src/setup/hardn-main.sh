@@ -151,7 +151,7 @@ setup_security_modules() {
         "auto_updates.sh" "central_logging.sh" "audit_system.sh" "ntp.sh"
         "debsums.sh" "yara.sh" "suricata.sh" "firejail.sh" "selinux.sh"
         "unhide.sh" "pentest.sh" "compilers.sh" "purge_old_pkgs.sh" "dns_config.sh"
-        "file_perms.sh" "shared_mem.sh" "coredumps.sh" "secure_net.sh"
+        "file_perms.sh" "apparmor.sh" "shared_mem.sh" "coredumps.sh" "secure_net.sh"
         "network_protocols.sh" "usb.sh" "firewire.sh" "binfmt.sh"
         "process_accounting.sh" "unnecesary_services.sh" "banner.sh"
         "deleted_files.sh"
