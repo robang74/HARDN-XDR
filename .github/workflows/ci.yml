@@ -191,7 +191,7 @@ jobs:
       - name: Copy logo into release
         run: |
            mkdir -p release_assets
-           cp docs/assets/HARDN (1).png release_assets/hardn_logo.png
+           cp "docs/assets/HARDN (1).png" release_assets/hardn_logo.png
 
       - name: Create GitHub Release
         env:
