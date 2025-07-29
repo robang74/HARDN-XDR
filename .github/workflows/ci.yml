@@ -139,7 +139,7 @@ jobs:
               apt-get install -y sudo bash gnupg curl whiptail coreutils zip
               dpkg -i /tmp/hardn.deb || true
               apt-get install -f -y
-
+              chmod +x /usr/lib/hardn-xdr/src/setup/modules/*.sh || true
               echo "Running HARDN-XDR"
               /usr/bin/hardn-xdr || echo "HARDN-XDR exited"
 
@@ -202,6 +202,6 @@ jobs:
             release_assets/deb-amd64/*.deb \
             release_assets/deb-arm64/*.deb \
             release_assets/hardn-logs-zip/hardn_logs_bundle_*.zip \
-            release_assets/hardn_logo.png \
+            release_assets/sig_logo.png \
             --title "Release $tag" \
-            --notes "![HARDN-XDR Logo](HARDN-XDR/docs/assets/HARDN(1).png)\n\nAutomated release for HARDN-XDR"
+            --notes "![HARDN-XDR Logo](HARDN-XDR/docs/assets/sig_logo.png)\n\nAutomated release for HARDN-XDR"
