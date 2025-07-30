@@ -68,22 +68,19 @@ jobs:
           arch="${{ matrix.arch }}"
           if [ ! -f debian/changelog ]; then touch debian/changelog; fi
           dch --newversion "$version" \
-              "Automated release $version for architecture: $arch." \
+              "Automated release $version for architecture: $arch (Architecture: all package)." \
               --distribution unstable \
               --force-distribution
           dch --release --force-distribution ""
 
-      - name: Build package for ${{ matrix.arch }}
+      - name: Build package for ${{ matrix.arch }} - Architecture all
         env:
           DEBIAN_FRONTEND: noninteractive
           SKIP_WHIPTAIL: 1
         run: |
-          # Build for specific architecture
-          if [ "${{ matrix.arch }}" = "amd64" ]; then
-            dpkg-buildpackage -us -uc --host-arch amd64
-          else
-            dpkg-buildpackage -us -uc --host-arch ${{ matrix.arch }}
-          fi
+          # Build architecture-independent package (same for all architectures)
+          # No cross-compilation needed for Architecture: all packages
+          dpkg-buildpackage -us -uc
           sudo apt install -f -y
 
       - name: Lint package
@@ -92,23 +89,29 @@ jobs:
           deb_file=$(ls ../*.deb | head -n 1)
           lintian "$deb_file" || echo "Lintian warnings found, but continuing..."
 
-      - name: Rename .deb
-        id: rename
+      - name: Prepare release assets for ${{ matrix.arch }}
+        id: prepare
         run: |
           raw_tag="${{ steps.bump.outputs.new_tag }}"
           version="${raw_tag#v}"
           deb_file=$(ls ../*.deb | head -n 1)
-          new_name="hardn_${version}_${{ matrix.arch }}.deb"
-          mv "$deb_file" "$new_name"
-          mkdir -p release_assets/deb-${{ matrix.arch }}
-          mv "$new_name" release_assets/deb-${{ matrix.arch }}/
-          echo "deb_file=release_assets/deb-${{ matrix.arch }}/$new_name" >> $GITHUB_OUTPUT
 
-      - name: Upload .deb
+          # Create architecture-specific name for this matrix job
+          arch_name="hardn_${version}_${{ matrix.arch }}.deb"
+
+          # Create directory for this architecture
+          mkdir -p release_assets/deb-${{ matrix.arch }}
+
+          # Copy the .deb file with architecture-specific name
+          cp "$deb_file" "release_assets/deb-${{ matrix.arch }}/$arch_name"
+
+          echo "arch_deb=release_assets/deb-${{ matrix.arch }}/$arch_name" >> $GITHUB_OUTPUT
+
+      - name: Upload .deb for ${{ matrix.arch }}
         uses: actions/upload-artifact@v4
         with:
           name: deb-${{ matrix.arch }}
-          path: ${{ steps.rename.outputs.deb_file }}
+          path: ${{ steps.prepare.outputs.arch_deb }}
 
   test-deployment:
     needs: build-and-test
@@ -116,8 +119,6 @@ jobs:
     strategy:
       matrix:
         arch: [amd64, arm64]
-    outputs:
-      passed: ${{ steps.simulate.outputs.passed }}
     steps:
       - name: Register QEMU emulation
         uses: docker/setup-qemu-action@v3
@@ -190,9 +191,22 @@ jobs:
           name: hardn-logs-zip-${{ matrix.arch }}
           path: release_assets/hardn-logs-zip/hardn_logs_bundle_${{ matrix.arch }}.zip
 
+  check-deployment-results:
+    needs: test-deployment
+    runs-on: ubuntu-latest
+    outputs:
+      passed: ${{ steps.check.outputs.passed }}
+    steps:
+      - name: Check deployment results
+        id: check
+        run: |
+          # If we get here, all test-deployment matrix jobs succeeded
+          # (GitHub Actions fails the workflow if any matrix job fails)
+          echo "passed=true" >> $GITHUB_OUTPUT
+
   release:
-    needs: [build-and-test, test-deployment]
-    if: needs.test-deployment.outputs.passed == 'true'
+    needs: [build-and-test, check-deployment-results]
+    if: needs.check-deployment-results.outputs.passed == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -218,21 +232,21 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           tag="${{ needs.build-and-test.outputs.new_tag }}"
-          
+
           # Check if logo exists and prepare release files
           release_files=(
             release_assets/deb-amd64/*.deb
             release_assets/deb-arm64/*.deb
             release_assets/hardn-logs-zip/hardn_logs_bundle_*.zip
           )
-          
+
           if [ -f "release_assets/sig_logo.png" ]; then
             release_files+=(release_assets/sig_logo.png)
             logo_note="![HARDN-XDR Logo](sig_logo.png)\n\n"
           else
             logo_note=""
           fi
-          
+
           gh release create "$tag" \
             "${release_files[@]}" \
             --title "Release $tag" \
