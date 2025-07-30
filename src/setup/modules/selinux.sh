@@ -24,6 +24,12 @@ get_os_id() {
 
 OS_ID=$(get_os_id)
 
+# Only allow execution on RHEL-based systems
+if [[ ! "$OS_ID" =~ ^(rhel|centos|fedora|rocky|almalinux)$ ]]; then
+    HARDN_STATUS "info" "This SELinux module is only supported on RHEL-based systems. Skipping..."
+    return 0 2>/dev/null || exit 0
+fi
+
 # --------- Container Detection ----------
 if grep -qa container /proc/1/environ || systemd-detect-virt --quiet --container; then
     HARDN_STATUS "info" "Container environment detected. Skipping SELinux setup."
@@ -55,33 +61,12 @@ else
 fi
 
 # --------- Package Installation ---------
-case "$OS_ID" in
-    debian|ubuntu)
-        HARDN_STATUS "info" "Installing SELinux for Debian/Ubuntu..."
-        apt-get update -y
-        DEBIAN_FRONTEND=noninteractive apt-get install -y selinux-basics selinux-policy-default auditd || {
-            HARDN_STATUS "warning" "Failed to install SELinux packages."
-            return 0 2>/dev/null || exit 0
-        }
-
-        if command -v selinux-activate &>/dev/null; then
-            HARDN_STATUS "info" "Running selinux-activate..."
-            selinux-activate || HARDN_STATUS "warning" "selinux-activate encountered an issue."
-        fi
-        ;;
-    rhel|centos|fedora|rocky|almalinux)
-        HARDN_STATUS "info" "Installing SELinux for $OS_ID..."
-        PKG_MGR=$(command -v dnf || command -v yum)
-        $PKG_MGR install -y selinux-policy selinux-policy-targeted policycoreutils policycoreutils-python-utils audit || {
-            HARDN_STATUS "warning" "Failed to install SELinux packages."
-            return 0 2>/dev/null || exit 0
-        }
-        ;;
-    *)
-        HARDN_STATUS "warning" "Unsupported OS ($OS_ID). Skipping SELinux setup."
-        return 0 2>/dev/null || exit 0
-        ;;
-esac
+HARDN_STATUS "info" "Installing SELinux for $OS_ID..."
+PKG_MGR=$(command -v dnf || command -v yum)
+$PKG_MGR install -y selinux-policy selinux-policy-targeted policycoreutils policycoreutils-python-utils audit || {
+    HARDN_STATUS "warning" "Failed to install SELinux packages."
+    return 0 2>/dev/null || exit 0
+}
 
 # --------- Config File Setup ---------
 CONFIG_FILE=""
@@ -97,7 +82,7 @@ else
 fi
 
 # --------- Auto Relabel If Enforcing + RHEL-based ---------
-if [[ "$CHOICE" == "advanced" && "$OS_ID" =~ ^(rhel|centos|fedora|rocky|almalinux)$ ]]; then
+if [[ "$CHOICE" == "advanced" ]]; then
     if command -v fixfiles >/dev/null 2>&1; then
         HARDN_STATUS "info" "Scheduling full filesystem relabel on next boot..."
         touch /.autorelabel
