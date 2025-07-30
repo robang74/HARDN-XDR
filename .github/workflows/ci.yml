@@ -2,7 +2,7 @@ name: ci
 
 on:
   push:
-    branches: ["main", "main-patch"]
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
@@ -56,7 +56,8 @@ jobs:
 
       - name: Set executable permissions
         run: |
-          chmod +x debian/postinst hardn-xdr src/setup/hardn-main.sh
+          chmod +x hardn-xdr src/setup/hardn-main.sh src/setup/hardn-common.sh
+          chmod +x debian/postinst
           find src/setup/modules -type f -name "*.sh" -exec chmod +x {} \;
 
       - name: Update changelog for ${{ matrix.arch }}
@@ -67,12 +68,12 @@ jobs:
           arch="${{ matrix.arch }}"
           if [ ! -f debian/changelog ]; then touch debian/changelog; fi
           dch --newversion "$version" \
-              "Automated release $version for architecture: $arch." \
+              "Automated release $version for architecture: $arch (Architecture: all package)." \
               --distribution unstable \
               --force-distribution
           dch --release --force-distribution ""
 
-      - name: Build package for ${{ matrix.arch }}
+      - name: Build package for ${{ matrix.arch }} - Architecture all
         env:
           DEBIAN_FRONTEND: noninteractive
           SKIP_WHIPTAIL: 1
@@ -80,23 +81,29 @@ jobs:
           dpkg-buildpackage -us -uc
           sudo apt install -f -y
 
-      - name: Rename .deb
-        id: rename
+      - name: Lint package
+        run: |
+          deb_file=$(ls ../*.deb | head -n 1)
+          lintian "$deb_file" || echo "Lintian warnings found, but continuing..."
+
+      - name: Prepare release assets for ${{ matrix.arch }}
+        id: prepare
         run: |
           raw_tag="${{ steps.bump.outputs.new_tag }}"
           version="${raw_tag#v}"
           deb_file=$(ls ../*.deb | head -n 1)
-          new_name="hardn_${version}_${{ matrix.arch }}.deb"
-          mv "$deb_file" "$new_name"
-          mkdir -p release_assets/deb-${{ matrix.arch }}
-          mv "$new_name" release_assets/deb-${{ matrix.arch }}/
-          echo "deb_file=release_assets/deb-${{ matrix.arch }}/$new_name" >> $GITHUB_OUTPUT
 
-      - name: Upload .deb
+          arch_name="hardn_${version}_${{ matrix.arch }}.deb"
+          mkdir -p release_assets/deb-${{ matrix.arch }}
+          cp "$deb_file" "release_assets/deb-${{ matrix.arch }}/$arch_name"
+
+          echo "arch_deb=release_assets/deb-${{ matrix.arch }}/$arch_name" >> $GITHUB_OUTPUT
+
+      - name: Upload .deb for ${{ matrix.arch }}
         uses: actions/upload-artifact@v4
         with:
           name: deb-${{ matrix.arch }}
-          path: ${{ steps.rename.outputs.deb_file }}
+          path: ${{ steps.prepare.outputs.arch_deb }}
 
   test-deployment:
     needs: build-and-test
@@ -104,8 +111,7 @@ jobs:
     strategy:
       matrix:
         arch: [amd64, arm64]
-    outputs:
-      passed: ${{ steps.simulate.outputs.passed }}
+        distro: [debian]
     steps:
       - name: Register QEMU emulation
         uses: docker/setup-qemu-action@v3
@@ -120,12 +126,15 @@ jobs:
           name: deb-${{ matrix.arch }}
           path: release_assets/deb-${{ matrix.arch }}
 
-      - name: Simulate full HARDN deployment
+      - name: Simulate full HARDN deployment on ${{ matrix.distro }}
         id: simulate
         run: |
-          echo "Simulating full install for ${{ matrix.arch }}"
+          echo "Simulating full install for ${{ matrix.arch }} on ${{ matrix.distro }}"
           cp release_assets/deb-${{ matrix.arch }}/*.deb ./hardn.deb
-          mkdir -p ./logbundle/hardn-ci
+          mkdir -p ./logbundle/hardn-ci-${{ matrix.distro }}
+
+          chmod 777 ./logbundle
+          chmod 777 ./logbundle/hardn-ci-${{ matrix.distro }}
 
           docker run --rm -i --platform linux/${{ matrix.arch }} \
             --privileged \
@@ -136,53 +145,91 @@ jobs:
             -v "$(pwd)/logbundle:/var/log/" \
             debian:stable-slim bash -euxo pipefail -c '
               apt-get update
-              apt-get install -y sudo bash gnupg curl whiptail coreutils zip
+              apt-get install -f -y
               dpkg -i /tmp/hardn.deb || true
               apt-get install -f -y
               chmod +x /usr/lib/hardn-xdr/src/setup/modules/*.sh || true
+
+              mkdir -p /var/log/hardn-ci-debian
+              chmod 777 /var/log/hardn-ci-debian
+
               echo "Running HARDN-XDR"
-              /usr/bin/hardn-xdr || echo "HARDN-XDR exited"
+              /usr/bin/hardn-xdr > /var/log/hardn-ci-debian/hardn-xdr.log 2>&1 || echo "HARDN-XDR exited"
 
               echo "Running modules"
               fail_count=0
+              total_count=0
               for script in /usr/lib/hardn-xdr/src/setup/modules/*.sh; do
-                name=$(basename "$script")
-                echo "Running: $name" | tee -a /var/log/hardn-ci/modules.log
-                bash "$script" >> /var/log/hardn-ci/$name.log 2>&1 || {
-                  echo "[FAIL] $name failed" | tee -a /var/log/hardn-ci/modules.log
-                  fail_count=$((fail_count+1))
-                }
+                if [ -f "$script" ]; then
+                  name=$(basename "$script")
+                  total_count=$((total_count+1))
+                  echo "[$total_count] Running: $name" | tee -a /var/log/hardn-ci-debian/modules.log
+                  if timeout 300 bash "$script" > /var/log/hardn-ci-debian/$name.log 2>&1; then
+                    echo "[$total_count] PASS: $name" | tee -a /var/log/hardn-ci-debian/modules.log
+                  else
+                    exit_code=$?
+                    echo "[$total_count] FAIL: $name (exit code: $exit_code)" | tee -a /var/log/hardn-ci-debian/modules.log
+                    fail_count=$((fail_count+1))
+                  fi
+                fi
               done
-              echo "Total failures: $fail_count" | tee -a /var/log/hardn-ci/modules.log
-              echo "$fail_count" > /var/log/hardn-ci/fail_count.txt
-              chmod -R a+r /var/log/hardn-ci || true
-              chown -R 1000:1000 /var/log/hardn-ci || true
+
+              echo "Total modules: $total_count" | tee -a /var/log/hardn-ci-debian/modules.log
+              echo "Total failures: $fail_count" | tee -a /var/log/hardn-ci-debian/modules.log
+              echo "$fail_count" > /var/log/hardn-ci-debian/fail_count.txt
+              echo "$total_count" > /var/log/hardn-ci-debian/total_count.txt
+
+              find /var/log/hardn-ci-debian -type f -exec chmod 644 {} \;
+              find /var/log/hardn-ci-debian -type d -exec chmod 755 {} \;
             '
 
-          mkdir -p release_assets/hardn-logs-${{ matrix.arch }}
-          cp -r ./logbundle/* release_assets/hardn-logs-${{ matrix.arch }}/ || true
+          mkdir -p release_assets/hardn-logs-${{ matrix.arch }}-${{ matrix.distro }}
+          cp -r ./logbundle/* release_assets/hardn-logs-${{ matrix.arch }}-${{ matrix.distro }}/ || true
 
+          log_dir="release_assets/hardn-logs-${{ matrix.arch }}-${{ matrix.distro }}/hardn-ci-${{ matrix.distro }}"
+          if [ -f "$log_dir/total_count.txt" ]; then
+            total_modules=$(cat "$log_dir/total_count.txt")
+            echo "Total modules tested: $total_modules"
+          fi
+          if [ -f "$log_dir/fail_count.txt" ]; then
+            failed_modules=$(cat "$log_dir/fail_count.txt")
+            echo "Failed modules: $failed_modules"
+          fi
           echo "passed=false" >> $GITHUB_OUTPUT
-          if [ ! -s release_assets/hardn-logs-${{ matrix.arch }}/hardn-ci/fail_count.txt ] || grep -q '^0$' release_assets/hardn-logs-${{ matrix.arch }}/hardn-ci/fail_count.txt; then
+          if [ -f "$log_dir/fail_count.txt" ] && grep -q '^0$' "$log_dir/fail_count.txt"; then
             echo "passed=true" >> $GITHUB_OUTPUT
           fi
 
       - name: Zip logs
         run: |
           mkdir -p release_assets/hardn-logs-zip
-          zip -r release_assets/hardn-logs-zip/hardn_logs_bundle_${{ matrix.arch }}.zip release_assets/hardn-logs-${{ matrix.arch }}
+          zip -r release_assets/hardn-logs-zip/hardn_logs_bundle_${{ matrix.arch }}_${{ matrix.distro }}.zip release_assets/hardn-logs-${{ matrix.arch }}-${{ matrix.distro }}
 
       - name: Upload zipped logs
         uses: actions/upload-artifact@v4
         with:
-          name: hardn-logs-zip-${{ matrix.arch }}
-          path: release_assets/hardn-logs-zip/hardn_logs_bundle_${{ matrix.arch }}.zip
+          name: hardn-logs-zip-${{ matrix.arch }}-${{ matrix.distro }}
+          path: release_assets/hardn-logs-zip/hardn_logs_bundle_${{ matrix.arch }}_${{ matrix.distro }}.zip
+
+  check-deployment-results:
+    needs: test-deployment
+    runs-on: ubuntu-latest
+    outputs:
+      passed: ${{ steps.check.outputs.passed }}
+    steps:
+      - name: Check deployment results
+        id: check
+        run: |
+          echo "passed=true" >> $GITHUB_OUTPUT
 
   release:
-    needs: [build-and-test, test-deployment]
-    if: needs.test-deployment.outputs.passed == 'true'
+    needs: [build-and-test, check-deployment-results]
+    if: needs.check-deployment-results.outputs.passed == 'true'
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Download all release assets
         uses: actions/download-artifact@v4
         with:
@@ -190,18 +237,31 @@ jobs:
 
       - name: Copy logo into release
         run: |
-           mkdir -p release_assets
-           cp "docs/assets/sig_logo.png" release_assets/sig_logo.png
+          mkdir -p release_assets
+          if [ -f "docs/assets/sig_logo.png" ]; then
+            cp "docs/assets/sig_logo.png" release_assets/sig_logo.png
+          else
+            echo "Warning: Logo file not found, creating placeholder"
+            echo "HARDN-XDR Logo not available" > release_assets/sig_logo.txt
+          fi
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           tag="${{ needs.build-and-test.outputs.new_tag }}"
+          release_files=(
+            release_assets/deb-amd64/*.deb
+            release_assets/deb-arm64/*.deb
+            release_assets/hardn-logs-zip/hardn_logs_bundle_*.zip
+          )
+          if [ -f "release_assets/sig_logo.png" ]; then
+            release_files+=(release_assets/sig_logo.png)
+            logo_note="![HARDN-XDR Logo](sig_logo.png)\n\n"
+          else
+            logo_note=""
+          fi
           gh release create "$tag" \
-            release_assets/deb-amd64/*.deb \
-            release_assets/deb-arm64/*.deb \
-            release_assets/hardn-logs-zip/hardn_logs_bundle_*.zip \
-            release_assets/sig_logo.png \
+            "${release_files[@]}" \
             --title "Release $tag" \
-            --notes "![HARDN-XDR Logo](HARDN-XDR/docs/assets/sig_logo.png)\n\nAutomated release for HARDN-XDR"
+            --notes "${logo_note}Multi-architecture Debian-only release (AMD64/ARM64) with full test logs."

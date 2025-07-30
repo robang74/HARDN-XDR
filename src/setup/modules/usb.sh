@@ -4,12 +4,14 @@ set -e
 
 
 # Whiptail confirmation and warning
-if command -v whiptail >/dev/null 2>&1; then
+if [[ "$SKIP_WHIPTAIL" != "1" ]] && command -v whiptail >/dev/null 2>&1; then
     whiptail --title "USB Storage Blocking" --msgbox "WARNING: This will block USB storage devices.\n\n- If your system is running from USB, this may cause lockout.\n- If you have a USB keyboard, ensure it is detected.\n\nProceed only if you understand the risks!" 14 70
     if ! whiptail --title "Confirm USB Block" --yesno "Do you want to proceed with blocking USB storage?" 10 70; then
         HARDN_STATUS "info" "User cancelled USB block operation."
         return 0
     fi
+else
+    HARDN_STATUS "info" "Running in non-interactive mode, proceeding with USB storage blocking"
 fi
 
 ROOT_USB=$(lsblk -o NAME,TRAN,MOUNTPOINT | grep -E 'usb.*\/$' || true)
@@ -43,14 +45,14 @@ HARDN_STATUS "info" "Udev rules written."
 udevadm control --reload-rules && udevadm trigger && HARDN_STATUS "pass" "Udev rules reloaded."
 
 # Try unloading storage
-  return 0
+if lsmod | grep -q usb_storage; then
   rmmod usb_storage && HARDN_STATUS "pass" "usb-storage module unloaded." || HARDN_STATUS "warning" "Failed to unload usb-storage."
 else
   HARDN_STATUS "info" "usb-storage module not currently loaded."
 fi
 
 # Ensure HID is enabled
-  return 1
+if ! lsmod | grep -q usbhid; then
   modprobe usbhid && HARDN_STATUS "pass" "usbhid module loaded." || HARDN_STATUS "error" "Could not load usbhid!"
 else
   HARDN_STATUS "pass" "usbhid module already active."
