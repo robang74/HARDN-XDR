@@ -250,17 +250,21 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tag="${{ needs.build-and-test.outputs.new_tag }}"
-          release_files=(
-            release_assets/deb-amd64/*.deb
-            release_assets/deb-arm64/*.deb
-            release_assets/hardn-logs-zip/hardn_logs_bundle_*.zip
-          )
+
+          release_files=()
+          for f in release_assets/deb-*/*.deb release_assets/hardn-logs-zip/*.zip; do
+            if [ -f "$f" ]; then
+              release_files+=("$f")
+            fi
+          done
+
           if [ -f "release_assets/sig_logo.png" ]; then
             release_files+=(release_assets/sig_logo.png)
             logo_note="![HARDN-XDR Logo](sig_logo.png)\n\n"
           else
             logo_note=""
           fi
+
           gh release create "$tag" \
             "${release_files[@]}" \
             --title "Release $tag" \
