@@ -30,7 +30,7 @@
 
 ## HARDN-XDR
 [![ci](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/ci.yml)
-[![Advanced CodeQL and Actions Security Scan](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/codeql.yml/badge.svg)](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/codeql.yml)
+[![Advanced CodeQL](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/codeql.yml/badge.svg)](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/codeql.yml)
 - **Our Goal**: 
   - Assist the open source community in building a Debian based **"GOLDEN IMAGE"** System, with Multi Architecture capabilities.
 - **Our Purpose**: 
