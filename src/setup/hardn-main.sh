@@ -187,7 +187,7 @@ main_menu() {
         "file_perms.sh" "shared_mem.sh" "coredumps.sh" "secure_net.sh"
         "network_protocols.sh" "usb.sh" "firewire.sh" "binfmt.sh"
         "process_accounting.sh" "unnecesary_services.sh" "banner.sh"
-        "deleted_files.sh"
+        "deleted_files.sh" "persistence_protection.sh" "process_protections.sh" "behavioral_analysis.sh"
     )
     local checklist_args=()
     for module in "${modules[@]}"; do
