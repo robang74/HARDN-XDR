@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck source=/usr/lib/hardn-xdr/src/setup/hardn-common.sh
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 # Remove set -e to handle errors gracefully in CI environment
 
@@ -105,15 +106,28 @@ for proto in "${!protocols_defaults[@]}"; do
 done
 
 if [[ "$SKIP_WHIPTAIL" != "1" ]] && command -v whiptail >/dev/null 2>&1; then
-    selected=$(whiptail --title "Network Protocol Hardening" --checklist "Select protocols to DISABLE (SPACE to select, TAB to move):" 25 80 15 "${checklist_args[@]}" 3>&1 1>&2 2>&3)
-
-    if [[ $? -ne 0 ]]; then
+    if ! selected=$(whiptail --title "Disable Network Protocols" --checklist "Select protocols to disable (RECOMMENDED: Keep all selected):" 20 100 15 \
+        "dccp" "Datagram Congestion Control Protocol" ON \
+        "sctp" "Stream Control Transmission Protocol" ON \
+        "rds" "Reliable Datagram Sockets" ON \
+        "tipc" "Transparent Inter Process Communication" ON \
+        "n-hdlc" "New High-level Data Link Control" ON \
+        "ax25" "Amateur Radio AX.25" ON \
+        "netrom" "NET/ROM Amateur Radio" ON \
+        "x25" "X.25 Protocol" ON \
+        "rose" "ROSE Amateur Radio" ON \
+        "decnet" "DECnet Protocol" ON \
+        "econet" "Econet Protocol" ON \
+        "af_802154" "IEEE 802.15.4" ON \
+        "ipx" "Internetwork Packet Exchange" ON \
+        "appletalk" "AppleTalk Protocol" ON \
+        "psnap" "SubNetwork Access Protocol" ON 3>&1 1>&2 2>&3); then
         HARDN_STATUS "info" "No changes made to network protocol blacklist. Exiting."
         exit 0  # Changed from return 0 for consistency
     fi
 
     # Remove quotes from whiptail output
-    selected=$(echo $selected | tr -d '"')
+    selected=$(echo "$selected" | tr -d '"')
 else
     # Default selection for non-interactive mode - disable vulnerable/legacy protocols
     selected="tipc dccp sctp rds ax25 netrom rose decnet econet ipx appletalk x25 netbeui firewire slip ftp telnet"
@@ -122,7 +136,7 @@ fi
 
 # Backup existing blacklist file
 if [[ -f /etc/modprobe.d/blacklist-rare-network.conf ]]; then
-	cp /etc/modprobe.d/blacklist-rare-network.conf /etc/modprobe.d/blacklist-rare-network.conf.bak.$(date +%Y%m%d%H%M%S)
+	cp /etc/modprobe.d/blacklist-rare-network.conf "/etc/modprobe.d/blacklist-rare-network.conf.bak.$(date +%Y%m%d%H%M%S)"
 fi
 
 # Write new blacklist file
@@ -134,6 +148,6 @@ fi
 	done
 } > /etc/modprobe.d/blacklist-rare-network.conf
 
-HARDN_STATUS "pass" "Network protocol hardening complete: Disabled $(echo $selected | wc -w) protocols."
-#Safe return or exit
-exit 0
+HARDN_STATUS "pass" "Network protocol hardening complete: Disabled $(echo "$selected" | wc -w) protocols."
+
+return 0 2>/dev/null || hardn_module_exit 0

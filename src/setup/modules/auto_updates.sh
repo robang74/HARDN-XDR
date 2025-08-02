@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC1091
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 # Remove set -e to handle errors gracefully in CI environment
 
@@ -30,6 +31,7 @@ fi
 # Ensure we have the OS variables available
 if [[ -z "$ID" ]]; then
     if [[ -f /etc/os-release ]]; then
+        # shellcheck disable=SC1091
         . /etc/os-release
     else
         ID="debian"  # Safe default for CI
@@ -84,5 +86,6 @@ Unattended-Upgrade::Allowed-Origins {
 EOF
 		;;
 esac
-#Safe return or exit
-return 0 2>/dev/null || exit 0
+
+# shellcheck disable=SC2317
+return 0 2>/dev/null || hardn_module_exit 0

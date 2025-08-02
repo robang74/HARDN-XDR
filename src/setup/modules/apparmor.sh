@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC1091
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 set -e
 
@@ -19,12 +20,14 @@ is_installed() {
 # --------- Detect if in container or no TTY ----------
 if grep -qa container /proc/1/environ || systemd-detect-virt --quiet --container || ! [ -t 0 ]; then
     HARDN_STATUS "info" "Skipping AppArmor setup (container or non-interactive)."
+    # shellcheck disable=SC2317
     return 0 2>/dev/null || exit 0
 fi
 
 # --------- Check whiptail ----------
 if ! command -v whiptail &>/dev/null; then
     HARDN_STATUS "warning" "whiptail not found. Skipping AppArmor wizard."
+    # shellcheck disable=SC2317
     return 0 2>/dev/null || exit 0
 fi
 
@@ -41,6 +44,7 @@ Choose the desired mode:" 20 78 3 \
 
 if [[ $? -ne 0 || "$MODE" == "disabled" ]]; then
     HARDN_STATUS "info" "User cancelled or selected to skip AppArmor setup."
+    # shellcheck disable=SC2317
     return 0 2>/dev/null || exit 0
 fi
 
@@ -50,10 +54,10 @@ HARDN_STATUS "info" "Initializing AppArmor security module..."
 if ! is_installed apparmor || ! is_installed apparmor-utils; then
     HARDN_STATUS "info" "AppArmor packages not found. Installing..."
     if command -v apt >/dev/null 2>&1; then
-        apt update -y && apt install -y apparmor apparmor-utils || {
+        if ! (apt update -y && apt install -y apparmor apparmor-utils); then
             HARDN_STATUS "warning" "Failed to install AppArmor with apt."
             return 0
-        }
+        fi
     elif command -v dnf >/dev/null 2>&1; then
         dnf install -y apparmor apparmor-utils || {
             HARDN_STATUS "warning" "Failed to install AppArmor with dnf."
@@ -120,4 +124,5 @@ fi
 
 HARDN_STATUS "pass" "AppArmor module completed in $MODE mode."
 
-return 0 2>/dev/null || exit 0
+# shellcheck disable=SC2317
+return 0 2>/dev/null || hardn_module_exit 0

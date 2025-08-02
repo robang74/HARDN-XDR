@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck source=/usr/lib/hardn-xdr/src/setup/hardn-common.sh
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 set -e
 
@@ -11,10 +12,9 @@ fi
 # Whiptail mode select
 mode="basic"
 if [[ "$SKIP_WHIPTAIL" != "1" ]] && command -v whiptail >/dev/null 2>&1; then
-    mode=$(whiptail --title "UFW Setup Mode" --radiolist "Choose firewall setup mode:" 12 90 2 \
+    if ! mode=$(whiptail --title "UFW Setup Mode" --radiolist "Choose firewall setup mode:" 12 90 2 \
         "basic" "Default deny incoming, allow outgoing, enable UFW" ON \
-        "advanced" "Custom rules for server/container" OFF 3>&1 1>&2 2>&3)
-    if [[ $? -ne 0 ]]; then
+        "advanced" "Custom rules for server/container" OFF 3>&1 1>&2 2>&3); then
         HARDN_STATUS "info" "User cancelled UFW setup."
         return 1 2>/dev/null || exit 1
     fi
@@ -36,10 +36,13 @@ fi
 
 # Advanced mode
 if [[ "$SKIP_WHIPTAIL" != "1" ]] && command -v whiptail >/dev/null 2>&1; then
-    profile=$(whiptail --title "Firewall Profile" --radiolist "Select profile type:" 10 90 2 \
-        "server" "Typical server (SSH, HTTP/S, custom)" ON \
-        "container" "Container (minimal, custom)" OFF 3>&1 1>&2 2>&3)
-    [[ $? -ne 0 ]] && HARDN_STATUS "info" "User cancelled profile selection." && return 1 2>/dev/null || exit 1
+    if ! profile=$(whiptail --title "UFW Profile" --radiolist "Choose profile:" 10 70 3 \
+        "desktop" "Allow common desktop ports (SSH, Web, Email)" ON \
+        "server" "Allow server ports (SSH, HTTP, HTTPS)" OFF \
+        "minimal" "Only SSH" OFF 3>&1 1>&2 2>&3); then
+        HARDN_STATUS "info" "User cancelled profile selection."
+        return 1 2>/dev/null || exit 1
+    fi
 else
     profile="server"
     HARDN_STATUS "info" "Running in non-interactive mode, using server profile"
@@ -51,17 +54,22 @@ ufw default allow outgoing
 rules=""
 if [[ "$SKIP_WHIPTAIL" != "1" ]] && command -v whiptail >/dev/null 2>&1; then
     if [[ "$profile" == "server" ]]; then
-        rules=$(whiptail --title "Server Firewall Rules" --checklist "Select services to allow:" 14 90 6 \
+        if ! rules=$(whiptail --title "Server Firewall Rules" --checklist "Select services to allow:" 14 90 6 \
             "ssh" "SSH (port 22)" ON \
             "http" "HTTP (port 80)" OFF \
             "https" "HTTPS (port 443)" OFF \
-            "custom" "Custom port(s)" OFF 3>&1 1>&2 2>&3)
+            "custom" "Custom port(s)" OFF 3>&1 1>&2 2>&3); then
+            HARDN_STATUS "info" "User cancelled rule selection."
+            return 1 2>/dev/null || exit 1
+        fi
     elif [[ "$profile" == "container" ]]; then
-        rules=$(whiptail --title "Container Firewall Rules" --checklist "Select services to allow:" 12 90 4 \
+        if ! rules=$(whiptail --title "Container Firewall Rules" --checklist "Select services to allow:" 12 90 4 \
             "ssh" "SSH (port 22)" OFF \
-            "custom" "Custom port(s)" ON 3>&1 1>&2 2>&3)
+            "custom" "Custom port(s)" ON 3>&1 1>&2 2>&3); then
+            HARDN_STATUS "info" "User cancelled rule selection."
+            return 1 2>/dev/null || exit 1
+        fi
     fi
-    [[ $? -ne 0 ]] && HARDN_STATUS "info" "User cancelled rule selection." && return 1 2>/dev/null || exit 1
 else
     # Default rules for non-interactive mode
     if [[ "$profile" == "server" ]]; then
@@ -73,7 +81,7 @@ else
     fi
 fi
 
-rules=$(echo $rules | tr -d '"')
+rules=$(echo "$rules" | tr -d '"')
 
 # Apply rules
 [[ "$rules" == *"ssh"* ]] && ufw allow ssh
@@ -99,5 +107,4 @@ ufw --force enable
 ufw status verbose
 HARDN_STATUS "pass" "UFW advanced firewall enabled with selected rules."
 
-# Safe return
-return 0 2>/dev/null || exit 0
+return 0 2>/dev/null || hardn_module_exit 0

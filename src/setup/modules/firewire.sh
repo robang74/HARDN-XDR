@@ -1,26 +1,13 @@
 #!/bin/bash
 
-# Source common functions
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "${SCRIPT_DIR}/../hardn-common.sh" 2>/dev/null || {
-    # Fallback if common file not found
-    HARDN_STATUS() {
-        local status="$1"
-        local message="$2"
-        case "$status" in
-            "pass")    echo -e "\033[1;32m[PASS]\033[0m $message" ;;
-            "warning") echo -e "\033[1;33m[WARNING]\033[0m $message" ;;
-            "error")   echo -e "\033[1;31m[ERROR]\033[0m $message" ;;
-            "info")    echo -e "\033[1;34m[INFO]\033[0m $message" ;;
-            *)         echo -e "\033[1;37m[UNKNOWN]\033[0m $message" ;;
-        esac
-    }
-}
+# shellcheck source=/usr/lib/hardn-xdr/src/setup/hardn-common.sh
+source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
+set -e
 
-HARDN_STATUS "error" "Checking/Disabling FireWire (IEEE 1394) drivers..."
-local firewire_modules changed blacklist_file
+HARDN_STATUS "info" "Checking/Disabling FireWire (IEEE 1394) drivers..."
 firewire_modules="firewire_core firewire_ohci firewire_sbp2"
 changed=0
+blacklist_file="/etc/modprobe.d/blacklist-firewire.conf"
 
 for module_name in $firewire_modules; do
 	if lsmod | grep -q "^${module_name}"; then
@@ -36,7 +23,6 @@ for module_name in $firewire_modules; do
 	fi
 done
 
-blacklist_file="/etc/modprobe.d/blacklist-firewire.conf"
 if [[ ! -f "$blacklist_file" ]]; then
 	touch "$blacklist_file"
 	HARDN_STATUS "pass" "Created FireWire blacklist file: $blacklist_file"
@@ -58,5 +44,4 @@ else
 	hardn_infobox "FireWire drivers checked. No changes made (likely already disabled/not present)." 8 70
 fi
 
-#Safe return or exit
-return 0 2>/dev/null || exit 0
+return 0 2>/dev/null || hardn_module_exit 0

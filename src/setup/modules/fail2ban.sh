@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# shellcheck source=/usr/lib/hardn-xdr/src/setup/hardn-common.sh
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 set -e
 
@@ -125,7 +126,9 @@ main() {
     configure_ufw_for_fail2ban
     summary_message
     HARDN_STATUS "pass" "Fail2ban installation and setup complete."
-    return 0 2>/dev/null || exit 0
+    return 0 2>/dev/null || hardn_module_exit 0
 }
 
 main
+
+return 0 2>/dev/null || hardn_module_exit 0

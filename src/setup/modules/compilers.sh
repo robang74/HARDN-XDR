@@ -1,6 +1,7 @@
 #!/bin/bash
+# shellcheck disable=SC1091
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
-set -e
+
 
 HARDN_STATUS "info" "Restricting compiler access to root only (HRDN-7222)..."
 
@@ -15,5 +16,6 @@ done
 
 #Safe return or exit
 
-return 0 2>/dev/null || exit 0
+# shellcheck disable=SC2317
+return 0 2>/dev/null || hardn_module_exit 0
 

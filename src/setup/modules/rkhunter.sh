@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck source=/usr/lib/hardn-xdr/src/setup/hardn-common.sh
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 # Remove set -e to handle errors gracefully in CI environment
 
@@ -52,12 +53,12 @@ if ! is_installed rkhunter; then
         return 1
     }
 
-    cd rkhunter_github_clone
-    ./installer.sh --layout DEB >/dev/null 2>&1 && ./installer.sh --install >/dev/null 2>&1 || {
+    cd rkhunter_github_clone || { HARDN_STATUS "error" "Failed to change directory"; return 1; }
+    if ! (./installer.sh --layout DEB >/dev/null 2>&1 && ./installer.sh --install >/dev/null 2>&1); then
         HARDN_STATUS "error" "GitHub rkhunter installer failed"
         cd .. && rm -rf rkhunter_github_clone
         return 1
-    }
+    fi
 
     cd .. && rm -rf rkhunter_github_clone
     HARDN_STATUS "pass" "rkhunter installed from GitHub."
@@ -82,5 +83,4 @@ rkhunter --version || {
 
 HARDN_STATUS "pass" "rkhunter installed and configured successfully on $ARCH."
 
-#Safe return or exit
-exit 0
+return 0 2>/dev/null || hardn_module_exit 0

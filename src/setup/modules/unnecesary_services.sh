@@ -1,7 +1,7 @@
 #!/bin/bash
 
+# shellcheck disable=SC1091
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
-set -e
 
 HARDN_STATUS "info" "Disabling unnecessary services..."
 disable_service_if_active() {
@@ -40,6 +40,6 @@ for pkg in $packages_to_remove; do
 done
 
 HARDN_STATUS "pass" "Unnecessary services checked and disabled/removed where applicable."
-# Safe return
-return 0 2>/dev/null || exit 0
 
+# shellcheck disable=SC2317
+return 0 2>/dev/null || hardn_module_exit 0

@@ -11,6 +11,7 @@ fi
 
 
 if [ -f /usr/lib/hardn-xdr/src/setup/hardn-common.sh ]; then
+# shellcheck source=/usr/lib/hardn-xdr/src/setup/hardn-common.sh
     source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 else
     echo "[ERROR] hardn-common.sh not found at expected path!"
@@ -179,7 +180,7 @@ cleanup() {
 
 main_menu() {
     local modules=(
-        "ufw.sh" "fail2ban.sh" "sshd.sh" "auditd.sh" "kernel_sec.sh"
+        "ufw.sh" "apparmor.sh" "fail2ban.sh" "sshd.sh" "auditd.sh" "kernel_sec.sh"
         "stig_pwquality.sh" "aide.sh" "rkhunter.sh" "chkrootkit.sh"
         "auto_updates.sh" "central_logging.sh" "audit_system.sh" "ntp.sh"
         "debsums.sh" "yara.sh" "suricata.sh" "firejail.sh" "selinux.sh"
@@ -196,9 +197,7 @@ main_menu() {
     checklist_args+=("ALL" "Install all modules" "OFF")
 
     local selected
-    selected=$(whiptail --title "HARDN-XDR Module Selection" --checklist "Select modules to install (SPACE to select, TAB to move):" 25 80 15 "${checklist_args[@]}" 3>&1 1>&2 2>&3)
-
-    if [[ $? -ne 0 ]]; then
+    if ! selected=$(whiptail --title "HARDN-XDR Module Selection" --checklist "Select modules to install (SPACE to select, TAB to move):" 25 80 15 "${checklist_args[@]}" 3>&1 1>&2 2>&3); then
         HARDN_STATUS "info" "No modules selected. Exiting."
         exit 1
     fi
@@ -210,7 +209,7 @@ main_menu() {
         setup_security_modules
     else
         # Remove quotes from whiptail output
-        selected=$(echo $selected | tr -d '"')
+        selected=$(echo "$selected" | tr -d '"')
         for module in $selected; do
             run_module "$module"
         done

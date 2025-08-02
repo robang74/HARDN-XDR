@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck source=/usr/lib/hardn-xdr/src/setup/hardn-common.sh
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 # Remove set -e to handle errors gracefully in CI environment
 
