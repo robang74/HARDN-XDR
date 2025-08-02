@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# shellcheck source=/usr/lib/hardn-xdr/src/setup/hardn-common.sh
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 # Remove set -e to handle errors gracefully in CI environment
 
@@ -43,7 +44,7 @@ for browser in $browsers; do
         app="$browser"
         # Remove possible path and extension for profile name
         profile_name=$(basename "$app" | cut -d. -f1)
-        if [ ! -f /etc/firejail/${profile_name}.profile ]; then
+        if [ ! -f "/etc/firejail/${profile_name}.profile" ]; then
             HARDN_STATUS "info" "Creating Firejail profile for $profile_name..."
             {
                 echo "# Firejail profile for $profile_name"
@@ -64,10 +65,9 @@ for browser in $browsers; do
                 echo "nooverlay"
                 echo "nodns"
                 echo "no3d"
-            } > /etc/firejail/${profile_name}.profile
+            } > "/etc/firejail/${profile_name}.profile"
         fi
     fi
 done
 
-#Safe return or exit
-exit 0
+return 0 2>/dev/null || hardn_module_exit 0

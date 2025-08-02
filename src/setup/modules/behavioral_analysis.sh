@@ -4,8 +4,7 @@
 # Part of HARDN-XDR Security Framework
 # Purpose: System behavior baselining and anomaly detection
 
-set -euo pipefail
-
+# shellcheck disable=SC1091
 source "/usr/share/hardn-xdr/hardn-common.sh" 2>/dev/null || {
     echo "Warning: Could not source hardn-common.sh, using basic functions"
     log_message() { echo "$(date '+%Y-%m-%d %H:%M:%S') - $1"; }
@@ -15,24 +14,24 @@ source "/usr/share/hardn-xdr/hardn-common.sh" 2>/dev/null || {
 MODULE_NAME="Behavioral Analysis"
 CONFIG_DIR="/etc/hardn-xdr/behavioral-analysis"
 LOG_FILE="/var/log/security/behavioral-analysis.log"
-BASELINE_FILE="$CONFIG_DIR/system-baseline.json"
+# BASELINE_FILE="$CONFIG_DIR/system-baseline.json"  # Reserved for future use
 
 behavioral_analysis_setup() {
     log_message "INFO: Setting up $MODULE_NAME"
-    
+
     if ! check_root; then
         log_message "ERROR: This module requires root privileges"
         return 1
     fi
-    
+
     mkdir -p "$CONFIG_DIR"
     mkdir -p "$(dirname "$LOG_FILE")"
-    
+
     # Create behavioral monitoring configuration
     cat > "$CONFIG_DIR/behavioral-config.conf" << 'EOF'
 # Behavioral Analysis Configuration
 MONITOR_PROCESS_ANOMALIES=true
-MONITOR_NETWORK_BEHAVIOR=true  
+MONITOR_NETWORK_BEHAVIOR=true
 MONITOR_FILE_ACCESS=true
 MONITOR_USER_BEHAVIOR=true
 ALERT_THRESHOLD=5
@@ -60,10 +59,10 @@ BASELINE_FILE="/etc/hardn-xdr/behavioral-analysis/system-baseline.json"
 EOF
 
     chmod +x "$CONFIG_DIR/create-baseline.sh"
-    
+
     # Create initial baseline
     "$CONFIG_DIR/create-baseline.sh"
-    
+
     log_message "INFO: $MODULE_NAME setup completed"
     return 0
 }
@@ -71,3 +70,6 @@ EOF
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     behavioral_analysis_setup
 fi
+
+# shellcheck disable=SC2317
+return 0 2>/dev/null || hardn_module_exit 0

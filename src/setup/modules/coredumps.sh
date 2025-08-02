@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC1091
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 set -e
 
@@ -16,3 +17,6 @@ sysctl -p >/dev/null 2>&1
 HARDN_STATUS "pass" "Core dumps disabled: Limits set to 0, suid_dumpable set to 0, core_pattern set to /dev/null."
 HARDN_STATUS "info" "Kernel security settings applied successfully."
 HARDN_STATUS "info" "Starting kernel security hardening..."
+
+# shellcheck disable=SC2317
+return 0 2>/dev/null || hardn_module_exit 0

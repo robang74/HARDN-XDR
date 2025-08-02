@@ -18,15 +18,15 @@ LOG_FILE="/var/log/security/process-protection.log"
 
 process_protection_setup() {
     log_message "INFO: Setting up $MODULE_NAME"
-    
+
     if ! check_root; then
         log_message "ERROR: This module requires root privileges"
         return 1
     fi
-    
+
     mkdir -p "$CONFIG_DIR"
     mkdir -p "$(dirname "$LOG_FILE")"
-    
+
     # Configure process injection detection rules
     cat > "$CONFIG_DIR/injection-rules.conf" << 'EOF'
 # Process injection detection rules
@@ -41,7 +41,7 @@ EOF
         auditctl -a always,exit -F arch=b32 -S ptrace -k process_injection
         log_message "INFO: Added auditd rules for process injection detection"
     fi
-    
+
     log_message "INFO: $MODULE_NAME setup completed"
     return 0
 }
@@ -49,3 +49,7 @@ EOF
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     process_protection_setup
 fi
+
+return 0 2>/dev/null || hardn_module_exit 0
+
+return 0 2>/dev/null || hardn_module_exit 0

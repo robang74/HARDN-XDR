@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck source=/usr/lib/hardn-xdr/src/setup/hardn-common.sh
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 set -e
 
@@ -37,7 +38,8 @@ if grep -qa container /proc/1/environ || systemd-detect-virt --quiet --container
 fi
 
 # --------- Interactive Menu ---------
-DEFAULT_MODE="permissive"
+# Remove unused DEFAULT_MODE variable
+# DEFAULT_MODE="permissive"
 SHOW_MENU=false
 
 if [ -t 0 ] && command -v whiptail &>/dev/null; then
@@ -99,4 +101,4 @@ else
     HARDN_STATUS "warning" "SELinux is not currently active."
 fi
 
-return 0 2>/dev/null || exit 0
+return 0 2>/dev/null || hardn_module_exit 0

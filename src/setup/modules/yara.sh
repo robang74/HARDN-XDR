@@ -1,21 +1,6 @@
 #!/bin/bash
-# Function to create integration script with AIDE
-create_aide_integration() {
-    cat > /usr/local/bin/aide-with-yara.sh << 'EOF'
-#!/bin/bash
-# Run AIDE check
-aide --check
 
-# Run YARA scan on important directories
-yara -r /etc/yara/rules/* /bin /sbin /usr/bin /usr/sbin /etc /var/www 2>/dev/null
-
-return 0
-EOF
-    chmod +x /usr/local/bin/aide-with-yara.sh
-    HARDN_STATUS "info" "Created /usr/local/bin/aide-with-yara.sh to run YARA after AIDE."
-}
-#!/bin/bash
-
+# shellcheck source=/usr/lib/hardn-xdr/src/setup/hardn-common.sh
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 set -e
 
@@ -170,7 +155,7 @@ yara_module() {
     install_yara
 
     # Multi-whiptail ruleset selection (basic, advanced, custom)
-    local ruleset_choice=""
+    local ruleset_choice="basic"
     if [[ "$SKIP_WHIPTAIL" != "1" ]] && command -v whiptail >/dev/null 2>&1; then
         ruleset_choice=$(whiptail --title "YARA Ruleset Selection" --checklist "Select YARA rulesets to download and enable:\n\n- Full GitHub repo: Most comprehensive, covers many threats\n- Basic: Eicar, Ransomware, Backdoor\n- ThreatFox: Community IOC rules\n- MalwareBazaar: Recent malware samples\n- APT: Targeted attack rules\n- Custom: Enter your own .yar or .zip URL\n\nYou can select multiple options." 20 100 8 \
             "github" "Full YARA-Rules GitHub repo (comprehensive)" ON \
@@ -181,11 +166,11 @@ yara_module() {
             "custom" "Specify custom rules URL" OFF 3>&1 1>&2 2>&3)
         ruleset_choice=$(echo "$ruleset_choice" | tr -d '"')
         if [[ -z "$ruleset_choice" ]]; then
-            HARDN_STATUS "info" "No YARA ruleset selected. Skipping rules download."
+            HARDN_STATUS "info" "No YARA ruleset selected. Using default basic rules."
+            ruleset_choice="basic"
         fi
     else
         # Default for non-interactive mode - just basic rules
-        ruleset_choice="basic"
         HARDN_STATUS "info" "Running in non-interactive mode, downloading basic rules only"
     fi
 
@@ -255,5 +240,6 @@ yara_module() {
 }
 # Execute the module function when sourced from hardn-main.sh
 yara_module
-# Safe return
-return 0 2>/dev/null || exit 0
+
+
+return 0 2>/dev/null || hardn_module_exit 0

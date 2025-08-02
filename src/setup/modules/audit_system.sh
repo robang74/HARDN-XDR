@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# shellcheck disable=SC1091
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 # Remove set -e to handle errors gracefully in CI environment
 
@@ -79,7 +80,7 @@ pam_login="/etc/pam.d/login"
 if [ -f "$pam_login" ] && ! grep -q "pam_limits.so" "$pam_login"; then
     echo "session required pam_limits.so" >> "$pam_login"
 fi
-if ! grep -q '* hard core 0' /etc/security/limits.conf 2>/dev/null; then
+if ! grep -q '^\* hard core 0' /etc/security/limits.conf 2>/dev/null; then
     echo '* hard core 0' >> /etc/security/limits.conf
 fi
 
@@ -167,5 +168,5 @@ echo "  - Verbose mode                                              [ $VERBOSE_M
 echo "  - Debug mode                                                [ $DEBUG_MODE ]"
 echo
 
-# Safe return or exit
-return 0 2>/dev/null || exit 0
+# shellcheck disable=SC2317
+return 0 2>/dev/null || hardn_module_exit 0

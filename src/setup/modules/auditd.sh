@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# shellcheck disable=SC1091
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 # Remove set -e to handle errors gracefully in CI environment
 
@@ -409,6 +410,6 @@ elif service auditd restart 2>/dev/null; then
 else
     HARDN_STATUS "warning" "Could not load audit rules - auditd may not be running in CI environment"
 fi
-# Safe return or exit
-return 0 2>/dev/null || exit 0
 
+# shellcheck disable=SC2317
+return 0 2>/dev/null || hardn_module_exit 0

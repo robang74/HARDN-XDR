@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC1091
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 # Remove set -e to handle errors gracefully in CI environment
 
@@ -46,18 +47,27 @@ udevadm control --reload-rules && udevadm trigger && HARDN_STATUS "pass" "Udev r
 
 # Try unloading storage
 if lsmod | grep -q usb_storage; then
-  rmmod usb_storage && HARDN_STATUS "pass" "usb-storage module unloaded." || HARDN_STATUS "warning" "Failed to unload usb-storage."
+  if rmmod usb_storage; then
+    HARDN_STATUS "pass" "usb-storage module unloaded."
+  else
+    HARDN_STATUS "warning" "Failed to unload usb-storage."
+  fi
 else
   HARDN_STATUS "info" "usb-storage module not currently loaded."
 fi
 
 # Ensure HID is enabled
 if ! lsmod | grep -q usbhid; then
-  modprobe usbhid && HARDN_STATUS "pass" "usbhid module loaded." || HARDN_STATUS "warning" "Could not load usbhid (may be normal in CI environment)!"
+  if modprobe usbhid; then
+    HARDN_STATUS "pass" "usbhid module loaded."
+  else
+    HARDN_STATUS "warning" "Could not load usbhid (may be normal in CI environment)!"
+  fi
 else
   HARDN_STATUS "pass" "usbhid module already active."
 fi
 
 HARDN_STATUS "pass" "USB policy: storage blocked, HID enabled."
-# Safe return
-exit 0
+
+# shellcheck disable=SC2317
+return 0 2>/dev/null || hardn_module_exit 0

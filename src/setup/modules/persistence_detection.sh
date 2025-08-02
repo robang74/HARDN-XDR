@@ -18,15 +18,15 @@ LOG_FILE="/var/log/security/persistence-detection.log"
 
 persistence_detection_setup() {
     log_message "INFO: Setting up $MODULE_NAME"
-    
+
     if ! check_root; then
         log_message "ERROR: This module requires root privileges"
         return 1
     fi
-    
+
     mkdir -p "$CONFIG_DIR"
     mkdir -p "$(dirname "$LOG_FILE")"
-    
+
     # Enhanced kernel module monitoring
     if command -v auditctl >/dev/null 2>&1; then
         auditctl -w /sbin/insmod -p x -k kernel_modules
@@ -35,7 +35,7 @@ persistence_detection_setup() {
         auditctl -a always,exit -F arch=b64 -S init_module -S delete_module -k kernel_modules
         log_message "INFO: Added auditd rules for kernel module monitoring"
     fi
-    
+
     # Boot process integrity monitoring
     cat > "$CONFIG_DIR/boot-integrity.sh" << 'EOF'
 #!/bin/bash
@@ -55,16 +55,16 @@ done
 EOF
 
     chmod +x "$CONFIG_DIR/boot-integrity.sh"
-    
+
     # Create boot integrity baseline
     "$CONFIG_DIR/boot-integrity.sh"
-    
+
     # Systemd service monitoring
     if command -v systemctl >/dev/null 2>&1; then
         systemctl list-unit-files --type=service --state=enabled > "$CONFIG_DIR/enabled-services-baseline.txt"
         log_message "INFO: Created systemd services baseline"
     fi
-    
+
     log_message "INFO: $MODULE_NAME setup completed"
     return 0
 }
@@ -72,3 +72,7 @@ EOF
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     persistence_detection_setup
 fi
+
+return 0 2>/dev/null || hardn_module_exit 0
+
+return 0 2>/dev/null || hardn_module_exit 0

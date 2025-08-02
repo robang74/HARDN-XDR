@@ -1,6 +1,7 @@
 #!/bin/bash
+# shellcheck disable=SC1091
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
-set -e
+
 
 disable_binfmt_misc() {
     HARDN_STATUS "error" "Checking/Disabling non-native binary format support (binfmt_misc)..."
@@ -42,5 +43,5 @@ disable_binfmt_misc() {
     hardn_infobox "Non-native binary format support (binfmt_misc) checked/disabled." 7 70
 }
 
-#Safe return or exit
-return 0 2>/dev/null || exit 0
+# shellcheck disable=SC2317
+return 0 2>/dev/null || hardn_module_exit 0

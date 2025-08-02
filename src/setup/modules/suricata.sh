@@ -1,17 +1,18 @@
 #!/bin/bash
+# shellcheck source=/usr/lib/hardn-xdr/src/setup/hardn-common.sh
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 # Remove set -euo pipefail to handle errors gracefully in CI environment
 
 suricata_module() {
     HARDN_STATUS "info" "Installing Suricata (basic mode)..."
-    
+
     # Handle CI environment
     if [[ -n "$CI" || -n "$GITHUB_ACTIONS" ]]; then
         HARDN_STATUS "info" "CI environment detected, skipping Suricata installation"
         HARDN_STATUS "pass" "Suricata module completed (skipped in CI environment)"
         return 0
     fi
-    
+
     apt-get update || true
     if ! apt-get install -y suricata python3-suricata-update; then
         HARDN_STATUS "warning" "Failed to install Suricata packages, skipping configuration"
@@ -70,8 +71,9 @@ EOF
     chmod +x /etc/cron.daily/update-suricata-rules
     HARDN_STATUS "pass" "Daily Suricata rule updater installed."
 
-    return 0
+    return 0 2>/dev/null || hardn_module_exit 0
 }
 
-
 suricata_module
+
+return 0 2>/dev/null || hardn_module_exit 0
