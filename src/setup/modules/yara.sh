@@ -85,10 +85,32 @@ download_basic_rules() {
 
     HARDN_STATUS "warning" "Downloading some basic rules directly..."
 
-    # Download some basic YARA rules directly
+    # basic YARA rules directly
     curl -s https://raw.githubusercontent.com/Yara-Rules/rules/master/malware/MALW_Eicar.yar -o /etc/yara/rules/MALW_Eicar.yar 2>/dev/null || true
     curl -s https://raw.githubusercontent.com/Yara-Rules/rules/master/malware/MALW_Ransomware.yar -o /etc/yara/rules/MALW_Ransomware.yar 2>/dev/null || true
     curl -s https://raw.githubusercontent.com/Yara-Rules/rules/master/malware/MALW_Backdoor.yar -o /etc/yara/rules/MALW_Backdoor.yar 2>/dev/null || true
+
+    # Debian specific rules
+    curl -s https://raw.githubusercontent.com/Yara-Rules/rules/master/malware/MALW_LinuxHelios.yar -o /etc/yara/rules/MALW_LinuxHelios.yar 2>/dev/null || true
+    curl -s https://raw.githubusercontent.com/Yara-Rules/rules/master/malware/MALW_Linux_Multiarch.yar -o /etc/yara/rules/MALW_Linux_Multiarch.yar 2>/dev/null || true
+    curl -s https://raw.githubusercontent.com/Yara-Rules/rules/master/malware/MALW_ROOTKIT_Linux.yar -o /etc/yara/rules/MALW_ROOTKIT_Linux.yar 2>/dev/null || true
+    curl -s https://raw.githubusercontent.com/Yara-Rules/rules/master/malware/MALW_Mirai_Okiru_ELF.yar -o /etc/yara/rules/MALW_Mirai_Okiru_ELF.yar 2>/dev/null || true
+    curl -s https://raw.githubusercontent.com/Yara-Rules/rules/master/malware/MALW_Torte_ELF.yar -o /etc/yara/rules/MALW_Torte_ELF.yar 2>/dev/null || true
+    curl -s https://raw.githubusercontent.com/Yara-Rules/rules/master/malware/MALW_Furtim.yar -o /etc/yara/rules/MALW_Furtim.yar 2>/dev/null || true
+    curl -s https://raw.githubusercontent.com/Yara-Rules/rules/master/malware/MALW_LXC_Webshell.yar -o /etc/yara/rules/MALW_LXC_Webshell.yar 2>/dev/null || true
+    curl -s https://raw.githubusercontent.com/Yara-Rules/rules/master/malware/MALW_Linux_Xor_Ddos.yar -o /etc/yara/rules/MALW_Linux_Xor_Ddos.yar 2>/dev/null || true
+
+    # Government/FedRAMP/FIPS
+    curl -s https://raw.githubusercontent.com/Yara-Rules/rules/master/apt/APT_APT29_Grizzly_Steppe.yar -o /etc/yara/rules/APT_APT29_Grizzly_Steppe.yar 2>/dev/null || true
+    curl -s https://raw.githubusercontent.com/Yara-Rules/rules/master/apt/APT_Sofacy.yar -o /etc/yara/rules/APT_Sofacy.yar 2>/dev/null || true
+    curl -s https://raw.githubusercontent.com/Yara-Rules/rules/master/apt/APT_EQUATIONGRP.yar -o /etc/yara/rules/APT_EQUATIONGRP.yar 2>/dev/null || true
+    curl -s https://raw.githubusercontent.com/Yara-Rules/rules/master/apt/APT_FIN7.yar -o /etc/yara/rules/APT_FIN7.yar 2>/dev/null || true
+    curl -s https://raw.githubusercontent.com/Yara-Rules/rules/master/apt/APT_HackingTeam.yar -o /etc/yara/rules/APT_HackingTeam.yar 2>/dev/null || true
+    curl -s https://raw.githubusercontent.com/Yara-Rules/rules/master/malware/MALW_Credential_Stealer.yar -o /etc/yara/rules/MALW_Credential_Stealer.yar 2>/dev/null || true
+    curl -s https://raw.githubusercontent.com/Yara-Rules/rules/master/malware/MALW_Lateral_Movement.yar -o /etc/yara/rules/MALW_Lateral_Movement.yar 2>/dev/null || true
+    curl -s https://raw.githubusercontent.com/Neo23x0/signature-base/master/yara/apt_apt41.yar -o /etc/yara/rules/apt_apt41.yar 2>/dev/null || true
+    curl -s https://raw.githubusercontent.com/Neo23x0/signature-base/master/yara/expl_log4j_cve_2021_44228.yar -o /etc/yara/rules/expl_log4j_cve_2021_44228.yar 2>/dev/null || true
+    curl -s https://raw.githubusercontent.com/Neo23x0/signature-base/master/yara/gen_crypto_signatures.yar -o /etc/yara/rules/gen_crypto_signatures.yar 2>/dev/null || true
 
     if [ "$(ls -A /etc/yara/rules/)" ]; then
         HARDN_STATUS "pass" "Basic YARA rules downloaded successfully."
