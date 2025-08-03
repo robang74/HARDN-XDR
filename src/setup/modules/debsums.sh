@@ -1,6 +1,6 @@
 #!/bin/bash
-# shellcheck disable=SC1091
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
+set -e
 
 export LC_ALL=C
 export LANG=C
@@ -281,6 +281,27 @@ measure_execution_time() {
     HARDN_STATUS "info" "Debsums check completed in: $time_str"
 }
 
+# Function to install GNU Parallel if not already installed
+install_parallel() {
+    if ! command -v parallel >/dev/null 2>&1; then
+        HARDN_STATUS "info" "GNU Parallel not found. Installing..."
+        if command -v apt-get >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y parallel
+        else
+            HARDN_STATUS "error" "No supported package manager found to install GNU Parallel."
+            return 1
+        fi
+    else
+        HARDN_STATUS "info" "GNU Parallel is already installed."
+    fi
+}
+# Install parallel for better performance
+install_parallel
+
+# Create scheduled task (systemd timer or cron)
+create_scheduled_task
+
 # Run initial check with optimizations - handle gracefully in CI
 HARDN_STATUS "info" "Running initial debsums check (this may take some time)..."
 start_time=$(date +%s)
@@ -305,5 +326,4 @@ else
     measure_execution_time "$start_time"
 fi
 
-# shellcheck disable=SC2317
 return 0 2>/dev/null || hardn_module_exit 0
