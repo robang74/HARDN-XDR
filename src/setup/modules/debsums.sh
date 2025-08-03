@@ -302,25 +302,26 @@ install_parallel
 # Create scheduled task (systemd timer or cron)
 create_scheduled_task
 
-# Run initial check with optimizations - handle gracefully in CI
-HARDN_STATUS "info" "Running initial debsums check (this may take some time)..."
-start_time=$(date +%s)
-
-# Skip intensive debsums check in CI environment to prevent timeouts
-if [[ -n "$CI" || -n "$GITHUB_ACTIONS" ]]; then
-    HARDN_STATUS "info" "CI environment detected, skipping intensive debsums verification"
-    HARDN_STATUS "pass" "Debsums configuration completed (verification skipped in CI)"
-else
-    # Choose method based on parallel availability and run the check
-    if command -v parallel >/dev/null 2>&1; then
-        run_parallel_check || HARDN_STATUS "warning" "Some packages failed debsums verification."
-        result=$?
-        report_check_result $result
+# Function to install GNU Parallel if not already installed
+install_parallel() {
+    if ! command -v parallel >/dev/null 2>&1; then
+        HARDN_STATUS "info" "GNU Parallel not found. Installing..."
+        if command -v apt-get >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y parallel
+        else
+            HARDN_STATUS "error" "No supported package manager found to install GNU Parallel."
+            return 1
+        fi
     else
-        run_standard_check || HARDN_STATUS "warning" "Some packages failed debsums verification."
-        result=$?
-        report_check_result $result
+        HARDN_STATUS "info" "GNU Parallel is already installed."
     fi
+}
+# Install parallel for better performance
+install_parallel
+
+# Create scheduled task (systemd timer or cron)
+create_scheduled_task
 
     # Report execution time
     measure_execution_time "$start_time"
