@@ -38,6 +38,27 @@ else
   echo "[postinst] WARNING: Modules directory not found." >> "$LOG_FILE"
 fi
 
+# add audit file and new dashboard files
+if [ -d /usr/lib/hardn-xdr/frontend/dashboard ]; then
+  chmod 755 /usr/lib/hardn-xdr/frontend/dashboard
+  find /usr/lib/hardn-xdr/frontend/dashboard -type f -name "*.html" -exec chmod 644 {} + || true
+  echo "[postinst] Dashboard file permissions set." >> "$LOG_FILE"
+else
+  echo "[postinst] WARNING: Dashboard directory not found." >> "$LOG_FILE"
+  echo "[postinst] Creating dashboard directory." >> "$LOG_FILE"
+  mkdir -p /usr/lib/hardn-xdr/frontend/dashboard
+  chmod 755 /usr/lib/hardn-xdr/frontend/dashboard
+  echo "[postinst] Dashboard directory created." >> "$LOG_FILE"
+fi
+
+# add hardn_audit.sh
+if [ -f /usr/lib/hardn-xdr/hardn_audit.sh ]; then
+  chmod 755 /usr/lib/hardn-xdr/hardn_audit.sh
+  echo "[postinst] Set executable permissions for hardn_audit.sh" >> "$LOG_FILE"
+else
+  echo "[postinst] WARNING: hardn_audit.sh not found." >> "$LOG_FILE"
+fi
+
 # Log dirs
 mkdir -p /var/log/debsums
 mkdir -p /usr/local/var/log/suricata

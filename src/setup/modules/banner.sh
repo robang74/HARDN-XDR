@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# shellcheck disable=SC1091
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 
 
@@ -45,5 +44,4 @@ configure_stig_banner "/etc/motd" "message of the day (/etc/motd)"
 
 HARDN_STATUS "pass" "All HARDN-XDR banners configured successfully."
 
-# shellcheck disable=SC2317
 return 0 2>/dev/null || hardn_module_exit 0

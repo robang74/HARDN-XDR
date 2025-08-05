@@ -3,7 +3,6 @@
 # AIDE Module for HARDN-XDR
 # Installs and configures a basic AIDE setup
 
-# shellcheck disable=SC1091
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 set -e
 
@@ -17,7 +16,7 @@ is_installed() {
     elif command -v rpm >/dev/null 2>&1; then
         rpm -q "$1" >/dev/null 2>&1
     else
-       return 1
+    return 1
     fi
 }
 
@@ -69,5 +68,5 @@ else
     HARDN_STATUS "warning" "Skipping: /etc/aide/aide.conf not found after install"
 fi
 
-# shellcheck disable=SC2317
+
 return 0 2>/dev/null || hardn_module_exit 0

@@ -13,4 +13,3 @@ fi
 HARDN_STATUS "pass" "Shared memory hardening completed"
 
 return 0 2>/dev/null || hardn_module_exit 0
-

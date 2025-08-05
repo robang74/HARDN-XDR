@@ -1,7 +1,5 @@
 #!/bin/bash
-# shellcheck disable=SC1091
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
-# Remove set -e to handle errors gracefully in CI environment
 
 is_installed() {
     if command -v apt >/dev/null 2>&1; then
@@ -28,7 +26,7 @@ if ! is_installed unattended-upgrades; then
     }
 fi
 
-# Ensure we have the OS variables available
+# Ensure we have the OS
 if [[ -z "$ID" ]]; then
     if [[ -f /etc/os-release ]]; then
         # shellcheck disable=SC1091
@@ -87,5 +85,5 @@ EOF
 		;;
 esac
 
-# shellcheck disable=SC2317
+
 return 0 2>/dev/null || hardn_module_exit 0
