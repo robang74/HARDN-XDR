@@ -5,9 +5,14 @@ hardn-xdr \- A Linux Security Hardening Sentinel
 .B hardn-xdr
 [\fI--version\fR | \fI-v\fR]
 [\fI--help\fR | \fI-h\fR]
+.br
+.B hardn_audit.sh
 .SH DESCRIPTION
 \fBHARDN-XDR\fR is a comprehensive security hardening script for Debian-based systems. It applies a wide range of security configurations, installs monitoring tools, and configures the system to be compliant with STIG (Security Technical Implementation Guide) standards.
 The script provides a menu-driven interface to select which security modules to apply, allowing for a customized hardening process.
+.br
+.br
+\fBhardn_audit.sh\fR is the compliance auditing component that performs comprehensive security assessments against multiple standards including DISA STIG, FIPS 140-2, CIS Controls, and Debian Security guidelines. It generates a Matrix-themed cyberpunk dashboard for visual compliance reporting.
 .SH OPTIONS
 .TP
 \fB--version, -v\fR
@@ -20,6 +25,36 @@ Runs in automatic mode without user prompts.
 Runs in CI environment mode (implies --auto).
 \fB--help, -h\fR
 Displays the help message.
+.SH COMPLIANCE AUDIT
+The \fBhardn_audit.sh\fR script performs comprehensive security compliance auditing against multiple standards:
+.TP
+\fBDISA STIG\fR
+Security Technical Implementation Guide compliance checks for government systems.
+.TP
+\fBFIPS 140-2\fR
+Federal Information Processing Standard cryptographic module validation.
+.TP
+\fBCIS Controls\fR
+Center for Internet Security framework implementation verification.
+.TP
+\fBDebian Security\fR
+Debian-specific security configuration and package management checks.
+.PP
+The audit generates a Matrix-themed cyberpunk dashboard accessible at:
+.br
+\fBhttp://localhost:8021/hardn-compliance.html\fR
+.PP
+Dashboard features include:
+.br
+• Real-time compliance metrics and percentages
+.br
+• Visual progress bars and animated charts
+.br
+• Detailed findings categorized by security standard
+.br
+• Hacker green-on-black terminal aesthetic with CRT effects
+.br
+• Auto-starting web server on port 8021
 .SH MODULES
 The default HARDN installation will install all of the following security modules. Alternatively, specific modules can be selected/deselected during installation for a customized set up.
 .TP
@@ -133,6 +168,9 @@ Blocks USB storage devices while allowing keyboards and mice, securing the syste
 .TP
 \fByara.sh\fR
 Installs and runs YARA to scan for malware and suspicious files using pattern-matching rules.
+.TP
+\fBhardn_audit.sh\fR
+Comprehensive compliance auditing script that assesses system security against DISA STIG, FIPS 140-2, CIS Controls, and Debian Security standards. Generates a Matrix-themed cyberpunk dashboard with real-time compliance metrics, visual charts, and detailed findings. Automatically starts a web server on port 8021 for dashboard access.
 .SH FILES
 .TP
 \fI/etc/hardn-xdr/\fR
@@ -140,6 +178,34 @@ The main configuration directory for HARDN-XDR.
 .TP
 \fI/var/log/hardn-xdr.log\fR
 The main log file for the HARDN-XDR script.
+.TP
+\fI./frontend/dashboard/\fR
+Dashboard directory containing the Matrix-themed compliance reports and web assets.
+.TP
+\fI./frontend/dashboard/hardn-compliance.html\fR
+Generated compliance dashboard with cyberpunk styling and real-time metrics.
+.TP
+\fI./frontend/dashboard/compliance.log\fR
+Detailed compliance audit log file with findings and recommendations.
+.TP
+\fI./frontend/server.sh\fR
+Auto-generated web server script for serving the compliance dashboard on port 8021.
+.SH EXAMPLES
+Run the main hardening script:
+.br
+\fBsudo hardn-xdr\fR
+.PP
+Perform compliance audit and generate dashboard:
+.br
+\fBsudo ./hardn_audit.sh\fR
+.PP
+Access the compliance dashboard:
+.br
+Open web browser to \fBhttp://localhost:8021/hardn-compliance.html\fR
+.PP
+Stop the dashboard server:
+.br
+\fBpkill -f 'python.*8021'\fR
 .SH BUGS
 Please report any bugs to the developers.
 .SH AUTHORS

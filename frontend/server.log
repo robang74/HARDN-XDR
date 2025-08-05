@@ -17,3 +17,5 @@ Press Ctrl+C to stop the server
 127.0.0.1 - - [05/Aug/2025 01:47:33] "GET /sig_logo.png HTTP/1.1" 200 -
 127.0.0.1 - - [05/Aug/2025 01:49:06] "GET /hardn-compliance.html HTTP/1.1" 200 -
 127.0.0.1 - - [05/Aug/2025 01:49:06] "GET /sig_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2025 01:55:58] "GET /hardn-compliance.html HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2025 01:55:58] "GET /sig_logo.png HTTP/1.1" 304 -
