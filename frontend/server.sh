@@ -10,7 +10,7 @@ TIMESTAMP="2025-08-05 01:42:35"
 SCAN_USER="root@debian"
 SYSTEM_INFO="Linux 6.1.0-37-amd64"
 
-echo "🌐 Starting HARDN-XDR Dashboard Server"
+echo "🌐 Starting HARDN-XDR Dashboard"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "Serving from: $REPORT_DIR"
 echo "URL: http://localhost:$PORT"
