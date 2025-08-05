@@ -108,12 +108,12 @@ man hardn-xdr
 HARDN-XDR includes a cyberpunk-styled compliance dashboard that provides real-time security metrics and visual reporting.
 
 ### Dashboard Features
-- **🟢 Matrix Theme**: Hacker green-on-black terminal aesthetic with CRT flicker effects
-- **📊 Real-Time Metrics**: Live compliance percentages and security status
-- **🔒 Multi-Standard Support**: DISA STIG, FIPS 140-2, CIS Controls, and Debian Security
-- **📈 Visual Charts**: Animated progress bars and compliance meters
-- **⚡ Auto-Server**: Automatically starts web server after audit completion
-- **🎯 Interactive Elements**: Hover effects and glowing animations
+- **Matrix Theme**: Hacker green-on-black terminal aesthetic with CRT flicker effects
+- **Real-Time Metrics**: Live compliance percentages and security status
+- **Multi-Standard Support**: DISA STIG, FIPS 140-2, CIS Controls, and Debian Security
+- **Visual Charts**: Animated progress bars and compliance meters
+- **Auto-Server**: Automatically starts web server after audit completion
+- **Interactive Elements**: Hover effects and glowing animations
 
 ### Accessing the Dashboard
 
