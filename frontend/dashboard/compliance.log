@@ -1,0 +1,457 @@
+2025-08-04 23:57:17 [WARN] [OSCAP-001] OpenSCAP not installed: Install with: sudo apt-get install libopenscap8
+2025-08-04 23:57:17 [FAIL] [STIG-010210] Password minimum length insufficient: Current: 'not set', Required: ≥14
+2025-08-04 23:57:17 [FAIL] [STIG-010320] Account lockout policy missing: Configure pam_faillock
+2025-08-04 23:57:17 [PASS] [STIG-020240] File permissions (/etc/passwd): Permissions: 644
+2025-08-04 23:57:17 [PASS] [STIG-020240] File permissions (/etc/shadow): Permissions: 640
+2025-08-04 23:57:17 [PASS] [STIG-020240] File permissions (/etc/group): Permissions: 644
+2025-08-04 23:57:17 [PASS] [STIG-020240] File permissions (/etc/gshadow): Permissions: 640
+2025-08-04 23:57:17 [PASS] [STIG-040370] SSH Protocol 1 disabled: 
+2025-08-04 23:57:17 [FAIL] [STIG-040380] SSH empty passwords not explicitly disabled: 
+2025-08-04 23:57:17 [WARN] [STIG-040390] SSH root login not explicitly disabled: 
+2025-08-04 23:57:17 [PASS] [STIG-021300] Core dumps disabled: 
+2025-08-04 23:57:17 [PASS] [STIG-021310] Address Space Layout Randomization enabled: 
+2025-08-04 23:57:17 [FAIL] [FIPS-001] FIPS 140-2 mode not enabled: Enable with fips-mode-setup
+2025-08-04 23:57:17 [FAIL] [FIPS-002] OpenSSL FIPS module not available: 
+2025-08-04 23:57:17 [PASS] [FIPS-ALG-sha256] FIPS algorithm sha256 available: 
+2025-08-04 23:57:17 [PASS] [FIPS-ALG-sha384] FIPS algorithm sha384 available: 
+2025-08-04 23:57:17 [PASS] [FIPS-ALG-sha512] FIPS algorithm sha512 available: 
+2025-08-04 23:57:17 [FAIL] [FIPS-ALG-aes-256-gcm] FIPS algorithm aes-256-gcm not available: 
+2025-08-04 23:57:17 [FAIL] [FIPS-WEAK-md5] Weak algorithm md5 still available: 
+2025-08-04 23:57:17 [FAIL] [FIPS-WEAK-sha1] Weak algorithm sha1 still available: 
+2025-08-04 23:57:17 [PASS] [FIPS-WEAK-des] Weak algorithm des not available: 
+2025-08-04 23:57:17 [PASS] [FIPS-WEAK-3des] Weak algorithm 3des not available: 
+2025-08-04 23:57:17 [PASS] [FIPS-WEAK-rc4] Weak algorithm rc4 not available: 
+2025-08-04 23:57:17 [FAIL] [CIS-001.1] Hardware inventory tools missing: Install lshw or dmidecode
+2025-08-04 23:57:17 [PASS] [CIS-002.1] Package management system available: 
+2025-08-04 23:57:17 [PASS] [CIS-002.2] Package integrity verification available: 
+2025-08-04 23:57:17 [WARN] [CIS-003.1] No vulnerability scanner detected: Install lynis or chkrootkit
+2025-08-04 23:57:17 [PASS] [CIS-004.1] Sudo configuration present: 
+2025-08-04 23:57:17 [PASS] [CIS-004.2] No password-less sudo entries: 
+2025-08-04 23:57:17 [PASS] [CIS-005.1] IP forwarding disabled: 
+2025-08-04 23:57:17 [PASS] [CIS-005.2] ICMP redirects disabled: 
+2025-08-04 23:57:17 [INFO] [DEBIAN-001] Debian version detected: 12.11
+2025-08-04 23:57:17 [PASS] [DEBIAN-002] Supported Debian version: 
+2025-08-04 23:57:17 [PASS] [DEBIAN-101] Security repositories configured: 
+2025-08-04 23:57:17 [WARN] [DEBIAN-102] Automatic security updates not configured: Install unattended-upgrades
+2025-08-04 23:57:17 [WARN] [DEBIAN-201] AppArmor not installed: Install apparmor package
+2025-08-04 23:57:17 [WARN] [DEBIAN-301] UFW not installed: Install with: apt-get install ufw
+2025-08-04 23:57:17 [PASS] [DEBIAN-302] Fail2ban intrusion prevention active: 
+2025-08-04 23:57:17 [INFO] [OSCAP-SCAN] OpenSCAP scan skipped: OpenSCAP or SCAP content not available
+2025-08-04 23:57:17 [PASS] [REPORT-001] Enhanced visual compliance report generated: ./frontend/dashboard/hardn-compliance.html
+2025-08-05 00:15:04 [WARN] [OSCAP-001] OpenSCAP not installed: Install with: sudo apt-get install libopenscap8
+2025-08-05 00:15:04 [FAIL] [STIG-010210] Password minimum length insufficient: Current: 'not set', Required: ≥14
+2025-08-05 00:15:04 [FAIL] [STIG-010320] Account lockout policy missing: Configure pam_faillock
+2025-08-05 00:15:04 [PASS] [STIG-020240] File permissions (/etc/passwd): Permissions: 644
+2025-08-05 00:15:04 [PASS] [STIG-020240] File permissions (/etc/shadow): Permissions: 640
+2025-08-05 00:15:04 [PASS] [STIG-020240] File permissions (/etc/group): Permissions: 644
+2025-08-05 00:15:04 [PASS] [STIG-020240] File permissions (/etc/gshadow): Permissions: 640
+2025-08-05 00:15:04 [PASS] [STIG-040370] SSH Protocol 1 disabled: 
+2025-08-05 00:15:04 [FAIL] [STIG-040380] SSH empty passwords not explicitly disabled: 
+2025-08-05 00:15:04 [WARN] [STIG-040390] SSH root login not explicitly disabled: 
+2025-08-05 00:15:04 [PASS] [STIG-021300] Core dumps disabled: 
+2025-08-05 00:15:04 [PASS] [STIG-021310] Address Space Layout Randomization enabled: 
+2025-08-05 00:15:04 [FAIL] [FIPS-001] FIPS 140-2 mode not enabled: Enable with fips-mode-setup
+2025-08-05 00:15:04 [FAIL] [FIPS-002] OpenSSL FIPS module not available: 
+2025-08-05 00:15:04 [PASS] [FIPS-ALG-sha256] FIPS algorithm sha256 available: 
+2025-08-05 00:15:04 [PASS] [FIPS-ALG-sha384] FIPS algorithm sha384 available: 
+2025-08-05 00:15:04 [PASS] [FIPS-ALG-sha512] FIPS algorithm sha512 available: 
+2025-08-05 00:15:04 [FAIL] [FIPS-ALG-aes-256-gcm] FIPS algorithm aes-256-gcm not available: 
+2025-08-05 00:15:04 [FAIL] [FIPS-WEAK-md5] Weak algorithm md5 still available: 
+2025-08-05 00:15:04 [FAIL] [FIPS-WEAK-sha1] Weak algorithm sha1 still available: 
+2025-08-05 00:15:04 [PASS] [FIPS-WEAK-des] Weak algorithm des not available: 
+2025-08-05 00:15:04 [PASS] [FIPS-WEAK-3des] Weak algorithm 3des not available: 
+2025-08-05 00:15:04 [PASS] [FIPS-WEAK-rc4] Weak algorithm rc4 not available: 
+2025-08-05 00:15:04 [FAIL] [CIS-001.1] Hardware inventory tools missing: Install lshw or dmidecode
+2025-08-05 00:15:04 [PASS] [CIS-002.1] Package management system available: 
+2025-08-05 00:15:04 [PASS] [CIS-002.2] Package integrity verification available: 
+2025-08-05 00:15:04 [WARN] [CIS-003.1] No vulnerability scanner detected: Install lynis or chkrootkit
+2025-08-05 00:15:04 [PASS] [CIS-004.1] Sudo configuration present: 
+2025-08-05 00:15:04 [PASS] [CIS-004.2] No password-less sudo entries: 
+2025-08-05 00:15:04 [PASS] [CIS-005.1] IP forwarding disabled: 
+2025-08-05 00:15:04 [PASS] [CIS-005.2] ICMP redirects disabled: 
+2025-08-05 00:15:04 [INFO] [DEBIAN-001] Debian version detected: 12.11
+2025-08-05 00:15:04 [PASS] [DEBIAN-002] Supported Debian version: 
+2025-08-05 00:15:04 [PASS] [DEBIAN-101] Security repositories configured: 
+2025-08-05 00:15:04 [WARN] [DEBIAN-102] Automatic security updates not configured: Install unattended-upgrades
+2025-08-05 00:15:04 [WARN] [DEBIAN-201] AppArmor not installed: Install apparmor package
+2025-08-05 00:15:04 [WARN] [DEBIAN-301] UFW not installed: Install with: apt-get install ufw
+2025-08-05 00:15:04 [PASS] [DEBIAN-302] Fail2ban intrusion prevention active: 
+2025-08-05 00:15:04 [INFO] [OSCAP-SCAN] OpenSCAP scan skipped: OpenSCAP or SCAP content not available
+2025-08-05 00:15:04 [PASS] [REPORT-001] Enhanced visual compliance report generated: ./frontend/dashboard/hardn-compliance.html
+2025-08-05 00:26:38 [WARN] [OSCAP-001] OpenSCAP not installed: Install with: sudo apt-get install libopenscap8
+2025-08-05 00:26:38 [FAIL] [STIG-010210] Password minimum length insufficient: Current: 'not set', Required: ≥14
+2025-08-05 00:26:38 [FAIL] [STIG-010320] Account lockout policy missing: Configure pam_faillock
+2025-08-05 00:26:38 [PASS] [STIG-020240] File permissions (/etc/passwd): Permissions: 644
+2025-08-05 00:26:38 [PASS] [STIG-020240] File permissions (/etc/shadow): Permissions: 640
+2025-08-05 00:26:38 [PASS] [STIG-020240] File permissions (/etc/group): Permissions: 644
+2025-08-05 00:26:38 [PASS] [STIG-020240] File permissions (/etc/gshadow): Permissions: 640
+2025-08-05 00:26:38 [PASS] [STIG-040370] SSH Protocol 1 disabled: 
+2025-08-05 00:26:38 [FAIL] [STIG-040380] SSH empty passwords not explicitly disabled: 
+2025-08-05 00:26:38 [WARN] [STIG-040390] SSH root login not explicitly disabled: 
+2025-08-05 00:26:38 [PASS] [STIG-021300] Core dumps disabled: 
+2025-08-05 00:26:38 [PASS] [STIG-021310] Address Space Layout Randomization enabled: 
+2025-08-05 00:26:38 [FAIL] [FIPS-001] FIPS 140-2 mode not enabled: Enable with fips-mode-setup
+2025-08-05 00:26:38 [FAIL] [FIPS-002] OpenSSL FIPS module not available: 
+2025-08-05 00:26:38 [PASS] [FIPS-ALG-sha256] FIPS algorithm sha256 available: 
+2025-08-05 00:26:38 [PASS] [FIPS-ALG-sha384] FIPS algorithm sha384 available: 
+2025-08-05 00:26:38 [PASS] [FIPS-ALG-sha512] FIPS algorithm sha512 available: 
+2025-08-05 00:26:38 [FAIL] [FIPS-ALG-aes-256-gcm] FIPS algorithm aes-256-gcm not available: 
+2025-08-05 00:26:38 [FAIL] [FIPS-WEAK-md5] Weak algorithm md5 still available: 
+2025-08-05 00:26:39 [FAIL] [FIPS-WEAK-sha1] Weak algorithm sha1 still available: 
+2025-08-05 00:26:39 [PASS] [FIPS-WEAK-des] Weak algorithm des not available: 
+2025-08-05 00:26:39 [PASS] [FIPS-WEAK-3des] Weak algorithm 3des not available: 
+2025-08-05 00:26:39 [PASS] [FIPS-WEAK-rc4] Weak algorithm rc4 not available: 
+2025-08-05 00:26:39 [FAIL] [CIS-001.1] Hardware inventory tools missing: Install lshw or dmidecode
+2025-08-05 00:26:39 [PASS] [CIS-002.1] Package management system available: 
+2025-08-05 00:26:39 [PASS] [CIS-002.2] Package integrity verification available: 
+2025-08-05 00:26:39 [WARN] [CIS-003.1] No vulnerability scanner detected: Install lynis or chkrootkit
+2025-08-05 00:26:39 [PASS] [CIS-004.1] Sudo configuration present: 
+2025-08-05 00:26:39 [PASS] [CIS-004.2] No password-less sudo entries: 
+2025-08-05 00:26:39 [PASS] [CIS-005.1] IP forwarding disabled: 
+2025-08-05 00:26:39 [PASS] [CIS-005.2] ICMP redirects disabled: 
+2025-08-05 00:26:39 [INFO] [DEBIAN-001] Debian version detected: 12.11
+2025-08-05 00:26:39 [PASS] [DEBIAN-002] Supported Debian version: 
+2025-08-05 00:26:39 [PASS] [DEBIAN-101] Security repositories configured: 
+2025-08-05 00:26:39 [WARN] [DEBIAN-102] Automatic security updates not configured: Install unattended-upgrades
+2025-08-05 00:26:39 [WARN] [DEBIAN-201] AppArmor not installed: Install apparmor package
+2025-08-05 00:26:39 [WARN] [DEBIAN-301] UFW not installed: Install with: apt-get install ufw
+2025-08-05 00:26:39 [PASS] [DEBIAN-302] Fail2ban intrusion prevention active: 
+2025-08-05 00:26:39 [INFO] [OSCAP-SCAN] OpenSCAP scan skipped: OpenSCAP or SCAP content not available
+2025-08-05 00:26:39 [PASS] [REPORT-001] Enhanced visual compliance report generated: ./frontend/dashboard/hardn-compliance.html
+2025-08-05 00:26:39 [PASS] [SERVER-001] Server script updated: ./frontend/server.sh
+2025-08-05 00:37:00 [WARN] [OSCAP-001] OpenSCAP not installed: Install with: sudo apt-get install libopenscap8
+2025-08-05 00:37:00 [FAIL] [STIG-010210] Password minimum length insufficient: Current: 'not set', Required: ≥14
+2025-08-05 00:37:00 [FAIL] [STIG-010320] Account lockout policy missing: Configure pam_faillock
+2025-08-05 00:37:00 [PASS] [STIG-020240] File permissions (/etc/passwd): Permissions: 644
+2025-08-05 00:37:00 [PASS] [STIG-020240] File permissions (/etc/shadow): Permissions: 640
+2025-08-05 00:37:00 [PASS] [STIG-020240] File permissions (/etc/group): Permissions: 644
+2025-08-05 00:37:00 [PASS] [STIG-020240] File permissions (/etc/gshadow): Permissions: 640
+2025-08-05 00:37:00 [PASS] [STIG-040370] SSH Protocol 1 disabled: 
+2025-08-05 00:37:00 [FAIL] [STIG-040380] SSH empty passwords not explicitly disabled: 
+2025-08-05 00:37:00 [WARN] [STIG-040390] SSH root login not explicitly disabled: 
+2025-08-05 00:37:00 [PASS] [STIG-021300] Core dumps disabled: 
+2025-08-05 00:37:00 [PASS] [STIG-021310] Address Space Layout Randomization enabled: 
+2025-08-05 00:37:00 [FAIL] [FIPS-001] FIPS 140-2 mode not enabled: Enable with fips-mode-setup
+2025-08-05 00:37:00 [FAIL] [FIPS-002] OpenSSL FIPS module not available: 
+2025-08-05 00:37:00 [PASS] [FIPS-ALG-sha256] FIPS algorithm sha256 available: 
+2025-08-05 00:37:00 [PASS] [FIPS-ALG-sha384] FIPS algorithm sha384 available: 
+2025-08-05 00:37:00 [PASS] [FIPS-ALG-sha512] FIPS algorithm sha512 available: 
+2025-08-05 00:37:00 [FAIL] [FIPS-ALG-aes-256-gcm] FIPS algorithm aes-256-gcm not available: 
+2025-08-05 00:37:00 [FAIL] [FIPS-WEAK-md5] Weak algorithm md5 still available: 
+2025-08-05 00:37:00 [FAIL] [FIPS-WEAK-sha1] Weak algorithm sha1 still available: 
+2025-08-05 00:37:01 [PASS] [FIPS-WEAK-des] Weak algorithm des not available: 
+2025-08-05 00:37:01 [PASS] [FIPS-WEAK-3des] Weak algorithm 3des not available: 
+2025-08-05 00:37:01 [PASS] [FIPS-WEAK-rc4] Weak algorithm rc4 not available: 
+2025-08-05 00:37:01 [FAIL] [CIS-001.1] Hardware inventory tools missing: Install lshw or dmidecode
+2025-08-05 00:37:01 [PASS] [CIS-002.1] Package management system available: 
+2025-08-05 00:37:01 [PASS] [CIS-002.2] Package integrity verification available: 
+2025-08-05 00:37:01 [WARN] [CIS-003.1] No vulnerability scanner detected: Install lynis or chkrootkit
+2025-08-05 00:37:01 [PASS] [CIS-004.1] Sudo configuration present: 
+2025-08-05 00:37:01 [PASS] [CIS-004.2] No password-less sudo entries: 
+2025-08-05 00:37:01 [PASS] [CIS-005.1] IP forwarding disabled: 
+2025-08-05 00:37:01 [PASS] [CIS-005.2] ICMP redirects disabled: 
+2025-08-05 00:37:01 [INFO] [DEBIAN-001] Debian version detected: 12.11
+2025-08-05 00:37:01 [PASS] [DEBIAN-002] Supported Debian version: 
+2025-08-05 00:37:01 [PASS] [DEBIAN-101] Security repositories configured: 
+2025-08-05 00:37:01 [WARN] [DEBIAN-102] Automatic security updates not configured: Install unattended-upgrades
+2025-08-05 00:37:01 [PASS] [DEBIAN-201] AppArmor active: 
+2025-08-05 00:37:01 [WARN] [DEBIAN-202] No AppArmor profiles loaded: 
+2025-08-05 00:37:01 [WARN] [DEBIAN-301] UFW firewall not active: Enable with: sudo ufw enable
+2025-08-05 00:37:01 [PASS] [DEBIAN-302] Fail2ban intrusion prevention active: 
+2025-08-05 00:37:01 [INFO] [OSCAP-SCAN] OpenSCAP scan skipped: OpenSCAP or SCAP content not available
+2025-08-05 00:37:01 [PASS] [REPORT-001] Enhanced visual compliance report generated: ./frontend/dashboard/hardn-compliance.html
+2025-08-05 00:37:01 [PASS] [SERVER-001] Server script updated: ./frontend/server.sh
+2025-08-05 00:41:07 [WARN] [OSCAP-001] OpenSCAP not installed: Install with: sudo apt-get install libopenscap8
+2025-08-05 00:41:07 [FAIL] [STIG-010210] Password minimum length insufficient: Current: 'not set', Required: ≥14
+2025-08-05 00:41:07 [FAIL] [STIG-010320] Account lockout policy missing: Configure pam_faillock
+2025-08-05 00:41:07 [PASS] [STIG-020240] File permissions (/etc/passwd): Permissions: 644
+2025-08-05 00:41:07 [PASS] [STIG-020240] File permissions (/etc/shadow): Permissions: 640
+2025-08-05 00:41:07 [PASS] [STIG-020240] File permissions (/etc/group): Permissions: 644
+2025-08-05 00:41:07 [PASS] [STIG-020240] File permissions (/etc/gshadow): Permissions: 640
+2025-08-05 00:41:07 [PASS] [STIG-040370] SSH Protocol 1 disabled: 
+2025-08-05 00:41:07 [FAIL] [STIG-040380] SSH empty passwords not explicitly disabled: 
+2025-08-05 00:41:07 [WARN] [STIG-040390] SSH root login not explicitly disabled: 
+2025-08-05 00:41:07 [PASS] [STIG-021300] Core dumps disabled: 
+2025-08-05 00:41:07 [PASS] [STIG-021310] Address Space Layout Randomization enabled: 
+2025-08-05 00:41:07 [FAIL] [FIPS-001] FIPS 140-2 mode not enabled: Enable with fips-mode-setup
+2025-08-05 00:41:07 [FAIL] [FIPS-002] OpenSSL FIPS module not available: 
+2025-08-05 00:41:07 [PASS] [FIPS-ALG-sha256] FIPS algorithm sha256 available: 
+2025-08-05 00:41:07 [PASS] [FIPS-ALG-sha384] FIPS algorithm sha384 available: 
+2025-08-05 00:41:07 [PASS] [FIPS-ALG-sha512] FIPS algorithm sha512 available: 
+2025-08-05 00:41:07 [FAIL] [FIPS-ALG-aes-256-gcm] FIPS algorithm aes-256-gcm not available: 
+2025-08-05 00:41:07 [FAIL] [FIPS-WEAK-md5] Weak algorithm md5 still available: 
+2025-08-05 00:41:07 [FAIL] [FIPS-WEAK-sha1] Weak algorithm sha1 still available: 
+2025-08-05 00:41:07 [PASS] [FIPS-WEAK-des] Weak algorithm des not available: 
+2025-08-05 00:41:07 [PASS] [FIPS-WEAK-3des] Weak algorithm 3des not available: 
+2025-08-05 00:41:07 [PASS] [FIPS-WEAK-rc4] Weak algorithm rc4 not available: 
+2025-08-05 00:41:07 [PASS] [CIS-001.1] Hardware inventory tools available: 
+2025-08-05 00:41:07 [PASS] [CIS-002.1] Package management system available: 
+2025-08-05 00:41:07 [PASS] [CIS-002.2] Package integrity verification available: 
+2025-08-05 00:41:07 [PASS] [CIS-003.1] Vulnerability scanner available (Lynis): 
+2025-08-05 00:41:07 [PASS] [CIS-004.1] Sudo configuration present: 
+2025-08-05 00:41:07 [PASS] [CIS-004.2] No password-less sudo entries: 
+2025-08-05 00:41:07 [PASS] [CIS-005.1] IP forwarding disabled: 
+2025-08-05 00:41:07 [PASS] [CIS-005.2] ICMP redirects disabled: 
+2025-08-05 00:41:07 [INFO] [DEBIAN-001] Debian version detected: 12.11
+2025-08-05 00:41:07 [PASS] [DEBIAN-002] Supported Debian version: 
+2025-08-05 00:41:07 [PASS] [DEBIAN-101] Security repositories configured: 
+2025-08-05 00:41:07 [WARN] [DEBIAN-102] Automatic security updates not configured: Install unattended-upgrades
+2025-08-05 00:41:07 [PASS] [DEBIAN-201] AppArmor active: 
+2025-08-05 00:41:07 [PASS] [DEBIAN-202] AppArmor profiles loaded: 24 profiles
+2025-08-05 00:41:07 [PASS] [DEBIAN-301] UFW firewall active: 
+2025-08-05 00:41:07 [PASS] [DEBIAN-302] Fail2ban intrusion prevention active: 
+2025-08-05 00:41:07 [INFO] [OSCAP-SCAN] OpenSCAP scan skipped: OpenSCAP or SCAP content not available
+2025-08-05 00:41:07 [PASS] [REPORT-001] Enhanced visual compliance report generated: ./frontend/dashboard/hardn-compliance.html
+2025-08-05 00:41:07 [PASS] [SERVER-001] Server script updated: ./frontend/server.sh
+2025-08-05 00:50:28 [WARN] [OSCAP-001] OpenSCAP not installed: Install with: sudo apt-get install libopenscap8
+2025-08-05 00:50:28 [FAIL] [STIG-010210] Password minimum length insufficient: Current: 'not set', Required: ≥14
+2025-08-05 00:50:28 [FAIL] [STIG-010320] Account lockout policy missing: Configure pam_faillock
+2025-08-05 00:50:28 [PASS] [STIG-020240] File permissions (/etc/passwd): Permissions: 644
+2025-08-05 00:50:28 [PASS] [STIG-020240] File permissions (/etc/shadow): Permissions: 640
+2025-08-05 00:50:28 [PASS] [STIG-020240] File permissions (/etc/group): Permissions: 644
+2025-08-05 00:50:28 [PASS] [STIG-020240] File permissions (/etc/gshadow): Permissions: 640
+2025-08-05 00:50:28 [PASS] [STIG-040370] SSH Protocol 1 disabled: 
+2025-08-05 00:50:28 [FAIL] [STIG-040380] SSH empty passwords not explicitly disabled: 
+2025-08-05 00:50:28 [WARN] [STIG-040390] SSH root login not explicitly disabled: 
+2025-08-05 00:50:28 [PASS] [STIG-021300] Core dumps disabled: 
+2025-08-05 00:50:28 [PASS] [STIG-021310] Address Space Layout Randomization enabled: 
+2025-08-05 00:50:28 [FAIL] [FIPS-001] FIPS 140-2 mode not enabled: Enable with fips-mode-setup
+2025-08-05 00:50:28 [FAIL] [FIPS-002] OpenSSL FIPS module not available: 
+2025-08-05 00:50:28 [PASS] [FIPS-ALG-sha256] FIPS algorithm sha256 available: 
+2025-08-05 00:50:28 [PASS] [FIPS-ALG-sha384] FIPS algorithm sha384 available: 
+2025-08-05 00:50:28 [PASS] [FIPS-ALG-sha512] FIPS algorithm sha512 available: 
+2025-08-05 00:50:28 [FAIL] [FIPS-ALG-aes-256-gcm] FIPS algorithm aes-256-gcm not available: 
+2025-08-05 00:50:28 [FAIL] [FIPS-WEAK-md5] Weak algorithm md5 still available: 
+2025-08-05 00:50:28 [FAIL] [FIPS-WEAK-sha1] Weak algorithm sha1 still available: 
+2025-08-05 00:50:28 [PASS] [FIPS-WEAK-des] Weak algorithm des not available: 
+2025-08-05 00:50:28 [PASS] [FIPS-WEAK-3des] Weak algorithm 3des not available: 
+2025-08-05 00:50:28 [PASS] [FIPS-WEAK-rc4] Weak algorithm rc4 not available: 
+2025-08-05 00:50:28 [PASS] [CIS-001.1] Hardware inventory tools available: 
+2025-08-05 00:50:28 [PASS] [CIS-002.1] Package management system available: 
+2025-08-05 00:50:28 [PASS] [CIS-002.2] Package integrity verification available: 
+2025-08-05 00:50:28 [PASS] [CIS-003.1] Vulnerability scanner available (Lynis): 
+2025-08-05 00:50:28 [PASS] [CIS-004.1] Sudo configuration present: 
+2025-08-05 00:50:28 [PASS] [CIS-004.2] No password-less sudo entries: 
+2025-08-05 00:50:28 [PASS] [CIS-005.1] IP forwarding disabled: 
+2025-08-05 00:50:28 [PASS] [CIS-005.2] ICMP redirects disabled: 
+2025-08-05 00:50:28 [INFO] [DEBIAN-001] Debian version detected: 12.11
+2025-08-05 00:50:28 [PASS] [DEBIAN-002] Supported Debian version: 
+2025-08-05 00:50:28 [PASS] [DEBIAN-101] Security repositories configured: 
+2025-08-05 00:50:28 [WARN] [DEBIAN-102] Automatic security updates not configured: Install unattended-upgrades
+2025-08-05 00:50:28 [PASS] [DEBIAN-201] AppArmor active: 
+2025-08-05 00:50:28 [PASS] [DEBIAN-202] AppArmor profiles loaded: 24 profiles
+2025-08-05 00:50:28 [PASS] [DEBIAN-301] UFW firewall active: 
+2025-08-05 00:50:28 [PASS] [DEBIAN-302] Fail2ban intrusion prevention active: 
+2025-08-05 00:50:28 [INFO] [OSCAP-SCAN] OpenSCAP scan skipped: OpenSCAP or SCAP content not available
+2025-08-05 00:50:28 [PASS] [REPORT-001] Enhanced visual compliance report generated: ./frontend/dashboard/hardn-compliance.html
+2025-08-05 00:50:28 [PASS] [SERVER-001] Server script updated: ./frontend/server.sh
+2025-08-05 01:06:03 [WARN] [OSCAP-001] OpenSCAP not installed: Install with: sudo apt-get install libopenscap8
+2025-08-05 01:06:03 [FAIL] [STIG-010210] Password minimum length insufficient: Current: 'not set', Required: ≥14
+2025-08-05 01:06:03 [FAIL] [STIG-010320] Account lockout policy missing: Configure pam_faillock
+2025-08-05 01:06:04 [PASS] [STIG-020240] File permissions (/etc/passwd): Permissions: 644
+2025-08-05 01:06:04 [PASS] [STIG-020240] File permissions (/etc/shadow): Permissions: 640
+2025-08-05 01:06:04 [PASS] [STIG-020240] File permissions (/etc/group): Permissions: 644
+2025-08-05 01:06:04 [PASS] [STIG-020240] File permissions (/etc/gshadow): Permissions: 640
+2025-08-05 01:06:04 [PASS] [STIG-040370] SSH Protocol 1 disabled: 
+2025-08-05 01:06:04 [FAIL] [STIG-040380] SSH empty passwords not explicitly disabled: 
+2025-08-05 01:06:04 [WARN] [STIG-040390] SSH root login not explicitly disabled: 
+2025-08-05 01:06:04 [PASS] [STIG-021300] Core dumps disabled: 
+2025-08-05 01:06:04 [PASS] [STIG-021310] Address Space Layout Randomization enabled: 
+2025-08-05 01:06:04 [FAIL] [FIPS-001] FIPS 140-2 mode not enabled: Enable with fips-mode-setup
+2025-08-05 01:06:04 [FAIL] [FIPS-002] OpenSSL FIPS module not available: 
+2025-08-05 01:06:04 [PASS] [FIPS-ALG-sha256] FIPS algorithm sha256 available: 
+2025-08-05 01:06:04 [PASS] [FIPS-ALG-sha384] FIPS algorithm sha384 available: 
+2025-08-05 01:06:04 [PASS] [FIPS-ALG-sha512] FIPS algorithm sha512 available: 
+2025-08-05 01:06:04 [FAIL] [FIPS-ALG-aes-256-gcm] FIPS algorithm aes-256-gcm not available: 
+2025-08-05 01:06:04 [FAIL] [FIPS-WEAK-md5] Weak algorithm md5 still available: 
+2025-08-05 01:06:04 [FAIL] [FIPS-WEAK-sha1] Weak algorithm sha1 still available: 
+2025-08-05 01:06:04 [PASS] [FIPS-WEAK-des] Weak algorithm des not available: 
+2025-08-05 01:06:04 [PASS] [FIPS-WEAK-3des] Weak algorithm 3des not available: 
+2025-08-05 01:06:04 [PASS] [FIPS-WEAK-rc4] Weak algorithm rc4 not available: 
+2025-08-05 01:06:04 [FAIL] [CIS-001.1] Hardware inventory tools missing: Install lshw or dmidecode
+2025-08-05 01:06:04 [PASS] [CIS-002.1] Package management system available: 
+2025-08-05 01:06:04 [PASS] [CIS-002.2] Package integrity verification available: 
+2025-08-05 01:06:04 [WARN] [CIS-003.1] No vulnerability scanner detected: Install lynis or chkrootkit
+2025-08-05 01:06:04 [PASS] [CIS-004.1] Sudo configuration present: 
+2025-08-05 01:06:04 [PASS] [CIS-004.2] No password-less sudo entries: 
+2025-08-05 01:06:04 [PASS] [CIS-005.1] IP forwarding disabled: 
+2025-08-05 01:06:04 [PASS] [CIS-005.2] ICMP redirects disabled: 
+2025-08-05 01:06:04 [INFO] [DEBIAN-001] Debian version detected: 12.11
+2025-08-05 01:06:04 [PASS] [DEBIAN-002] Supported Debian version: 
+2025-08-05 01:06:04 [PASS] [DEBIAN-101] Security repositories configured: 
+2025-08-05 01:06:04 [WARN] [DEBIAN-102] Automatic security updates not configured: Install unattended-upgrades
+2025-08-05 01:06:04 [PASS] [DEBIAN-201] AppArmor active: 
+2025-08-05 01:06:04 [WARN] [DEBIAN-202] No AppArmor profiles loaded: 
+2025-08-05 01:06:04 [PASS] [DEBIAN-301] UFW firewall service active: 
+2025-08-05 01:06:04 [PASS] [DEBIAN-302] Fail2ban intrusion prevention active: 
+2025-08-05 01:06:04 [INFO] [OSCAP-SCAN] OpenSCAP scan skipped: OpenSCAP or SCAP content not available
+2025-08-05 01:06:04 [PASS] [REPORT-001] Enhanced visual compliance report generated: ./frontend/dashboard/hardn-compliance.html
+2025-08-05 01:06:04 [PASS] [SERVER-001] Server script updated: ./frontend/server.sh
+2025-08-05 01:23:54 [WARN] [OSCAP-001] OpenSCAP not installed: Install with: sudo apt-get install libopenscap8
+2025-08-05 01:23:54 [FAIL] [STIG-010210] Password minimum length insufficient: Current: 'not set', Required: ≥14
+2025-08-05 01:23:54 [FAIL] [STIG-010320] Account lockout policy missing: Configure pam_faillock
+2025-08-05 01:23:54 [PASS] [STIG-020240] File permissions (/etc/passwd): Permissions: 644
+2025-08-05 01:23:54 [PASS] [STIG-020240] File permissions (/etc/shadow): Permissions: 640
+2025-08-05 01:23:54 [PASS] [STIG-020240] File permissions (/etc/group): Permissions: 644
+2025-08-05 01:23:54 [PASS] [STIG-020240] File permissions (/etc/gshadow): Permissions: 640
+2025-08-05 01:23:54 [PASS] [STIG-040370] SSH Protocol 1 disabled: 
+2025-08-05 01:23:54 [FAIL] [STIG-040380] SSH empty passwords not explicitly disabled: 
+2025-08-05 01:23:54 [WARN] [STIG-040390] SSH root login not explicitly disabled: 
+2025-08-05 01:23:54 [PASS] [STIG-021300] Core dumps disabled: 
+2025-08-05 01:23:54 [PASS] [STIG-021310] Address Space Layout Randomization enabled: 
+2025-08-05 01:23:54 [FAIL] [FIPS-001] FIPS 140-2 mode not enabled: Enable with fips-mode-setup
+2025-08-05 01:23:54 [FAIL] [FIPS-002] OpenSSL FIPS module not available: 
+2025-08-05 01:23:54 [PASS] [FIPS-ALG-sha256] FIPS algorithm sha256 available: 
+2025-08-05 01:23:54 [PASS] [FIPS-ALG-sha384] FIPS algorithm sha384 available: 
+2025-08-05 01:23:54 [PASS] [FIPS-ALG-sha512] FIPS algorithm sha512 available: 
+2025-08-05 01:23:54 [FAIL] [FIPS-ALG-aes-256-gcm] FIPS algorithm aes-256-gcm not available: 
+2025-08-05 01:23:54 [FAIL] [FIPS-WEAK-md5] Weak algorithm md5 still available: 
+2025-08-05 01:23:54 [FAIL] [FIPS-WEAK-sha1] Weak algorithm sha1 still available: 
+2025-08-05 01:23:54 [PASS] [FIPS-WEAK-des] Weak algorithm des not available: 
+2025-08-05 01:23:54 [PASS] [FIPS-WEAK-3des] Weak algorithm 3des not available: 
+2025-08-05 01:23:54 [PASS] [FIPS-WEAK-rc4] Weak algorithm rc4 not available: 
+2025-08-05 01:23:54 [PASS] [CIS-001.1] Hardware inventory tools available: 
+2025-08-05 01:23:54 [PASS] [CIS-002.1] Package management system available: 
+2025-08-05 01:23:54 [PASS] [CIS-002.2] Package integrity verification available: 
+2025-08-05 01:23:55 [PASS] [CIS-003.1] Vulnerability scanner available (Lynis): 
+2025-08-05 01:23:55 [PASS] [CIS-004.1] Sudo configuration present: 
+2025-08-05 01:23:55 [PASS] [CIS-004.2] No password-less sudo entries: 
+2025-08-05 01:23:55 [PASS] [CIS-005.1] IP forwarding disabled: 
+2025-08-05 01:23:55 [PASS] [CIS-005.2] ICMP redirects disabled: 
+2025-08-05 01:23:55 [INFO] [DEBIAN-001] Debian version detected: 12.11
+2025-08-05 01:23:55 [PASS] [DEBIAN-002] Supported Debian version: 
+2025-08-05 01:23:55 [PASS] [DEBIAN-101] Security repositories configured: 
+2025-08-05 01:23:55 [WARN] [DEBIAN-102] Automatic security updates not configured: Install unattended-upgrades
+2025-08-05 01:23:55 [PASS] [DEBIAN-201] AppArmor active: 
+2025-08-05 01:23:55 [PASS] [DEBIAN-202] AppArmor profiles loaded: 24 profiles
+2025-08-05 01:23:55 [PASS] [DEBIAN-301] UFW firewall active: 
+2025-08-05 01:23:55 [PASS] [DEBIAN-302] Fail2ban intrusion prevention active: 
+2025-08-05 01:23:55 [INFO] [OSCAP-SCAN] OpenSCAP scan skipped: OpenSCAP or SCAP content not available
+2025-08-05 01:23:55 [PASS] [REPORT-001] Enhanced visual compliance report generated: ./frontend/dashboard/hardn-compliance.html
+2025-08-05 01:23:55 [PASS] [SERVER-001] Server script updated: ./frontend/server.sh
+2025-08-05 01:25:04 [WARN] [OSCAP-001] OpenSCAP not installed: Install with: sudo apt-get install libopenscap8
+2025-08-05 01:25:04 [FAIL] [STIG-010210] Password minimum length insufficient: Current: 'not set', Required: ≥14
+2025-08-05 01:25:04 [FAIL] [STIG-010320] Account lockout policy missing: Configure pam_faillock
+2025-08-05 01:25:04 [PASS] [STIG-020240] File permissions (/etc/passwd): Permissions: 644
+2025-08-05 01:25:04 [PASS] [STIG-020240] File permissions (/etc/shadow): Permissions: 640
+2025-08-05 01:25:04 [PASS] [STIG-020240] File permissions (/etc/group): Permissions: 644
+2025-08-05 01:25:04 [PASS] [STIG-020240] File permissions (/etc/gshadow): Permissions: 640
+2025-08-05 01:25:04 [PASS] [STIG-040370] SSH Protocol 1 disabled: 
+2025-08-05 01:25:04 [FAIL] [STIG-040380] SSH empty passwords not explicitly disabled: 
+2025-08-05 01:25:04 [WARN] [STIG-040390] SSH root login not explicitly disabled: 
+2025-08-05 01:25:04 [PASS] [STIG-021300] Core dumps disabled: 
+2025-08-05 01:25:04 [PASS] [STIG-021310] Address Space Layout Randomization enabled: 
+2025-08-05 01:25:04 [FAIL] [FIPS-001] FIPS 140-2 mode not enabled: Enable with fips-mode-setup
+2025-08-05 01:25:04 [FAIL] [FIPS-002] OpenSSL FIPS module not available: 
+2025-08-05 01:25:04 [PASS] [FIPS-ALG-sha256] FIPS algorithm sha256 available: 
+2025-08-05 01:25:04 [PASS] [FIPS-ALG-sha384] FIPS algorithm sha384 available: 
+2025-08-05 01:25:04 [PASS] [FIPS-ALG-sha512] FIPS algorithm sha512 available: 
+2025-08-05 01:25:04 [FAIL] [FIPS-ALG-aes-256-gcm] FIPS algorithm aes-256-gcm not available: 
+2025-08-05 01:25:04 [FAIL] [FIPS-WEAK-md5] Weak algorithm md5 still available: 
+2025-08-05 01:25:04 [FAIL] [FIPS-WEAK-sha1] Weak algorithm sha1 still available: 
+2025-08-05 01:25:04 [PASS] [FIPS-WEAK-des] Weak algorithm des not available: 
+2025-08-05 01:25:04 [PASS] [FIPS-WEAK-3des] Weak algorithm 3des not available: 
+2025-08-05 01:25:04 [PASS] [FIPS-WEAK-rc4] Weak algorithm rc4 not available: 
+2025-08-05 01:25:04 [FAIL] [CIS-001.1] Hardware inventory tools missing: Install lshw or dmidecode
+2025-08-05 01:25:04 [PASS] [CIS-002.1] Package management system available: 
+2025-08-05 01:25:04 [PASS] [CIS-002.2] Package integrity verification available: 
+2025-08-05 01:25:04 [WARN] [CIS-003.1] No vulnerability scanner detected: Install lynis or chkrootkit
+2025-08-05 01:25:04 [PASS] [CIS-004.1] Sudo configuration present: 
+2025-08-05 01:25:04 [PASS] [CIS-004.2] No password-less sudo entries: 
+2025-08-05 01:25:04 [PASS] [CIS-005.1] IP forwarding disabled: 
+2025-08-05 01:25:04 [PASS] [CIS-005.2] ICMP redirects disabled: 
+2025-08-05 01:25:04 [INFO] [DEBIAN-001] Debian version detected: 12.11
+2025-08-05 01:25:04 [PASS] [DEBIAN-002] Supported Debian version: 
+2025-08-05 01:25:04 [PASS] [DEBIAN-101] Security repositories configured: 
+2025-08-05 01:25:04 [WARN] [DEBIAN-102] Automatic security updates not configured: Install unattended-upgrades
+2025-08-05 01:25:04 [PASS] [DEBIAN-201] AppArmor active: 
+2025-08-05 01:25:04 [WARN] [DEBIAN-202] No AppArmor profiles loaded: 
+2025-08-05 01:25:04 [PASS] [DEBIAN-301] UFW firewall service active: 
+2025-08-05 01:25:04 [PASS] [DEBIAN-302] Fail2ban intrusion prevention active: 
+2025-08-05 01:25:04 [INFO] [OSCAP-SCAN] OpenSCAP scan skipped: OpenSCAP or SCAP content not available
+2025-08-05 01:25:04 [PASS] [REPORT-001] Enhanced visual compliance report generated: ./frontend/dashboard/hardn-compliance.html
+2025-08-05 01:25:04 [PASS] [SERVER-001] Server script updated: ./frontend/server.sh
+2025-08-05 01:34:57 [WARN] [OSCAP-001] OpenSCAP not installed: Install with: sudo apt-get install libopenscap8
+2025-08-05 01:34:57 [FAIL] [STIG-010210] Password minimum length insufficient: Current: 'not set', Required: ≥14
+2025-08-05 01:34:57 [FAIL] [STIG-010320] Account lockout policy missing: Configure pam_faillock
+2025-08-05 01:34:57 [PASS] [STIG-020240] File permissions (/etc/passwd): Permissions: 644
+2025-08-05 01:34:57 [PASS] [STIG-020240] File permissions (/etc/shadow): Permissions: 640
+2025-08-05 01:34:57 [PASS] [STIG-020240] File permissions (/etc/group): Permissions: 644
+2025-08-05 01:34:57 [PASS] [STIG-020240] File permissions (/etc/gshadow): Permissions: 640
+2025-08-05 01:34:57 [PASS] [STIG-040370] SSH Protocol 1 disabled: 
+2025-08-05 01:34:57 [FAIL] [STIG-040380] SSH empty passwords not explicitly disabled: 
+2025-08-05 01:34:57 [WARN] [STIG-040390] SSH root login not explicitly disabled: 
+2025-08-05 01:34:57 [PASS] [STIG-021300] Core dumps disabled: 
+2025-08-05 01:34:57 [PASS] [STIG-021310] Address Space Layout Randomization enabled: 
+2025-08-05 01:34:57 [FAIL] [FIPS-001] FIPS 140-2 mode not enabled: Enable with fips-mode-setup
+2025-08-05 01:34:57 [FAIL] [FIPS-002] OpenSSL FIPS module not available: 
+2025-08-05 01:34:57 [PASS] [FIPS-ALG-sha256] FIPS algorithm sha256 available: 
+2025-08-05 01:34:57 [PASS] [FIPS-ALG-sha384] FIPS algorithm sha384 available: 
+2025-08-05 01:34:57 [PASS] [FIPS-ALG-sha512] FIPS algorithm sha512 available: 
+2025-08-05 01:34:57 [FAIL] [FIPS-ALG-aes-256-gcm] FIPS algorithm aes-256-gcm not available: 
+2025-08-05 01:34:57 [FAIL] [FIPS-WEAK-md5] Weak algorithm md5 still available: 
+2025-08-05 01:34:57 [FAIL] [FIPS-WEAK-sha1] Weak algorithm sha1 still available: 
+2025-08-05 01:34:57 [PASS] [FIPS-WEAK-des] Weak algorithm des not available: 
+2025-08-05 01:34:57 [PASS] [FIPS-WEAK-3des] Weak algorithm 3des not available: 
+2025-08-05 01:34:57 [PASS] [FIPS-WEAK-rc4] Weak algorithm rc4 not available: 
+2025-08-05 01:34:57 [PASS] [CIS-001.1] Hardware inventory tools available: 
+2025-08-05 01:34:57 [PASS] [CIS-002.1] Package management system available: 
+2025-08-05 01:34:57 [PASS] [CIS-002.2] Package integrity verification available: 
+2025-08-05 01:34:57 [PASS] [CIS-003.1] Vulnerability scanner available (Lynis): 
+2025-08-05 01:34:57 [PASS] [CIS-004.1] Sudo configuration present: 
+2025-08-05 01:34:57 [PASS] [CIS-004.2] No password-less sudo entries: 
+2025-08-05 01:34:57 [PASS] [CIS-005.1] IP forwarding disabled: 
+2025-08-05 01:34:57 [PASS] [CIS-005.2] ICMP redirects disabled: 
+2025-08-05 01:34:57 [INFO] [DEBIAN-001] Debian version detected: 12.11
+2025-08-05 01:34:57 [PASS] [DEBIAN-002] Supported Debian version: 
+2025-08-05 01:34:57 [PASS] [DEBIAN-101] Security repositories configured: 
+2025-08-05 01:34:57 [WARN] [DEBIAN-102] Automatic security updates not configured: Install unattended-upgrades
+2025-08-05 01:34:57 [PASS] [DEBIAN-201] AppArmor active: 
+2025-08-05 01:34:57 [PASS] [DEBIAN-202] AppArmor profiles loaded: 24 profiles
+2025-08-05 01:34:57 [PASS] [DEBIAN-301] UFW firewall active: 
+2025-08-05 01:34:57 [PASS] [DEBIAN-302] Fail2ban intrusion prevention active: 
+2025-08-05 01:34:57 [INFO] [OSCAP-SCAN] OpenSCAP scan skipped: OpenSCAP or SCAP content not available
+2025-08-05 01:34:57 [PASS] [REPORT-001] Enhanced visual compliance report generated: ./frontend/dashboard/hardn-compliance.html
+2025-08-05 01:34:57 [PASS] [SERVER-001] Server script updated: ./frontend/server.sh
+2025-08-05 01:42:34 [WARN] [OSCAP-001] OpenSCAP not installed: Install with: sudo apt-get install libopenscap8
+2025-08-05 01:42:34 [FAIL] [STIG-010210] Password minimum length insufficient: Current: 'not set', Required: ≥14
+2025-08-05 01:42:34 [FAIL] [STIG-010320] Account lockout policy missing: Configure pam_faillock
+2025-08-05 01:42:34 [PASS] [STIG-020240] File permissions (/etc/passwd): Permissions: 644
+2025-08-05 01:42:34 [PASS] [STIG-020240] File permissions (/etc/shadow): Permissions: 640
+2025-08-05 01:42:34 [PASS] [STIG-020240] File permissions (/etc/group): Permissions: 644
+2025-08-05 01:42:34 [PASS] [STIG-020240] File permissions (/etc/gshadow): Permissions: 640
+2025-08-05 01:42:34 [PASS] [STIG-040370] SSH Protocol 1 disabled: 
+2025-08-05 01:42:34 [FAIL] [STIG-040380] SSH empty passwords not explicitly disabled: 
+2025-08-05 01:42:34 [WARN] [STIG-040390] SSH root login not explicitly disabled: 
+2025-08-05 01:42:34 [PASS] [STIG-021300] Core dumps disabled: 
+2025-08-05 01:42:34 [PASS] [STIG-021310] Address Space Layout Randomization enabled: 
+2025-08-05 01:42:34 [FAIL] [FIPS-001] FIPS 140-2 mode not enabled: Enable with fips-mode-setup
+2025-08-05 01:42:34 [FAIL] [FIPS-002] OpenSSL FIPS module not available: 
+2025-08-05 01:42:34 [PASS] [FIPS-ALG-sha256] FIPS algorithm sha256 available: 
+2025-08-05 01:42:34 [PASS] [FIPS-ALG-sha384] FIPS algorithm sha384 available: 
+2025-08-05 01:42:34 [PASS] [FIPS-ALG-sha512] FIPS algorithm sha512 available: 
+2025-08-05 01:42:34 [FAIL] [FIPS-ALG-aes-256-gcm] FIPS algorithm aes-256-gcm not available: 
+2025-08-05 01:42:34 [FAIL] [FIPS-WEAK-md5] Weak algorithm md5 still available: 
+2025-08-05 01:42:34 [FAIL] [FIPS-WEAK-sha1] Weak algorithm sha1 still available: 
+2025-08-05 01:42:34 [PASS] [FIPS-WEAK-des] Weak algorithm des not available: 
+2025-08-05 01:42:34 [PASS] [FIPS-WEAK-3des] Weak algorithm 3des not available: 
+2025-08-05 01:42:34 [PASS] [FIPS-WEAK-rc4] Weak algorithm rc4 not available: 
+2025-08-05 01:42:34 [PASS] [CIS-001.1] Hardware inventory tools available: 
+2025-08-05 01:42:34 [PASS] [CIS-002.1] Package management system available: 
+2025-08-05 01:42:34 [PASS] [CIS-002.2] Package integrity verification available: 
+2025-08-05 01:42:34 [PASS] [CIS-003.1] Vulnerability scanner available (Lynis): 
+2025-08-05 01:42:34 [PASS] [CIS-004.1] Sudo configuration present: 
+2025-08-05 01:42:34 [PASS] [CIS-004.2] No password-less sudo entries: 
+2025-08-05 01:42:34 [PASS] [CIS-005.1] IP forwarding disabled: 
+2025-08-05 01:42:34 [PASS] [CIS-005.2] ICMP redirects disabled: 
+2025-08-05 01:42:34 [INFO] [DEBIAN-001] Debian version detected: 12.11
+2025-08-05 01:42:34 [PASS] [DEBIAN-002] Supported Debian version: 
+2025-08-05 01:42:34 [PASS] [DEBIAN-101] Security repositories configured: 
+2025-08-05 01:42:34 [WARN] [DEBIAN-102] Automatic security updates not configured: Install unattended-upgrades
+2025-08-05 01:42:34 [PASS] [DEBIAN-201] AppArmor active: 
+2025-08-05 01:42:34 [PASS] [DEBIAN-202] AppArmor profiles loaded: 24 profiles
+2025-08-05 01:42:35 [PASS] [DEBIAN-301] UFW firewall active: 
+2025-08-05 01:42:35 [PASS] [DEBIAN-302] Fail2ban intrusion prevention active: 
+2025-08-05 01:42:35 [INFO] [OSCAP-SCAN] OpenSCAP scan skipped: OpenSCAP or SCAP content not available
+2025-08-05 01:42:35 [PASS] [REPORT-001] Enhanced visual compliance report generated: ./frontend/dashboard/hardn-compliance.html
+2025-08-05 01:42:35 [PASS] [SERVER-001] Server script updated: ./frontend/server.sh

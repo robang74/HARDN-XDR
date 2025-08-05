@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# shellcheck source=/usr/lib/hardn-xdr/src/setup/hardn-common.sh
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 set -e
 
@@ -196,4 +195,4 @@ else
 	HARDN_STATUS "error" "NTP configuration failed or skipped due to errors."
 fi
 
-(return 0 2>/dev/null) || exit 0
+return 0 2>/dev/null || hardn_module_exit 0

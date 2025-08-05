@@ -1,5 +1,4 @@
 #!/bin/bash
-# shellcheck source=/usr/lib/hardn-xdr/src/setup/hardn-common.sh
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 set -e
 
@@ -19,4 +18,5 @@ else
 fi
 
 HARDN_STATUS "pass" "File permissions hardening completed successfully."
+
 return 0 2>/dev/null || hardn_module_exit 0
