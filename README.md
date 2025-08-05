@@ -54,7 +54,8 @@
 - **Scalability**: Manage endpoints across small to large-scale networks.
 - **User-Friendly Interface**: Intuitive design for seamless navigation and management.
 - **Interactive Menu**: A user-friendly menu to select which hardening modules to apply.
-- **STIG Compliance**: This release brings the utmost security for Debian Government based information systems. 
+- **STIG Compliance**: This release brings the utmost security for Debian Government based information systems.
+- **Matrix-Themed Dashboard**: Cyberpunk-styled compliance dashboard with real-time security metrics and visual reporting. 
 
 
 <br>
@@ -82,11 +83,62 @@ sudo apt install ./hardn_*_amd64.deb
 sudo hardn-xdr
 ```
 
+4. Run compliance audit and view dashboard:
+```bash
+sudo ./hardn_audit.sh
+```
+
+After running the audit, access the live dashboard at: **[http://localhost:8021/hardn-compliance.html](http://localhost:8021/hardn-compliance.html)**
+
 ### To access the man page
 
 ```bash
 man hardn-xdr
 ```
+---
+
+<br>
+<br>
+<p align="center">
+  <img src="https://img.shields.io/badge/COMPLIANCE DASHBOARD-white?style=for-the-badge&labelColor=black" alt="COMPLIANCE DASHBOARD"><br><br>
+</p>
+
+## Matrix-Themed Security Dashboard
+
+HARDN-XDR includes a cyberpunk-styled compliance dashboard that provides real-time security metrics and visual reporting.
+
+### Dashboard Features
+- **🟢 Matrix Theme**: Hacker green-on-black terminal aesthetic with CRT flicker effects
+- **📊 Real-Time Metrics**: Live compliance percentages and security status
+- **🔒 Multi-Standard Support**: DISA STIG, FIPS 140-2, CIS Controls, and Debian Security
+- **📈 Visual Charts**: Animated progress bars and compliance meters
+- **⚡ Auto-Server**: Automatically starts web server after audit completion
+- **🎯 Interactive Elements**: Hover effects and glowing animations
+
+### Accessing the Dashboard
+
+1. **Run Compliance Audit**:
+```bash
+cd /path/to/HARDN-XDR
+sudo ./hardn_audit.sh
+```
+
+2. **View Live Dashboard**:
+   - **Dashboard URL**: [http://localhost:8021/hardn-compliance.html](http://localhost:8021/hardn-compliance.html)
+   - **Port**: 8021
+   - **Auto-Start**: Server launches automatically after audit
+
+3. **Stop Dashboard Server**:
+```bash
+pkill -f 'python.*8021'
+```
+
+### Dashboard Sections
+- **Executive Summary**: Overall compliance percentage and critical findings
+- **Compliance Progress**: Standard-specific progress meters (STIG, FIPS, CIS, Debian)
+- **Detailed Findings**: Categorized security check results with status indicators
+- **Visual Charts**: Bar charts showing passed/failed/warning statistics
+
 ---
 
 ### Installation Notes
