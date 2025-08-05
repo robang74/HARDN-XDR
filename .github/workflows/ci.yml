@@ -260,7 +260,7 @@ jobs:
 
           if [ -f "release_assets/sig_logo.png" ]; then
             release_files+=(release_assets/sig_logo.png)
-            logo_note="![HARDN-XDR Logo](sig_logo.png)\n\n"
+            logo_note="![HARDN-XDR Logo](docs/assets/sig_logo.png)\n\n"
           else
             logo_note=""
           fi
