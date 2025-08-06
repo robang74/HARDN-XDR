@@ -19,20 +19,13 @@ declare -A dns_providers=(
 
 # Handle DNS provider selection - auto-select in CI mode
 if [[ -n "$CI" || -n "$GITHUB_ACTIONS" || "$SKIP_WHIPTAIL" == "1" ]]; then
-    # Auto-select Quad9 in CI environment
-    selected_provider="Quad9"
-    HARDN_STATUS "info" "CI environment detected, auto-selecting Quad9 DNS provider"
+    # Auto-select Cloudflare in CI environment
+    selected_provider="Cloudflare"
+    HARDN_STATUS "info" "CI environment detected, auto-selecting Cloudflare DNS provider"
 else
-    # A through selection of recommended Secured DNS provider
-    selected_provider=$(hardn_menu \
-        "Select a DNS provider for enhanced security and privacy:" 18 78 6 \
-        "Quad9" "DNSSEC, Malware Blocking, No Logging (Recommended)" \
-        "Cloudflare" "DNSSEC, Privacy-First, No Logging" \
-        "Google" "DNSSEC, Fast, Reliable (some logging)" \
-        "OpenDNS" "DNSSEC, Custom Filtering, Logging (opt-in)" \
-        "CleanBrowsing" "Family-safe, Malware Block, DNSSEC" \
-        "UncensoredDNS" "DNSSEC, No Logging, Europe-based, Privacy Focus" \
-        3>&1 1>&2 2>&3)
+    # Use Cloudflare as default for automated deployment (DNSSEC, Privacy-First, No Logging)
+    selected_provider="Cloudflare"
+    HARDN_STATUS "info" "DNS provider configured automatically: Cloudflare (DNSSEC, Privacy-First, No Logging)"
 fi
 
 # Exit if user cancels (but not in CI mode)
@@ -220,9 +213,9 @@ EOF
 fi
 
 if [[ "$changes_made" = true ]]; then
-	hardn_infobox "DNS configured: $selected_provider\nPrimary: $primary_dns\nSecondary: $secondary_dns" 8 70
+	HARDN_STATUS "pass" "DNS configured: $selected_provider - Primary: $primary_dns, Secondary: $secondary_dns"
 else
-	hardn_infobox "DNS configuration checked. No changes made or needed." 8 70
+	HARDN_STATUS "info" "DNS configuration checked. No changes made or needed"
 fi
 
 return 0 2>/dev/null || hardn_module_exit 0

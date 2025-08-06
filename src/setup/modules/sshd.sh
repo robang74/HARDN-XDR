@@ -15,8 +15,8 @@ is_systemd_available() {
 }
 
 HARDN_STATUS "info" "Installing OpenSSH server..."
-hardn_msgbox "Installing OpenSSH server...\n\nThis may take a few minutes."
-hardn_infobox "Please have your ssh key stored and login backup...\n\nThis process disables certain processes."
+HARDN_STATUS "info" "Installing OpenSSH server for secure remote access"
+HARDN_STATUS "warning" "SSH configuration will be hardened - ensure you have backup access"
 
 # Install OpenSSH server
 if command -v apt-get &>/dev/null; then
@@ -62,9 +62,9 @@ else
 fi
 
 HARDN_STATUS "info" "Enabling and starting SSH service: $SERVICE_NAME"
-hardn_msgbox "Enabling and starting SSH service: $SERVICE_NAME\n\nThis may take a few seconds."
-hardn_infobox "Please have your ssh key stored and login backup...\n\nThis process disables login certain processes."
-hardn_msgbox "Press OK to continue."
+HARDN_STATUS "info" "Configuring SSH service for secure remote access"
+HARDN_STATUS "warning" "Ensure you have SSH key access or backup login method"
+HARDN_STATUS "info" "Proceeding with SSH hardening configuration"
 
 # Enable and start sshd service
 if is_systemd_available; then

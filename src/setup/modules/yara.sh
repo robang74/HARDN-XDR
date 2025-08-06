@@ -176,25 +176,9 @@ yara_module() {
     # Install YARA
     install_yara
 
-    # Multi-whiptail ruleset selection (basic, advanced, custom)
-    local ruleset_choice="basic"
-    if [[ "$SKIP_WHIPTAIL" != "1" ]] && command -v whiptail >/dev/null 2>&1; then
-        ruleset_choice=$(whiptail --title "YARA Ruleset Selection" --checklist "Select YARA rulesets to download and enable:\n\n- Full GitHub repo: Most comprehensive, covers many threats\n- Basic: Eicar, Ransomware, Backdoor\n- ThreatFox: Community IOC rules\n- MalwareBazaar: Recent malware samples\n- APT: Targeted attack rules\n- Custom: Enter your own .yar or .zip URL\n\nYou can select multiple options." 20 100 8 \
-            "github" "Full YARA-Rules GitHub repo (comprehensive)" ON \
-            "basic" "Basic malware rules (Eicar, Ransomware, Backdoor)" ON \
-            "yararoth" "Florian Roth's yararules (APT, malware, web threats)" OFF \
-            "malwarebazaar" "MalwareBazaar YARA rules (abuse.ch)" OFF \
-            "apt" "APT & targeted attack rules (YARA-Rules/apt)" OFF \
-            "custom" "Specify custom rules URL" OFF 3>&1 1>&2 2>&3)
-        ruleset_choice=$(echo "$ruleset_choice" | tr -d '"')
-        if [[ -z "$ruleset_choice" ]]; then
-            HARDN_STATUS "info" "No YARA ruleset selected. Using default basic rules."
-            ruleset_choice="basic"
-        fi
-    else
-        # Default for non-interactive mode - just basic rules
-        HARDN_STATUS "info" "Running in non-interactive mode, downloading basic rules only"
-    fi
+    # Use basic and github rules by default for comprehensive coverage
+    local ruleset_choice="basic github"
+    HARDN_STATUS "info" "YARA configured for automated deployment: downloading basic and GitHub rules"
 
     # Download selected rulesets
     if [[ "$ruleset_choice" == *"github"* ]]; then
@@ -230,25 +214,8 @@ yara_module() {
         fi
     fi
     if [[ "$ruleset_choice" == *"custom"* ]]; then
-        custom_url=""
-        if command -v whiptail >/dev/null 2>&1; then
-            custom_url=$(whiptail --title "Custom YARA Rules" --inputbox "Enter the URL to a custom YARA rules file (.yar or .zip):" 10 100 3>&1 1>&2 2>&3)
-        fi
-        if [[ -n "$custom_url" ]]; then
-            if [[ "$custom_url" == *.zip ]]; then
-                if curl -s "$custom_url" -o /tmp/custom_yara.zip && unzip -o /tmp/custom_yara.zip -d /etc/yara/rules/ && rm -f /tmp/custom_yara.zip; then
-                    HARDN_STATUS "pass" "Custom YARA rules (zip) downloaded."
-                else
-                    HARDN_STATUS "error" "Failed to download custom YARA rules (zip)."
-                fi
-            else
-                if curl -s "$custom_url" -o /etc/yara/rules/custom.yar; then
-                    HARDN_STATUS "pass" "Custom YARA rules downloaded."
-                else
-                    HARDN_STATUS "error" "Failed to download custom YARA rules."
-                fi
-            fi
-        fi
+        # Skip custom URLs for automated deployment
+        HARDN_STATUS "info" "Custom YARA rules skipped for automated deployment (can be added manually later)"
     fi
 
     # Create integration scripts

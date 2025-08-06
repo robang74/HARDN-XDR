@@ -39,7 +39,7 @@ disable_binfmt_misc() {
             HARDN_STATUS "info" "Modprobe rule to disable binfmt_misc already exists in $modprobe_conf."
         fi
     fi
-    hardn_infobox "Non-native binary format support (binfmt_misc) checked/disabled." 7 70
+    HARDN_STATUS "pass" "Non-native binary format support (binfmt_misc) checked/disabled"
 }
 
 return 0 2>/dev/null || hardn_module_exit 0

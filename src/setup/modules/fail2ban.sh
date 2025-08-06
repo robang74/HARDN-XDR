@@ -10,19 +10,8 @@ if grep -qa container /proc/1/environ || systemd-detect-virt --quiet --container
     return 0 2>/dev/null || hardn_module_exit 0
 fi
 
-# -------- Ensure whiptail exists --------
-if ! command -v whiptail &>/dev/null; then
-    HARDN_STATUS "warning" "whiptail not found. Skipping Fail2ban wizard."
-    return 0 2>/dev/null || hardn_module_exit 0
-fi
-
-# -------- Prompt user to continue --------
-if ! whiptail --title "Fail2ban Setup" --yesno \
-"Fail2ban protects your server from brute force attacks by banning IPs.\n\n\
-Setup will:\n• Install Fail2ban\n• Harden its systemd service\n• Enable and start the service\n• Optionally integrate with UFW\n\nDo you want to continue?" 18 70; then
-    HARDN_STATUS "info" "User cancelled Fail2ban setup."
-    return 0 2>/dev/null || hardn_module_exit 0
-fi
+# Install Fail2ban automatically for security hardening
+HARDN_STATUS "info" "Installing Fail2ban for brute force protection (automated mode)"
 
 # -------- Installation --------
 install_fail2ban() {
@@ -85,38 +74,33 @@ configure_ufw_for_fail2ban() {
         return 0
     fi
 
-    if whiptail --title "Enable UFW Integration" --yesno \
-"UFW (Uncomplicated Firewall) is active on your system.\n\n\
-Would you like Fail2ban to use UFW to block brute force attacks?" 14 70; then
+    # Enable UFW integration automatically for enhanced security
+    HARDN_STATUS "info" "Configuring Fail2ban with UFW integration (automated mode)"
 
-        mkdir -p /etc/fail2ban
-        JAIL_LOCAL="/etc/fail2ban/jail.local"
-        touch "$JAIL_LOCAL"
+    mkdir -p /etc/fail2ban
+    JAIL_LOCAL="/etc/fail2ban/jail.local"
+    touch "$JAIL_LOCAL"
 
-        if ! grep -q '\[DEFAULT\]' "$JAIL_LOCAL"; then
-            cat >> "$JAIL_LOCAL" <<EOF
+    if ! grep -q '\[DEFAULT\]' "$JAIL_LOCAL"; then
+        cat >> "$JAIL_LOCAL" <<EOF
 [DEFAULT]
 banaction = ufw
 EOF
-            HARDN_STATUS "info" "UFW banaction set in jail.local."
-        elif ! grep -q 'banaction = ufw' "$JAIL_LOCAL"; then
-            sed -i 's/^banaction\s*=.*/banaction = ufw/' "$JAIL_LOCAL"
-            HARDN_STATUS "info" "banaction updated to use UFW."
-        fi
-
-        systemctl restart fail2ban
-        HARDN_STATUS "pass" "Fail2ban reloaded with UFW support."
-    else
-        HARDN_STATUS "info" "User skipped UFW integration."
+        HARDN_STATUS "info" "UFW banaction set in jail.local."
+    elif ! grep -q 'banaction = ufw' "$JAIL_LOCAL"; then
+        sed -i 's/^banaction\s*=.*/banaction = ufw/' "$JAIL_LOCAL"
+        HARDN_STATUS "info" "banaction updated to use UFW."
     fi
+
+    systemctl restart fail2ban
+    HARDN_STATUS "pass" "Fail2ban reloaded with UFW support."
 }
 
 summary_message() {
-    whiptail --title "Setup Complete" --msgbox \
-"Fail2ban was installed and hardened.\n\n\
-To check active jails:\n  fail2ban-client status\n\n\
-Logs:\n  /var/log/fail2ban.log\n\n\
-To configure bans:\n  /etc/fail2ban/jail.local\n\nSetup complete." 16 70
+    HARDN_STATUS "pass" "Fail2ban installation and hardening completed successfully"
+    HARDN_STATUS "info" "Check active jails: fail2ban-client status"
+    HARDN_STATUS "info" "Logs: /var/log/fail2ban.log"
+    HARDN_STATUS "info" "Configuration: /etc/fail2ban/jail.local"
 }
 
 main() {

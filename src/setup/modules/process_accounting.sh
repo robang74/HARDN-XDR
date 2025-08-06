@@ -8,7 +8,7 @@ changed_sysstat=false
 
 HARDN_STATUS "info" "Checking and installing acct (process accounting)..."
 if ! command -v acct >/dev/null 2>&1 && ! command -v psacct >/dev/null 2>&1; then
-	hardn_infobox "Installing acct (process accounting)..." 7 60
+	HARDN_STATUS "info" "Installing acct (process accounting)..."
 	if apt-get install -y acct; then
 		HARDN_STATUS "pass" "acct installed successfully."
 		changed_acct=true
@@ -33,7 +33,7 @@ fi
 # Enable Sysstat
 HARDN_STATUS "info" "Checking and installing sysstat..."
 if ! command -v sar >/dev/null 2>&1; then
-	hardn_infobox "Installing sysstat..." 7 60
+	HARDN_STATUS "info" "Installing sysstat..."
 	if apt-get install -y sysstat; then
 		HARDN_STATUS "pass" "sysstat installed successfully."
 		changed_sysstat=true

@@ -40,8 +40,8 @@ fi
 
 # add audit file and new dashboard files
 if [ -d /usr/lib/hardn-xdr/frontend/dashboard ]; then
-  chmod 755 /usr/lib/hardn-xdr/frontend/dashboard
-  find /usr/lib/hardn-xdr/frontend/dashboard -type f -name "*.html" -exec chmod 644 {} + || true
+  chmod 755 /usr/lib/hardn-xdr/frontend/dashboard/*
+  find /usr/lib/hardn-xdr/frontend/dashboard/* -type f -name "*.html" -exec chmod 644 {} + || true
   echo "[postinst] Dashboard file permissions set." >> "$LOG_FILE"
 else
   echo "[postinst] WARNING: Dashboard directory not found." >> "$LOG_FILE"
@@ -65,5 +65,13 @@ mkdir -p /usr/local/var/log/suricata
 echo "[postinst] Created log directories." >> "$LOG_FILE"
 
 echo "[postinst] HARDN-XDR installed successfully. Run it with: sudo hardn-xdr" >> "$LOG_FILE"
+
+# install server.sh
+if [ -f /usr/lib/hardn-xdr/src/setup/server.sh ]; then
+    chmod +x /usr/lib/hardn-xdr/src/setup/server.sh
+    echo "[postinst] Set executable permissions for server.sh" >> "$LOG_FILE"
+else
+    echo "[postinst] WARNING: server.sh not found." >> "$LOG_FILE"
+fi  
 
 exit 0

@@ -4,5 +4,6 @@ hardn-xdr                        usr/bin/
 man/hardn-xdr.1                  usr/share/man/man1/
 src/setup/hardn-common.sh        usr/lib/hardn-xdr/src/setup/
 hardn_audit.sh                   usr/bin/
-frontend/dashboard/hardn-compliance.html usr/bin
+frontend/dashboard/hardn-compliance.html usr/lib/hardn-xdr/frontend/dashboard/
+frontend/server.sh               usr/lib/hardn-xdr/frontend/
 

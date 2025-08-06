@@ -19,9 +19,7 @@ if [[ "$packages_to_purge" ]]; then
     HARDN_STATUS "info" "Found the following packages with leftover configuration files to purge:"
     echo "$packages_to_purge"
 
-    if command -v whiptail >/dev/null; then
-        hardn_msgbox "The following packages have leftover configuration files that will be purged:\n\n$packages_to_purge" 15 70
-    fi
+    HARDN_STATUS "info" "Purging leftover configuration files for removed packages: $packages_to_purge"
 
     for pkg in $packages_to_purge; do
         HARDN_STATUS "info" "Purging $pkg..."
@@ -36,15 +34,15 @@ if [[ "$packages_to_purge" ]]; then
             fi
         fi
     done
-    hardn_infobox "Purged configuration files for removed packages." 7 70
+    HARDN_STATUS "pass" "Purged configuration files for removed packages"
 else
     HARDN_STATUS "pass" "No old/removed packages with leftover configuration files found to purge."
-    hardn_infobox "No leftover package configurations to purge." 7 70
+    HARDN_STATUS "info" "No leftover package configurations to purge"
 fi
 
 HARDN_STATUS "info" "Running apt-get autoremove and clean to free up space..."
 apt-get autoremove -y >/dev/null 2>&1
 apt-get clean >/dev/null 2>&1
-hardn_infobox "Apt cache cleaned." 7 70
+HARDN_STATUS "pass" "Apt cache cleaned"
 
 return 0 2>/dev/null || hardn_module_exit 0

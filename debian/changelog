@@ -1,5 +1,51 @@
-hardn (1.1.188) unstable; urgency=medium
+hardn (1.1.202) unstable; urgency=medium
 
-  * Automated release v1.1.188
+  * Changed default DNS provider to Cloudflare (1.1.1.1, 1.0.0.1)
+  * Complete whiptail elimination across all modules
+  * Fully automated deployment without user interaction
+  * Enhanced privacy and performance with Cloudflare DNS
 
- -- Tim Burns <cyborgcreations01@gmail.com>  Mon, 08 Jul 2024 10:48:00 +0000
+ -- Tim Burns <cyborgcreations01@gmail.com>  Tue, 06 Aug 2025 10:00:00 +0000
+
+hardn (1.1.201) unstable; urgency=medium
+
+  * Eliminated ALL whiptail message boxes from modules
+  * Fixed: purge_old_pkgs, dns_config, binfmt, firewire, process_accounting
+  * Replaced hardn_msgbox, hardn_infobox, hardn_menu with HARDN_STATUS calls
+  * Complete automation - no more hanging dialogs
+
+ -- Tim Burns <cyborgcreations01@gmail.com>  Tue, 06 Aug 2025 09:30:00 +0000
+
+hardn (1.1.200) unstable; urgency=medium
+
+  * Fixed SSHD module to eliminate whiptail message boxes
+  * SSH hardening now proceeds without user interaction
+  * Removed blocking dialogs from SSH configuration process
+
+ -- Tim Burns <cyborgcreations01@gmail.com>  Tue, 06 Aug 2025 09:00:00 +0000
+
+hardn (1.1.199) unstable; urgency=medium
+
+  * Eliminated whiptail dialogs from YARA, Fail2ban, and USB modules
+  * YARA now downloads basic and GitHub rules automatically
+  * Fail2ban enables UFW integration by default
+  * USB storage blocking configured automatically for security
+  * Complete automation for enterprise deployment
+
+ -- Tim Burns <cyborgcreations01@gmail.com>  Tue, 06 Aug 2025 08:30:00 +0000
+
+hardn (1.1.198) unstable; urgency=medium
+
+  * Fixed UFW module to eliminate whiptail dialogs
+  * Added automated firewall configuration with secure defaults
+  * UFW now allows SSH only by default for security
+
+ -- Tim Burns <cyborgcreations01@gmail.com>  Tue, 06 Aug 2025 08:00:00 +0000
+
+hardn (1.1.197) unstable; urgency=medium
+
+  * Updated AppArmor module to eliminate whiptail dialogs
+  * Added critical service protection for enforce mode
+  * Improved automated deployment capability
+
+ -- Tim Burns <cyborgcreations01@gmail.com>  Tue, 06 Aug 2025 00:00:00 +0000

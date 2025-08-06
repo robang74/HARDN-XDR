@@ -9,28 +9,10 @@ if grep -qa container /proc/1/environ || systemd-detect-virt --quiet --container
     return 0 2>/dev/null || exit 0
 fi
 
-# --------- Check whiptail ----------
-if ! command -v whiptail &>/dev/null; then
-    HARDN_STATUS "warning" "whiptail not found. Skipping AppArmor wizard."
-
-    return 0 2>/dev/null || exit 0
-fi
-
-# --------- User Prompt for Mode ----------
-MODE=$(whiptail --title "AppArmor Setup" --radiolist \
-"AppArmor is a Mandatory Access Control system. Select a configuration mode:\n\n\
-• Enforce: Strictly enforce profile rules\n\
-• Complain: Log violations but allow all\n\
-• Disabled: Turn off AppArmor (not recommended)\n\n\
-Choose the desired mode:" 20 78 3 \
-"enforce" "Secure, default mode" ON \
-"complain" "Debug/logging only" OFF \
-"disabled" "Disable AppArmor completely" OFF 3>&1 1>&2 2>&3)
-
-if [[ $? -ne 0 || "$MODE" == "disabled" ]]; then
-    HARDN_STATUS "info" "User cancelled or selected to skip AppArmor setup."
-    return 0 2>/dev/null || exit 0
-fi
+# --------- Set Default Mode ----------
+# AppArmor will run in enforce mode by default for maximum security
+MODE="enforce"
+HARDN_STATUS "info" "AppArmor configured to run in enforce mode (default secure setting)."
 
 # --------- Begin Installation ----------
 HARDN_STATUS "info" "Initializing AppArmor security module..."
@@ -58,52 +40,195 @@ fi
 # --------- Ensure Kernel Boot Flag ----------
 if ! grep -q "apparmor=1" /proc/cmdline; then
     if grep -q '^GRUB_CMDLINE_LINUX="' /etc/default/grub; then
+        HARDN_STATUS "info" "Updating GRUB to enable AppArmor..."
         sed -i 's/^GRUB_CMDLINE_LINUX="/GRUB_CMDLINE_LINUX="apparmor=1 security=apparmor /' /etc/default/grub
+        
         if grep -q "ID=debian" /etc/os-release || grep -q "ID=ubuntu" /etc/os-release; then
-            update-grub
+            if timeout 60 update-grub 2>/dev/null; then
+                HARDN_STATUS "info" "GRUB updated successfully. Reboot required for full AppArmor activation."
+            else
+                HARDN_STATUS "warning" "GRUB update timed out or failed. AppArmor enabled in config but may need manual GRUB update."
+            fi
         elif grep -q "ID=fedora" /etc/os-release || grep -q "ID=centos" /etc/os-release; then
-            grub2-mkconfig -o /boot/grub2/grub.cfg
+            if timeout 60 grub2-mkconfig -o /boot/grub2/grub.cfg 2>/dev/null; then
+                HARDN_STATUS "info" "GRUB updated successfully. Reboot required for full AppArmor activation."
+            else
+                HARDN_STATUS "warning" "GRUB update timed out or failed. AppArmor enabled in config but may need manual GRUB update."
+            fi
         else
-            HARDN_STATUS "error" "Unsupported distribution. GRUB update failed."
-            return 1
+            HARDN_STATUS "warning" "Unsupported distribution. GRUB update skipped - please enable AppArmor manually."
         fi
-        HARDN_STATUS "info" "GRUB updated to enable AppArmor. Reboot required."
     else
-        HARDN_STATUS "warning" "Could not modify GRUB. Please enable AppArmor manually."
+        HARDN_STATUS "warning" "Could not modify GRUB configuration. Please enable AppArmor manually."
     fi
 fi
 
 # --------- Load Kernel Module ----------
 if ! lsmod | grep -q apparmor; then
-    if modprobe apparmor; then
+    HARDN_STATUS "info" "Loading AppArmor kernel module..."
+    if timeout 10 modprobe apparmor 2>/dev/null; then
         HARDN_STATUS "info" "AppArmor kernel module loaded."
     else
-        HARDN_STATUS "error" "Failed to load AppArmor kernel module. Please check your system configuration."
-        return 1
+        HARDN_STATUS "warning" "Failed to load AppArmor kernel module or kernel doesn't support it."
+        HARDN_STATUS "info" "AppArmor will be enabled after reboot if GRUB was updated."
+        return 0 2>/dev/null || exit 0
     fi
 fi
 
 # --------- Apply Selected Mode ----------
 if [[ "$MODE" == "enforce" ]]; then
-    HARDN_STATUS "info" "Enforcing all AppArmor profiles..."
-    aa-enforce /etc/apparmor.d/* 2>/dev/null || {
-        HARDN_STATUS "warning" "Some profiles could not be enforced."
-    }
+    HARDN_STATUS "info" "Enforcing AppArmor profiles (with exceptions for critical services)..."
+    
+    # First, enforce all profiles
+    if timeout 30 aa-enforce /etc/apparmor.d/* 2>/dev/null; then
+        HARDN_STATUS "info" "AppArmor profiles enforced successfully."
+    else
+        HARDN_STATUS "warning" "Some profiles could not be enforced or operation timed out."
+    fi
+    
+    # protected services 
+    CRITICAL_SERVICES=(
+        # Display managers
+        "/etc/apparmor.d/usr.sbin.gdm3"
+        "/etc/apparmor.d/usr.bin.gdm3"
+        "/etc/apparmor.d/gdm3"
+        "/etc/apparmor.d/usr.sbin.lightdm"
+        "/etc/apparmor.d/lightdm"
+        "/etc/apparmor.d/usr.sbin.sddm"
+        "/etc/apparmor.d/usr.bin.sddm"
+        "/etc/apparmor.d/sddm"
+        "/etc/apparmor.d/usr.sbin.lxdm"
+        "/etc/apparmor.d/usr.bin.lxdm"
+        "/etc/apparmor.d/lxdm"
+        "/etc/apparmor.d/usr.sbin.xdm"
+        "/etc/apparmor.d/usr.bin.xdm"
+        "/etc/apparmor.d/xdm"
+        "/etc/apparmor.d/usr.sbin.slim"
+        "/etc/apparmor.d/usr.bin.slim"
+        "/etc/apparmor.d/slim"
+        
+        # Network security
+        "/etc/apparmor.d/usr.bin.suricata"
+        "/etc/apparmor.d/suricata"
+        "/etc/apparmor.d/usr.sbin.snort"
+        "/etc/apparmor.d/usr.bin.snort"
+        "/etc/apparmor.d/usr.sbin.fail2ban-server"
+        "/etc/apparmor.d/usr.bin.fail2ban-server"
+        "/etc/apparmor.d/usr.bin.tcpdump"
+        "/etc/apparmor.d/usr.sbin.tcpdump"
+        "/etc/apparmor.d/usr.bin.zeek"
+        "/etc/apparmor.d/usr.sbin.zeek"
+        
+        # Networking
+        "/etc/apparmor.d/usr.sbin.NetworkManager"
+        "/etc/apparmor.d/usr.bin.wpa_supplicant"
+        "/etc/apparmor.d/usr.sbin.dhclient"
+        "/etc/apparmor.d/usr.sbin.dhcpcd"
+        "/etc/apparmor.d/usr.bin.nmcli"
+        "/etc/apparmor.d/usr.sbin.connmand"
+        "/etc/apparmor.d/usr.lib.systemd.systemd-networkd"
+        "/etc/apparmor.d/usr.sbin.iwd"
+        "/etc/apparmor.d/usr.sbin.wicd"
+        "/etc/apparmor.d/usr.bin.systemd-resolved"
+        "/etc/apparmor.d/usr.sbin.avahi-daemon"
+        "/etc/apparmor.d/usr.sbin.ModemManager"
+        "/etc/apparmor.d/usr.sbin.pppd"
+        "/etc/apparmor.d/usr.sbin.dnsmasq"
+        
+        # System services
+        "/etc/apparmor.d/usr.sbin.sshd"
+        "/etc/apparmor.d/sshd"
+        "/etc/apparmor.d/usr.sbin.cron"
+        "/etc/apparmor.d/usr.bin.dbus-daemon"
+        "/etc/apparmor.d/usr.lib.systemd.systemd-logind"
+        "/etc/apparmor.d/usr.lib.systemd.systemd-journald"
+        "/etc/apparmor.d/usr.lib.systemd.systemd-udevd"
+        "/etc/apparmor.d/usr.lib.systemd.systemd-timesyncd"
+        "/etc/apparmor.d/usr.lib.systemd.systemd-resolved"
+        "/etc/apparmor.d/usr.lib.systemd.systemd-machined"
+        "/etc/apparmor.d/usr.lib.systemd.systemd-tmpfiles"
+        "/etc/apparmor.d/usr.lib.systemd.systemd-oomd"
+        
+        # X server
+        "/etc/apparmor.d/usr.bin.Xorg"
+        "/etc/apparmor.d/usr.lib.xorg.Xorg"
+        
+        # Legion
+        "/etc/apparmor.d/usr.bin.legion"
+        "/etc/apparmor.d/legion"
+        
+        # HARDN-XDR
+        "/etc/apparmor.d/usr.bin.hardn-xdr"
+        "/etc/apparmor.d/hardn-xdr"
+        "/etc/apparmor.d/usr.lib.hardn-xdr"
+    )
+    
+    HARDN_STATUS "info" "Setting critical services to complain mode to prevent service breakage..."
+    for service in "${CRITICAL_SERVICES[@]}"; do
+        if [[ -f "$service" ]]; then
+            if timeout 10 aa-complain "$service" 2>/dev/null; then
+                HARDN_STATUS "info" "Set $(basename "$service") to complain mode."
+            else
+                HARDN_STATUS "warning" "Failed to set $(basename "$service") to complain mode."
+            fi
+        fi
+    done
+    
 elif [[ "$MODE" == "complain" ]]; then
     HARDN_STATUS "info" "Setting all AppArmor profiles to complain mode..."
-    aa-complain /etc/apparmor.d/* 2>/dev/null || {
-        HARDN_STATUS "warning" "Some profiles could not be put in complain mode."
-    }
+    if timeout 30 aa-complain /etc/apparmor.d/* 2>/dev/null; then
+        HARDN_STATUS "info" "AppArmor profiles set to complain mode successfully."
+    else
+        HARDN_STATUS "warning" "Some profiles could not be put in complain mode or operation timed out."
+    fi
 fi
 
 # --------- Service Handling ----------
-systemctl restart apparmor.service
-systemctl enable apparmor.service
+HARDN_STATUS "info" "Managing AppArmor service..."
+if timeout 20 systemctl restart apparmor.service 2>/dev/null; then
+    HARDN_STATUS "info" "AppArmor service restarted successfully."
+else
+    HARDN_STATUS "warning" "AppArmor service restart failed or timed out."
+fi
+
+if systemctl enable apparmor.service 2>/dev/null; then
+    HARDN_STATUS "info" "AppArmor service enabled for startup."
+else
+    HARDN_STATUS "warning" "Failed to enable AppArmor service."
+fi
 
 # --------- Status Output ----------
 if command -v aa-status &>/dev/null; then
     HARDN_STATUS "info" "Current AppArmor profile status:"
-    aa-status
+    if timeout 10 aa-status 2>/dev/null; then
+        HARDN_STATUS "info" "AppArmor status retrieved successfully."
+        
+        # Check if critical services are in complain mode
+        if aa-status 2>/dev/null | grep -q "complain"; then
+            HARDN_STATUS "info" "Some profiles are in complain mode (this is expected for critical services)."
+        fi
+    else
+        HARDN_STATUS "warning" "AppArmor status check timed out or failed."
+    fi
+fi
+
+# --------- Service Status Check ----------
+HARDN_STATUS "info" "Checking critical service status after AppArmor configuration..."
+
+# Check GDM3 service
+if systemctl is-active --quiet gdm3 2>/dev/null; then
+    HARDN_STATUS "info" "GDM3 login manager is running correctly."
+else
+    HARDN_STATUS "warning" "GDM3 may have issues - check logs if login problems occur."
+fi
+
+# Check Suricata service if installed
+if command -v suricata &>/dev/null && systemctl is-enabled suricata 2>/dev/null; then
+    if systemctl is-active --quiet suricata 2>/dev/null; then
+        HARDN_STATUS "info" "Suricata IDS is running correctly."
+    else
+        HARDN_STATUS "warning" "Suricata IDS may have issues - check logs if network monitoring fails."
+    fi
 fi
 
 HARDN_STATUS "pass" "AppArmor module completed in $MODE mode."

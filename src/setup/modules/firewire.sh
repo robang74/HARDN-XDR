@@ -39,9 +39,9 @@ for module_name in $firewire_modules; do
 done
 
 if [[ "$changed" -eq 1 ]]; then
-	hardn_infobox "FireWire drivers checked. Unloaded and/or blacklisted where applicable." 7 70
+	HARDN_STATUS "pass" "FireWire drivers checked. Unloaded and/or blacklisted where applicable"
 else
-	hardn_infobox "FireWire drivers checked. No changes made (likely already disabled/not present)." 8 70
+	HARDN_STATUS "info" "FireWire drivers checked. No changes made (likely already disabled/not present)"
 fi
 
 return 0 2>/dev/null || hardn_module_exit 0

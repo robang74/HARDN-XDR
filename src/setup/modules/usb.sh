@@ -4,16 +4,9 @@ source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 # Remove set -e to handle errors gracefully in CI environment
 
 
-# Whiptail confirmation and warning
-if [[ "$SKIP_WHIPTAIL" != "1" ]] && command -v whiptail >/dev/null 2>&1; then
-    whiptail --title "USB Storage Blocking" --msgbox "WARNING: This will block USB storage devices.\n\n- If your system is running from USB, this may cause lockout.\n- If you have a USB keyboard, ensure it is detected.\n\nProceed only if you understand the risks!" 14 70
-    if ! whiptail --title "Confirm USB Block" --yesno "Do you want to proceed with blocking USB storage?" 10 70; then
-        HARDN_STATUS "info" "User cancelled USB block operation."
-        exit 0  # Changed from return 0 for consistency
-    fi
-else
-    HARDN_STATUS "info" "Running in non-interactive mode, proceeding with USB storage blocking"
-fi
+# USB storage blocking for security hardening (automated mode)
+HARDN_STATUS "info" "Configuring USB storage blocking for enhanced security"
+HARDN_STATUS "warning" "USB storage devices will be blocked for security purposes"
 
 ROOT_USB=$(lsblk -o NAME,TRAN,MOUNTPOINT | grep -E 'usb.*\/$' || true)
 
