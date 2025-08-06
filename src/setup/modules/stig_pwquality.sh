@@ -44,58 +44,28 @@ else
     return 0 2>/dev/null || hardn_module_exit 0
 fi
 
-# --------- Skip if no TTY or container ----------
-if grep -qa container /proc/1/environ || systemd-detect-virt --quiet --container || ! [ -t 0 ]; then
-    HARDN_STATUS "info" "Skipping password policy setup (container or non-interactive)."
+# --------- Skip if container ----------
+if grep -qa container /proc/1/environ || systemd-detect-virt --quiet --container; then
+    HARDN_STATUS "info" "Skipping password policy setup (container environment)."
     return 0 2>/dev/null || hardn_module_exit 0
 fi
 
-# --------- Check whiptail ----------
-if ! command -v whiptail &>/dev/null; then
-    HARDN_STATUS "warning" "whiptail not found. Skipping password policy wizard."
-    return 0 2>/dev/null || hardn_module_exit 0
-fi
+# --------- Apply STIG-Compliant Password Policy (Automated) ----------
+HARDN_STATUS "info" "Applying STIG-compliant password policy automatically..."
 
-# --------- Intro Message ----------
-whiptail --title "Password Policy Setup" --msgbox \
-"This application will configure password strength rules.\n\n\
-Be careful: improper settings may lock out users.\n\
-After applying, you should run 'passwd' to verify compliance." 12 70
+# STIG-recommended secure defaults
+minlen=12
+ucredit=1
+lcredit=1
+dcredit=1
+ocredit=1
 
-# --------- Prompt User for Policy Values ----------
-minlen=$(whiptail --title "Minimum Length" --inputbox "Minimum password length (e.g. 12):" 10 60 12 3>&1 1>&2 2>&3)
-ucredit=$(whiptail --title "Uppercase Letters" --inputbox "Minimum uppercase letters (e.g. 1):" 10 60 1 3>&1 1>&2 2>&3)
-lcredit=$(whiptail --title "Lowercase Letters" --inputbox "Minimum lowercase letters (e.g. 1):" 10 60 1 3>&1 1>&2 2>&3)
-dcredit=$(whiptail --title "Digits" --inputbox "Minimum digits (e.g. 1):" 10 60 1 3>&1 1>&2 2>&3)
-ocredit=$(whiptail --title "Special Characters" --inputbox "Minimum special characters (e.g. 1):" 10 60 1 3>&1 1>&2 2>&3)
-
-# --------- Prompt for a Test Password ----------
-while true; do
-    user_pw=$(whiptail --title "Test Password" --passwordbox \
-"Enter a sample password to ensure it meets your policy before continuing.\n\
-You can change this later, this is just to validate the policy." 12 70 3>&1 1>&2 2>&3)
-
-    if validate_password "$user_pw" "$minlen" "$ucredit" "$lcredit" "$dcredit" "$ocredit"; then
-        break
-    else
-        whiptail --title "Password Failed" --msgbox \
-"The password you entered does not meet the requirements.\n\n\
-Required:\n\
-• Length: $minlen\n• Uppercase: $ucredit\n• Lowercase: $lcredit\n\
-• Digits: $dcredit\n• Special Chars: $ocredit" 15 70
-    fi
-done
-
-# --------- Confirm Policy Summary ----------
-if ! whiptail --title "Confirm Policy and Test Result" --yesno \
-"The sample password meets your policy.\n\n\
-The following password policy will be applied to $PAM_FILE:\n\
-• Minimum length: $minlen\n• Uppercase letters: $ucredit\n• Lowercase letters: $lcredit\n\
-• Digits: $dcredit\n• Special characters: $ocredit\n\n\
-Continue?" 18 70; then
-    HARDN_STATUS "info" "User cancelled password policy setup."
-    return 0 2>/dev/null || hardn_module_exit 0
-fi
+HARDN_STATUS "info" "Password policy settings:"
+HARDN_STATUS "info" "• Minimum length: $minlen"
+HARDN_STATUS "info" "• Uppercase letters: $ucredit"
+HARDN_STATUS "info" "• Lowercase letters: $lcredit"
+HARDN_STATUS "info" "• Digits: $dcredit"
+HARDN_STATUS "info" "• Special characters: $ocredit"
 
 # --------- Ensure Package Installed ----------
 if command -v apt &>/dev/null && ! command -v pwscore &>/dev/null; then
@@ -121,9 +91,59 @@ else
     HARDN_STATUS "warning" "Added new line to $PAM_FILE — review manually if needed."
 fi
 
+# --------- CLI Interactive Password Reset (Default for TTY) ----------
+if [ -t 0 ] && [ -t 1 ]; then
+    HARDN_STATUS "info" "Starting interactive password reset for current user..."
+    
+    # Get current username
+    CURRENT_USER=$(whoami)
+    HARDN_STATUS "info" "Password reset for user: $CURRENT_USER"
+    
+    # Password validation loop
+    while true; do
+        echo ""
+        echo "Password Requirements:"
+        echo "• Minimum length: $minlen characters"
+        echo "• Must contain: $ucredit uppercase, $lcredit lowercase, $dcredit digits, $ocredit special characters"
+        echo ""
+        
+        # Read password securely
+        read -s -p "Enter new password: " new_password
+        echo ""
+        read -s -p "Confirm new password: " confirm_password
+        echo ""
+        
+        # Check if passwords match
+        if [ "$new_password" != "$confirm_password" ]; then
+            echo "!!! Passwords do not match. Please try again."
+            continue
+        fi
+        
+        # Validate password against policy
+        if validate_password "$new_password" "$minlen" "$ucredit" "$lcredit" "$dcredit" "$ocredit"; then
+            echo "Password meets policy requirements."
+            
+            # Apply the password
+            if echo "$CURRENT_USER:$new_password" | chpasswd; then
+                HARDN_STATUS "pass" "Password successfully updated for user: $CURRENT_USER"
+                echo "Password has been successfully changed!"
+                break
+            else
+                HARDN_STATUS "error" "Failed to update password for user: $CURRENT_USER"
+                echo "Failed to update password. Please try again or contact administrator."
+            fi
+        else
+            echo "Password does not meet policy requirements:"
+            echo "   Required: ${minlen}+ chars, ${ucredit}+ uppercase, ${lcredit}+ lowercase, ${dcredit}+ digits, ${ocredit}+ special"
+            echo "   Please try again."
+        fi
+    done
+else
+    HARDN_STATUS "info" "Non-interactive mode: Password policy applied without user interaction."
+fi
+
 # --------- Final Message ----------
-HARDN_STATUS "pass" "Password policy successfully applied."
-whiptail --title "Reminder" --msgbox \
-"The policy is now active.\nRun 'passwd' to change your password and test compliance." 10 60
+HARDN_STATUS "pass" "STIG-compliant password policy successfully applied."
+HARDN_STATUS "info" "Password policy is now active. Users can run 'passwd' to update passwords."
 
 return 0 2>/dev/null || hardn_module_exit 0
