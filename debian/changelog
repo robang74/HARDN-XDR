@@ -5,7 +5,7 @@ hardn (1.1.202) unstable; urgency=medium
   * Fully automated deployment without user interaction
   * Enhanced privacy and performance with Cloudflare DNS
 
- -- Tim Burns <cyborgcreations01@gmail.com>  Tue, 06 Aug 2025 10:00:00 +0000
+ -- Tim Burns <control@cybersynapse.ro>  Tue, 06 Aug 2025 10:00:00 +0000
 
 hardn (1.1.201) unstable; urgency=medium
 
@@ -14,7 +14,7 @@ hardn (1.1.201) unstable; urgency=medium
   * Replaced hardn_msgbox, hardn_infobox, hardn_menu with HARDN_STATUS calls
   * Complete automation - no more hanging dialogs
 
- -- Tim Burns <cyborgcreations01@gmail.com>  Tue, 06 Aug 2025 09:30:00 +0000
+ -- Tim Burns <control@cybersynapse.ro>  Tue, 06 Aug 2025 09:30:00 +0000
 
 hardn (1.1.200) unstable; urgency=medium
 
@@ -22,7 +22,7 @@ hardn (1.1.200) unstable; urgency=medium
   * SSH hardening now proceeds without user interaction
   * Removed blocking dialogs from SSH configuration process
 
- -- Tim Burns <cyborgcreations01@gmail.com>  Tue, 06 Aug 2025 09:00:00 +0000
+ -- Tim Burns <control@cybersynapse.ro>  Tue, 06 Aug 2025 09:00:00 +0000
 
 hardn (1.1.199) unstable; urgency=medium
 
@@ -32,7 +32,7 @@ hardn (1.1.199) unstable; urgency=medium
   * USB storage blocking configured automatically for security
   * Complete automation for enterprise deployment
 
- -- Tim Burns <cyborgcreations01@gmail.com>  Tue, 06 Aug 2025 08:30:00 +0000
+ -- Tim Burns <control@cybersynapse.ro>  Tue, 06 Aug 2025 08:30:00 +0000
 
 hardn (1.1.198) unstable; urgency=medium
 
@@ -40,7 +40,7 @@ hardn (1.1.198) unstable; urgency=medium
   * Added automated firewall configuration with secure defaults
   * UFW now allows SSH only by default for security
 
- -- Tim Burns <cyborgcreations01@gmail.com>  Tue, 06 Aug 2025 08:00:00 +0000
+ -- Tim Burns <control@cybersynapse.ro>  Tue, 06 Aug 2025 08:00:00 +0000
 
 hardn (1.1.197) unstable; urgency=medium
 
@@ -48,4 +48,4 @@ hardn (1.1.197) unstable; urgency=medium
   * Added critical service protection for enforce mode
   * Improved automated deployment capability
 
- -- Tim Burns <cyborgcreations01@gmail.com>  Tue, 06 Aug 2025 00:00:00 +0000
+ -- Tim Burns <control@cybersynapse.ro>  Tue, 06 Aug 2025 00:00:00 +0000
