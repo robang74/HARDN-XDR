@@ -1,4 +1,9 @@
 #!/bin/bash
+# STIG Password Quality Assessment Module
+# Purpose: Provide STIG password policy recommendations and guidance
+# Mode: WARNING/ASSESSMENT ONLY - Does not apply policies automatically
+# Users must manually apply recommendations if desired
+
 source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 set -e
 
@@ -50,8 +55,8 @@ if grep -qa container /proc/1/environ || systemd-detect-virt --quiet --container
     return 0 2>/dev/null || hardn_module_exit 0
 fi
 
-# --------- Apply STIG-Compliant Password Policy (Automated) ----------
-HARDN_STATUS "info" "Applying STIG-compliant password policy automatically..."
+# --------- STIG Password Policy Recommendations (Warning Mode) ----------
+HARDN_STATUS "warning" "Password Policy Assessment Mode - No automatic changes will be applied."
 
 # STIG-recommended secure defaults
 minlen=12
@@ -60,121 +65,149 @@ lcredit=1
 dcredit=1
 ocredit=1
 
-HARDN_STATUS "info" "Password policy settings:"
-HARDN_STATUS "info" "• Minimum length: $minlen"
-HARDN_STATUS "info" "• Uppercase letters: $ucredit"
-HARDN_STATUS "info" "• Lowercase letters: $lcredit"
-HARDN_STATUS "info" "• Digits: $dcredit"
-HARDN_STATUS "info" "• Special characters: $ocredit"
+HARDN_STATUS "info" "STIG-recommended password policy settings:"
+HARDN_STATUS "info" "• Minimum length: $minlen characters"
+HARDN_STATUS "info" "• Uppercase letters: $ucredit required"
+HARDN_STATUS "info" "• Lowercase letters: $lcredit required"
+HARDN_STATUS "info" "• Digits: $dcredit required"
+HARDN_STATUS "info" "• Special characters: $ocredit required"
 
-# --------- Ensure Package Installed ----------
-if command -v apt &>/dev/null && ! command -v pwscore &>/dev/null; then
-    apt install -y libpam-pwquality
-elif command -v dnf &>/dev/null && ! command -v pwscore &>/dev/null; then
-    dnf install -y pam_pwquality
-elif command -v yum &>/dev/null && ! command -v pwscore &>/dev/null; then
-    yum install -y pam_pwquality
-fi
+# --------- Check Current Policy Status ----------
+HARDN_STATUS "info" "Checking current password policy configuration..."
 
-# --------- Backup Current PAM File ----------
-STAMP=$(date +%Y%m%d%H%M%S)
-if ! cp "$PAM_FILE" "${PAM_FILE}.bak-$STAMP"; then
-    HARDN_STATUS "error" "Failed to backup PAM file. Aborting password policy changes."
-    return 0 2>/dev/null || hardn_module_exit 0
-fi
-HARDN_STATUS "info" "Backup saved to ${PAM_FILE}.bak-$STAMP"
-
-# Validate backup was created successfully
-if [[ ! -f "${PAM_FILE}.bak-$STAMP" ]]; then
-    HARDN_STATUS "error" "PAM backup validation failed. Aborting password policy changes."
-    return 0 2>/dev/null || hardn_module_exit 0
-fi
-
-# --------- Apply Password Policy ----------
-if grep -q "pam_pwquality.so" "$PAM_FILE"; then
-    sed -i '/pam_pwquality\.so/ s/^.*$/password requisite pam_pwquality.so retry=3 minlen='"$minlen"' ucredit=-'"$ucredit"' lcredit=-'"$lcredit"' dcredit=-'"$dcredit"' ocredit=-'"$ocredit"'/' "$PAM_FILE"
-elif grep -q "pam_cracklib.so" "$PAM_FILE"; then
-    sed -i '/pam_cracklib\.so/ s/^.*$/password requisite pam_cracklib.so retry=3 minlen='"$minlen"' ucredit=-'"$ucredit"' lcredit=-'"$lcredit"' dcredit=-'"$dcredit"' ocredit=-'"$ocredit"'/' "$PAM_FILE"
+# Check if PAM password quality is configured
+if grep -q "pam_pwquality.so\|pam_cracklib.so" "$PAM_FILE"; then
+    HARDN_STATUS "info" "Password quality module is already configured in $PAM_FILE"
+    
+    # Show current configuration
+    current_config=$(grep -E "pam_pwquality\.so|pam_cracklib\.so" "$PAM_FILE" 2>/dev/null || echo "Configuration not found")
+    HARDN_STATUS "info" "Current configuration: $current_config"
 else
-    echo "password requisite pam_pwquality.so retry=3 minlen=$minlen ucredit=-$ucredit lcredit=-$lcredit dcredit=-$dcredit ocredit=-$ocredit" >> "$PAM_FILE"
-    HARDN_STATUS "warning" "Added new line to $PAM_FILE — review manually if needed."
+    HARDN_STATUS "warning" "No password quality module found in $PAM_FILE"
+    HARDN_STATUS "warning" "System may not enforce strong password requirements"
 fi
 
-# Validate PAM configuration syntax
-if ! pam-config --create 2>/dev/null && ! pamtester login root authenticate 2>/dev/null; then
-    # Basic syntax check - ensure the file is readable and has expected content
-    if ! grep -q "pam_pwquality.so\|pam_cracklib.so" "$PAM_FILE"; then
-        HARDN_STATUS "error" "PAM configuration appears corrupted. Restoring backup."
-        cp "${PAM_FILE}.bak-$STAMP" "$PAM_FILE"
-        return 0 2>/dev/null || hardn_module_exit 0
+# --------- Password Policy Recommendations ----------
+echo ""
+echo "================================================================"
+echo "        STIG PASSWORD POLICY RECOMMENDATIONS"
+echo "================================================================"
+echo ""
+echo "CURRENT STATUS: Password policy is in ASSESSMENT MODE"
+echo "No automatic changes have been applied to your system."
+echo ""
+echo "STIG REQUIREMENTS:"
+echo "• Minimum password length: $minlen characters"
+echo "• Must contain at least $ucredit uppercase letter(s)"
+echo "• Must contain at least $lcredit lowercase letter(s)"  
+echo "• Must contain at least $dcredit digit(s)"
+echo "• Must contain at least $ocredit special character(s)"
+echo ""
+echo "TO MANUALLY APPLY STIG PASSWORD POLICY:"
+echo "1. Install password quality package:"
+echo "   sudo apt install libpam-pwquality  # (Debian/Ubuntu)"
+echo "   sudo dnf install pam_pwquality     # (Fedora/CentOS)"
+echo ""
+echo "2. Edit $PAM_FILE and add:"
+echo "   password requisite pam_pwquality.so retry=3 minlen=$minlen ucredit=-$ucredit lcredit=-$lcredit dcredit=-$dcredit ocredit=-$ocredit"
+echo ""
+echo "3. Test the configuration:"
+echo "   sudo passwd \$USER"
+echo ""
+echo "================================================================"
+echo ""
+
+# --------- Check if pwquality package is available ----------
+if command -v apt &>/dev/null; then
+    if ! command -v pwscore &>/dev/null; then
+        HARDN_STATUS "info" "Password quality tools not installed."
+        HARDN_STATUS "info" "To install: sudo apt install libpam-pwquality"
+    else
+        HARDN_STATUS "info" "Password quality tools are available."
+    fi
+elif command -v dnf &>/dev/null; then
+    if ! command -v pwscore &>/dev/null; then
+        HARDN_STATUS "info" "Password quality tools not installed."
+        HARDN_STATUS "info" "To install: sudo dnf install pam_pwquality"
+    else
+        HARDN_STATUS "info" "Password quality tools are available."
+    fi
+elif command -v yum &>/dev/null; then
+    if ! command -v pwscore &>/dev/null; then
+        HARDN_STATUS "info" "Password quality tools not installed."
+        HARDN_STATUS "info" "To install: sudo yum install pam_pwquality"
+    else
+        HARDN_STATUS "info" "Password quality tools are available."
     fi
 fi
 
-# --------- CLI Interactive Password Reset (Optional and Safe) ----------
-# Only perform interactive password reset if explicitly requested and in safe conditions
-if [ -t 0 ] && [ -t 1 ] && [ -z "$HARDN_SKIP_PASSWORD_RESET" ] && [ -z "$CI" ]; then
-    # Ask user if they want to reset password immediately
+# --------- CLI Interactive Password Reset Help (Optional and Safe) ----------
+# Provide helpful guidance for password changes without forcing policy
+if [ -t 0 ] && [ -t 1 ] && [ -z "$HARDN_SKIP_PASSWORD_HELP" ] && [ -z "$CI" ]; then
     echo ""
-    echo "Password policy has been updated. Current user password may need to be changed."
-    read -p "Do you want to reset your password now? (y/N): " -n 1 -r
+    echo "================================================================"
+    echo "        INTERACTIVE PASSWORD CHANGE ASSISTANCE"
+    echo "================================================================"
+    echo ""
+    echo "STIG password requirements recommend the following:"
+    echo "• Minimum length: $minlen characters"
+    echo "• Must contain: $ucredit uppercase, $lcredit lowercase, $dcredit digits, $ocredit special characters"
+    echo ""
+    read -p "Would you like to change your password now to meet STIG requirements? (y/N): " -n 1 -r
     echo ""
     
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        HARDN_STATUS "info" "Starting interactive password reset for current user..."
-    
-    # Get current username
-    CURRENT_USER=$(whoami)
-    HARDN_STATUS "info" "Password reset for user: $CURRENT_USER"
-    
-    # Password validation loop
-    while true; do
+        HARDN_STATUS "info" "Starting interactive password guidance for current user..."
+        
+        # Get current username
+        CURRENT_USER=$(whoami)
+        HARDN_STATUS "info" "Password change assistance for user: $CURRENT_USER"
+        
         echo ""
-        echo "Password Requirements:"
+        echo "PASSWORD REQUIREMENTS GUIDE:"
         echo "• Minimum length: $minlen characters"
-        echo "• Must contain: $ucredit uppercase, $lcredit lowercase, $dcredit digits, $ocredit special characters"
+        echo "• Must contain: $ucredit uppercase letter(s)"
+        echo "• Must contain: $lcredit lowercase letter(s)"
+        echo "• Must contain: $dcredit digit(s)"
+        echo "• Must contain: $ocredit special character(s)"
         echo ""
-        
-        # Read password securely
-        read -s -p "Enter new password: " new_password
+        echo "EXAMPLES OF STRONG PASSWORDS:"
+        echo "• MyP@ssw0rd2024! (15 chars, mixed case, digits, symbols)"
+        echo "• Secure#Login99 (15 chars, mixed case, digits, symbols)"
+        echo "• Admin2024@Safe (15 chars, mixed case, digits, symbols)"
         echo ""
-        read -s -p "Confirm new password: " confirm_password
+        echo "The system will now run the standard 'passwd' command."
+        echo "Enter a password that meets the above requirements."
         echo ""
+        read -p "Press Enter to continue with password change, or Ctrl+C to cancel..."
         
-        # Check if passwords match
-        if [ "$new_password" != "$confirm_password" ]; then
-            echo "!!! Passwords do not match. Please try again."
-            continue
-        fi
-        
-        # Validate password against policy
-        if validate_password "$new_password" "$minlen" "$ucredit" "$lcredit" "$dcredit" "$ocredit"; then
-            echo "Password meets policy requirements."
-            
-            # Apply the password
-            if echo "$CURRENT_USER:$new_password" | chpasswd; then
-                HARDN_STATUS "pass" "Password successfully updated for user: $CURRENT_USER"
-                echo "Password has been successfully changed!"
-                break
-            else
-                HARDN_STATUS "error" "Failed to update password for user: $CURRENT_USER"
-                echo "Failed to update password. Please try again or contact administrator."
-            fi
+        # Use the standard passwd command for safety
+        if passwd; then
+            HARDN_STATUS "pass" "Password change completed for user: $CURRENT_USER"
+            echo ""
+            echo "Password successfully changed!"
+            echo "Your new password should now meet STIG security requirements."
         else
-            echo "Password does not meet policy requirements:"
-            echo "   Required: ${minlen}+ chars, ${ucredit}+ uppercase, ${lcredit}+ lowercase, ${dcredit}+ digits, ${ocredit}+ special"
-            echo "   Please try again."
+            HARDN_STATUS "warning" "Password change was cancelled or failed for user: $CURRENT_USER"
+            echo ""
+            echo "Password change was not completed."
+            echo "You can run 'passwd' manually anytime to change your password."
         fi
-    done
     else
-        HARDN_STATUS "info" "Password reset skipped. Users can run 'passwd' to update passwords when ready."
+        HARDN_STATUS "info" "Password change skipped. You can run 'passwd' anytime to update your password."
+        echo ""
+        echo "To change your password later, run: passwd"
+        echo "Remember to follow STIG requirements when choosing a new password."
     fi
 else
-    HARDN_STATUS "info" "Non-interactive mode or automated environment: Password policy applied without user interaction."
-    HARDN_STATUS "info" "Users can run 'passwd' to update passwords to meet new requirements."
+    HARDN_STATUS "info" "Non-interactive mode: Password guidance provided in assessment output above."
+    HARDN_STATUS "info" "Users can run 'passwd' anytime to update passwords to meet STIG requirements."
 fi
 
 # --------- Final Message ----------
-HARDN_STATUS "pass" "STIG-compliant password policy successfully applied."
-HARDN_STATUS "info" "Password policy is now active. Users can run 'passwd' to update passwords."
+HARDN_STATUS "pass" "STIG password policy assessment completed."
+HARDN_STATUS "info" "Assessment mode: No automatic policy changes were applied."
+HARDN_STATUS "info" "Review the recommendations above and apply manually if desired."
+HARDN_STATUS "info" "Users can run 'passwd' to change passwords according to STIG requirements."
 
 return 0 2>/dev/null || hardn_module_exit 0
