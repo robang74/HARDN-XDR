@@ -8,28 +8,29 @@ HARDN_STATUS "info" "Setting up central logging for security tools..."
 
 install_logging_packages() {
     HARDN_STATUS "info" "Checking and installing logging packages (rsyslog, logrotate)..."
+    
+    # Use the safe package installation function
+    local missing_packages=()
     for pkg in rsyslog logrotate; do
         if ! is_installed "$pkg"; then
-            if command -v apt-get >/dev/null 2>&1; then
-                sudo apt-get update >/dev/null 2>&1
-                sudo apt-get install -y "$pkg" >/dev/null 2>&1
-            elif command -v dnf >/dev/null 2>&1; then
-                sudo dnf install -y "$pkg" >/dev/null 2>&1
-            elif command -v yum >/dev/null 2>&1; then
-                sudo yum install -y "$pkg" >/dev/null 2>&1
-            else
-                HARDN_STATUS "error" "Unsupported package manager. Cannot install $pkg."
-                return 1
-            fi
+            missing_packages+=("$pkg")
         fi
     done
-    HARDN_STATUS "pass" "Logging packages are installed."
+    
+    if [[ ${#missing_packages[@]} -gt 0 ]]; then
+        HARDN_STATUS "info" "Installing missing packages: ${missing_packages[*]}"
+        if ! safe_package_install "${missing_packages[@]}"; then
+            HARDN_STATUS "warning" "Some logging packages could not be installed in this environment"
+            # Don't fail completely - logging may work with existing tools
+        fi
+    fi
+    
+    HARDN_STATUS "pass" "Logging package installation completed."
     return 0
 }
 
 if ! install_logging_packages; then
-    HARDN_STATUS "error" "Failed to install essential logging packages. Skipping central logging configuration."
-    return 1
+    HARDN_STATUS "warning" "Package installation had issues but continuing with available tools"
 fi
 
 
@@ -107,6 +108,9 @@ cat > /etc/logrotate.d/hardn-xdr << 'EOF'
         # Use the standard rsyslog-rotate script if available, otherwise restart
         if [ -x /usr/lib/rsyslog/rsyslog-rotate ]; then
             /usr/lib/rsyslog/rsyslog-rotate
+        elif is_container_environment; then
+            # In containers, try to reload gracefully or skip
+            pkill -HUP rsyslog 2>/dev/null || true
         else
             systemctl reload rsyslog >/dev/null 2>&1 || true
         fi
