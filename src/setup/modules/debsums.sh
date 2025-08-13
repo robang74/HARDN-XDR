@@ -137,8 +137,8 @@ create_scheduled_task() {
     local random_minute=$((hostname_hash % 60))
     local random_hour=$((3 + (hostname_hash % 4)))  # Between 3-6 AM
 
-    if [ "$SYSTEMD_AVAILABLE" = "yes" ]; then
-        # Create systemd timer and service for better resource control
+    if [ "$SYSTEMD_AVAILABLE" = "yes" ] && ! is_container_environment; then
+        # Create systemd timer and service for better resource control (only outside containers)
         local service_file="/etc/systemd/system/debsums-check.service"
         local timer_file="/etc/systemd/system/debsums-check.timer"
 
@@ -174,14 +174,23 @@ Persistent=true
 WantedBy=timers.target
 EOF
 
-            systemctl daemon-reload
-            systemctl enable debsums-check.timer
-            systemctl start debsums-check.timer
-            HARDN_STATUS "pass" "Systemd timer for debsums check created and enabled"
+            if systemctl daemon-reload >/dev/null 2>&1 && \
+               systemctl enable debsums-check.timer >/dev/null 2>&1 && \
+               systemctl start debsums-check.timer >/dev/null 2>&1; then
+                HARDN_STATUS "pass" "Systemd timer for debsums check created and enabled"
+            else
+                HARDN_STATUS "warning" "Failed to enable systemd timer, falling back to cron"
+                # Clean up failed systemd files
+                rm -f "$service_file" "$timer_file"
+                # Force cron fallback
+                SYSTEMD_AVAILABLE="no"
+            fi
         else
             HARDN_STATUS "warning" "Systemd service for debsums already exists"
         fi
-    else
+    fi
+
+    if [ "$SYSTEMD_AVAILABLE" != "yes" ] || is_container_environment; then
         # Fall back to cron if systemd not available
         local cron_file="/etc/cron.d/debsums"
         if [ ! -f "$cron_file" ]; then

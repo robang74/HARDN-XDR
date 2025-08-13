@@ -66,8 +66,12 @@ for param in "${!kernel_params[@]}"; do
 	safe_sysctl_set "$param" "$expected_value"
 done
 
-if ! is_container_environment && sysctl --system >/dev/null 2>&1; then
-	HARDN_STATUS "pass" "Kernel hardening applied successfully."
+if ! is_container_environment; then
+	if sysctl --system >/dev/null 2>&1; then
+		HARDN_STATUS "pass" "Kernel hardening applied successfully."
+	else
+		HARDN_STATUS "warning" "Kernel parameters configured but sysctl --system failed. Settings may require reboot."
+	fi
 else
 	HARDN_STATUS "info" "Kernel security parameters configured (some limitations may apply in containers)"
 fi

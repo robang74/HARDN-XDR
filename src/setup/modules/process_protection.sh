@@ -6,9 +6,9 @@
 
 set -euo pipefail
 
-source "/usr/share/hardn-xdr/hardn-common.sh" 2>/dev/null || {
+source "/usr/lib/hardn-xdr/src/setup/hardn-common.sh" 2>/dev/null || {
     echo "Warning: Could not source hardn-common.sh, using basic functions"
-    log_message() { echo "$(date '+%Y-%m-%d %H:%M:%S') - $1"; }
+    HARDN_STATUS() { echo "$(date '+%Y-%m-%d %H:%M:%S') - [$1] $2"; }
     check_root() { [[ $EUID -eq 0 ]]; }
 }
 
@@ -17,10 +17,10 @@ CONFIG_DIR="/etc/hardn-xdr/process-protection"
 LOG_FILE="/var/log/security/process-protection.log"
 
 process_protection_setup() {
-    log_message "INFO: Setting up $MODULE_NAME"
+    HARDN_STATUS "info" "Setting up $MODULE_NAME"
 
     if ! check_root; then
-        log_message "ERROR: This module requires root privileges"
+        HARDN_STATUS "error" "This module requires root privileges"
         return 1
     fi
 
@@ -37,12 +37,17 @@ EOF
 
     # Add auditd rules for process monitoring
     if command -v auditctl >/dev/null 2>&1; then
-        auditctl -a always,exit -F arch=b64 -S ptrace -k process_injection
-        auditctl -a always,exit -F arch=b32 -S ptrace -k process_injection
-        log_message "INFO: Added auditd rules for process injection detection"
+        # Check if auditd is available (may not work in containers)
+        if auditctl -l >/dev/null 2>&1; then
+            auditctl -a always,exit -F arch=b64 -S ptrace -k process_injection 2>/dev/null || true
+            auditctl -a always,exit -F arch=b32 -S ptrace -k process_injection 2>/dev/null || true
+            HARDN_STATUS "info" "Added auditd rules for process injection detection"
+        else
+            HARDN_STATUS "info" "Auditd not available (normal in containers)"
+        fi
     fi
 
-    log_message "INFO: $MODULE_NAME setup completed"
+    HARDN_STATUS "pass" "$MODULE_NAME setup completed"
     return 0
 }
 

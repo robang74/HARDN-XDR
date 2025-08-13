@@ -23,13 +23,20 @@ set -e
 # Function to install YARA and dependencies
 install_yara() {
     HARDN_STATUS "info" "Installing YARA and related packages..."
-    apt-get update || true
-    apt-get install -y yara python3-yara libyara-dev || {
-        HARDN_STATUS "warning" "Failed to install some YARA packages, continuing anyway"
-    }
+    
+    # Use safe package installation
+    if ! safe_package_install yara python3-yara libyara-dev; then
+        HARDN_STATUS "warning" "Failed to install some YARA packages (normal in minimal containers)"
+        # Check if any YARA tools were installed
+        if ! command -v yara >/dev/null 2>&1; then
+            HARDN_STATUS "warning" "YARA not available, skipping YARA configuration"
+            return 1
+        fi
+    fi
 
     # Create directories for YARA rules
     mkdir -p /etc/yara/rules
+    return 0
 }
 
 
@@ -173,8 +180,11 @@ EOF
 yara_module() {
     HARDN_STATUS "info" "Installing and configuring YARA..."
 
-    # Install YARA
-    install_yara
+    # Install YARA - exit gracefully if it fails
+    if ! install_yara; then
+        HARDN_STATUS "warning" "YARA installation failed, skipping YARA configuration"
+        return 0
+    fi
 
     # Use basic and github rules by default for comprehensive coverage
     local ruleset_choice="basic github"
