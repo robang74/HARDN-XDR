@@ -5,11 +5,22 @@ set -e
 
 
 HARDN_STATUS "info" "Checking network interfaces for promiscuous mode..."
-for interface in $(/sbin/ip link show | awk '$0 ~ /: / {print $2}' | sed 's/://g'); do
-	if /sbin/ip link show "$interface" | grep -q "PROMISC"; then
-		HARDN_STATUS "warning" "Interface $interface is in promiscuous mode. Review Interface."
-	fi
-done
+
+# Check if ip command is available and get interfaces safely
+if command -v ip >/dev/null 2>&1; then
+    interfaces=$(/sbin/ip link show 2>/dev/null | awk '$0 ~ /: / {print $2}' | sed 's/://g' 2>/dev/null || true)
+    if [[ -n "$interfaces" ]]; then
+        for interface in $interfaces; do
+            if /sbin/ip link show "$interface" 2>/dev/null | grep -q "PROMISC"; then
+                HARDN_STATUS "warning" "Interface $interface is in promiscuous mode. Review Interface."
+            fi
+        done
+    else
+        HARDN_STATUS "info" "No network interfaces found or ip command failed"
+    fi
+else
+    HARDN_STATUS "info" "ip command not available, skipping interface check"
+fi
 
 
 # Expanded protocol list: Vulnerable/Legacy/Uncommon protocols OFF by default, common protocols ON by default

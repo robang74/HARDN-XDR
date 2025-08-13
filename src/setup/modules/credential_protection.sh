@@ -26,30 +26,28 @@ credential_protection_setup() {
     mkdir -p "$CONFIG_DIR"
     mkdir -p "$(dirname "$LOG_FILE")"
 
-    # Secure memory dump protection (if not already configured)
-    if ! grep -q "kernel.core_pattern" /etc/sysctl.d/99-credential-protection.conf 2>/dev/null; then
-        echo 'kernel.core_pattern=|/bin/false' >> /etc/sysctl.d/99-credential-protection.conf
-        HARDN_STATUS "info" "Core dump protection configured"
-    fi
+    # Secure memory dump protection using safe sysctl
+    safe_sysctl_set "kernel.core_pattern" "|/bin/false" "/etc/sysctl.d/99-credential-protection.conf"
+    HARDN_STATUS "info" "Core dump protection configured"
 
     # Enhanced credential file monitoring
     if command -v auditctl >/dev/null 2>&1; then
-        auditctl -w /etc/shadow -p wa -k credential_access
-        auditctl -w /etc/gshadow -p wa -k credential_access
-        auditctl -w /etc/passwd -p wa -k credential_access
-        auditctl -a always,exit -F arch=b64 -S setuid -k credential_manipulation
-        auditctl -a always,exit -F arch=b32 -S setuid -k credential_manipulation
-        HARDN_STATUS "info" "Added auditd rules for credential protection"
+        # Check if auditd is available (may not work in containers)
+        if auditctl -l >/dev/null 2>&1; then
+            auditctl -w /etc/shadow -p wa -k credential_access 2>/dev/null || true
+            auditctl -w /etc/gshadow -p wa -k credential_access 2>/dev/null || true
+            auditctl -w /etc/passwd -p wa -k credential_access 2>/dev/null || true
+            auditctl -a always,exit -F arch=b64 -S setuid -k credential_manipulation 2>/dev/null || true
+            auditctl -a always,exit -F arch=b32 -S setuid -k credential_manipulation 2>/dev/null || true
+            HARDN_STATUS "info" "Added auditd rules for credential protection"
+        else
+            HARDN_STATUS "info" "Auditd not available (normal in containers)"
+        fi
     fi
 
-    # Restrict access to process memory
-    if [[ -d /proc/sys/kernel ]]; then
-        echo 1 > /proc/sys/kernel/yama/ptrace_scope
-        if ! grep -q "kernel.yama.ptrace_scope" /etc/sysctl.d/99-credential-protection.conf 2>/dev/null; then
-            echo 'kernel.yama.ptrace_scope = 1' >> /etc/sysctl.d/99-credential-protection.conf
-        fi
-        HARDN_STATUS "info" "Enhanced ptrace restrictions applied"
-    fi
+    # Restrict access to process memory using safe sysctl
+    safe_sysctl_set "kernel.yama.ptrace_scope" "1" "/etc/sysctl.d/99-credential-protection.conf"
+    HARDN_STATUS "info" "Enhanced ptrace restrictions applied"
 
     HARDN_STATUS "pass" "$MODULE_NAME setup completed"
     return 0

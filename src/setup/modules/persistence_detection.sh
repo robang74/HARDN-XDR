@@ -17,11 +17,16 @@ mkdir -p "$(dirname "$LOG_FILE")"
 
 # Enhanced kernel module monitoring
 if command -v auditctl >/dev/null 2>&1; then
-    auditctl -w /sbin/insmod -p x -k kernel_modules
-    auditctl -w /sbin/rmmod -p x -k kernel_modules
-    auditctl -w /sbin/modprobe -p x -k kernel_modules
-    auditctl -a always,exit -F arch=b64 -S init_module -S delete_module -k kernel_modules
-    HARDN_STATUS "pass" "Added auditd rules for kernel module monitoring"
+    # Check if auditd is available (may not work in containers)
+    if auditctl -l >/dev/null 2>&1; then
+        auditctl -w /sbin/insmod -p x -k kernel_modules 2>/dev/null || true
+        auditctl -w /sbin/rmmod -p x -k kernel_modules 2>/dev/null || true
+        auditctl -w /sbin/modprobe -p x -k kernel_modules 2>/dev/null || true
+        auditctl -a always,exit -F arch=b64 -S init_module -S delete_module -k kernel_modules 2>/dev/null || true
+        HARDN_STATUS "pass" "Added auditd rules for kernel module monitoring"
+    else
+        HARDN_STATUS "info" "Auditd not available (normal in containers)"
+    fi
 fi
 
 # Boot process integrity monitoring
