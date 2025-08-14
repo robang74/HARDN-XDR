@@ -6,8 +6,8 @@
 
 REPORT_DIR="$(dirname "$0")/dashboard"
 PORT=8021
-TIMESTAMP="2025-08-07 21:32:56"
-SCAN_USER="runner@pkrvmjbmru5nbw0"
+TIMESTAMP="2025-08-13 23:41:04"
+SCAN_USER="runner@pkrvmsl9tci6h6u"
 SYSTEM_INFO="Linux 6.11.0-1018-azure"
 
 echo "🌐 Starting HARDN-XDR Dashboard Server"
