@@ -431,6 +431,70 @@ detect_os_info() {
 # Initialize OS detection
 detect_os_info
 
+# ========== NEW CENTRALIZED RUNTIME DETECTION LAYER ==========
+
+# True if running as root
+is_root() {
+    [ "$(id -u)" -eq 0 ]
+}
+
+# True if we're in a container (cgroup or /.dockerenv heuristics)
+is_container() {
+    [ -f "/.dockerenv" ] && return 0
+    grep -qiE 'container|docker|podman' /proc/1/cgroup 2>/dev/null && return 0
+    # In CI, default to container-like unless explicitly overridden
+    [[ -n "$CI" || -n "$GITHUB_ACTIONS" || -n "$GITLAB_CI" || -n "$JENKINS_URL" ]] && return 0
+    return 1
+}
+
+# True if we're in a VM (best-effort)
+is_vm() {
+    command -v systemd-detect-virt >/dev/null 2>&1 && systemd-detect-virt -vq && return 0
+    return 1
+}
+
+# True if systemd is actually usable
+has_systemd() {
+    command -v systemctl >/dev/null 2>&1 || return 1
+    [ -d /run/systemd/system ] || return 1
+    return 0
+}
+
+# Require root or skip safely (never hard error in CI)
+require_root_or_skip() {
+    if ! is_root; then
+        HARDN_STATUS "info" "Skipping: requires root privileges"
+        return 1
+    fi
+    return 0
+}
+
+# Guard a binary; if missing, skip with INFO
+require_cmd_or_skip() {
+    local cmd="$1"
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        HARDN_STATUS "info" "Skipping: '$cmd' not available in this environment"
+        return 1
+    fi
+    return 0
+}
+
+# Maintain compatibility with existing check_root function
+check_root() {
+    is_root
+}
+
+# Export new runtime detection functions
+export -f is_root
+export -f is_container
+export -f is_vm
+export -f has_systemd
+export -f require_root_or_skip
+export -f require_cmd_or_skip
+export -f check_root
+
+# ========== END NEW RUNTIME DETECTION LAYER ==========
+
 # Module exit function - used by modules when they need to exit
 # (when run standalone rather than sourced)
 hardn_module_exit() {
