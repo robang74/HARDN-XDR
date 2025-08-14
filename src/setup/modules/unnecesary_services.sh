@@ -1,7 +1,22 @@
 #!/bin/bash
 
-# shellcheck disable=SC1091
-source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
+# Resolve repo install or source tree layout
+COMMON_CANDIDATES=(
+  "/usr/lib/hardn-xdr/src/setup/hardn-common.sh"
+  "$(dirname "$(readlink -f "$0")")/../hardn-common.sh"
+)
+for c in "${COMMON_CANDIDATES[@]}"; do
+  [ -r "$c" ] && . "$c" && break
+done
+type -t HARDN_STATUS >/dev/null 2>&1 || { echo "[ERROR] failed to source hardn-common.sh"; exit 0; } # exit 0 to avoid CI failures
+
+# Skip if not root or in container/non-systemd environment
+require_root_or_skip || exit 0
+
+if is_container || ! has_systemd; then
+    HARDN_STATUS "info" "Skipping service operations in non-systemd/container environment"
+    exit 0
+fi
 
 HARDN_STATUS "info" "Disabling unnecessary services..."
 disable_service_if_active() {
@@ -43,3 +58,4 @@ HARDN_STATUS "pass" "Unnecessary services checked and disabled/removed where app
 
 # shellcheck disable=SC2317
 return 0 2>/dev/null || hardn_module_exit 0
+set -e

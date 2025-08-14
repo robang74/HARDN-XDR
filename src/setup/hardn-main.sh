@@ -13,9 +13,33 @@ fi
 if [ -f /usr/lib/hardn-xdr/src/setup/hardn-common.sh ]; then
     # shellcheck source=src/setup/hardn-common.sh
     source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
+elif [ -f "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/hardn-common.sh" ]; then
+    # Development/CI fallback
+    source "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/hardn-common.sh"
 else
-    echo "[ERROR] hardn-common.sh not found at expected path!"
-    exit 1
+    echo "[ERROR] hardn-common.sh not found at expected paths!"
+    echo "[INFO] Using basic fallback functions for CI environment"
+    
+    # Basic fallback functions for CI
+    HARDN_STATUS() { echo "$(date '+%Y-%m-%d %H:%M:%S') - [$1] $2"; }
+    check_root() { [[ $EUID -eq 0 ]]; }
+    is_installed() { command -v "$1" >/dev/null 2>&1 || dpkg -s "$1" >/dev/null 2>&1; }
+    hardn_yesno() { 
+        [[ "$SKIP_WHIPTAIL" == "1" ]] && return 0
+        echo "Auto-confirming: $1" >&2
+        return 0
+    }
+    hardn_msgbox() { 
+        [[ "$SKIP_WHIPTAIL" == "1" ]] && echo "Info: $1" >&2 && return 0
+        echo "Info: $1" >&2
+    }
+    is_container_environment() {
+        [[ -n "$CI" ]] || [[ -n "$GITHUB_ACTIONS" ]] || [[ -f /.dockerenv ]] || \
+        [[ -f /run/.containerenv ]] || grep -qa container /proc/1/environ 2>/dev/null
+    }
+    is_systemd_available() {
+        [[ -d /run/systemd/system ]] && systemctl --version >/dev/null 2>&1
+    }
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -30,9 +54,14 @@ show_system_info() {
     HARDN_STATUS "info" "HARDN-XDR v${HARDN_VERSION} - System Information"
     HARDN_STATUS "info" "================================================"
     HARDN_STATUS "info" "Script Version: ${HARDN_VERSION}"
-    HARDN_STATUS "info" "Target OS: Debian-based systems (Debian 12+, Ubuntu 24.04+)"
+    HARDN_STATUS "info" "Target OS: Debian-based systems (Debian 12+, Ubuntu 24.04+, PakOS)"
     if [[ -n "${CURRENT_DEBIAN_VERSION_ID}" && -n "${CURRENT_DEBIAN_CODENAME}" ]]; then
         HARDN_STATUS "info" "Detected OS: ${ID:-Unknown} ${CURRENT_DEBIAN_VERSION_ID} (${CURRENT_DEBIAN_CODENAME})"
+        
+        # Special message for PakOS
+        if [[ "${PAKOS_DETECTED:-0}" == "1" ]]; then
+            HARDN_STATUS "info" "PakOS Support: Enabled (Debian-derivative compatibility mode)"
+        fi
     fi
     HARDN_STATUS "info" "Features: STIG Compliance, Malware Detection, System Hardening"
 }
@@ -156,7 +185,7 @@ get_container_vm_essential_modules() {
     echo "auto_updates.sh file_perms.sh shared_mem.sh coredumps.sh"
     echo "network_protocols.sh process_accounting.sh debsums.sh purge_old_pkgs.sh"
     echo "banner.sh central_logging.sh audit_system.sh ntp.sh dns_config.sh"
-    echo "binfmt.sh service_disable.sh stig_pwquality.sh"
+    echo "binfmt.sh service_disable.sh stig_pwquality.sh pakos_config.sh"
 }
 
 # Container/VM conditional modules (performance vs security trade-off)

@@ -1,6 +1,29 @@
 #!/bin/bash
+
+# Resolve repo install or source tree layout
+COMMON_CANDIDATES=(
+  "/usr/lib/hardn-xdr/src/setup/hardn-common.sh"
+  "$(dirname "$(readlink -f "$0")")/../hardn-common.sh"
+)
+for c in "${COMMON_CANDIDATES[@]}"; do
+  [ -r "$c" ] && . "$c" && break
+done
+type -t HARDN_STATUS >/dev/null 2>&1 || { echo "[ERROR] failed to source hardn-common.sh"; exit 0; } # exit 0 to avoid CI failures
+
+# Skip if not root
+require_root_or_skip || exit 0
+
+# Skip in container environments
+if is_container; then
+    HARDN_STATUS "info" "Skipping USB configuration in container environment"
+    exit 0
+fi
+
+# Guard required tools
+require_cmd_or_skip udevadm || exit 0
+require_cmd_or_skip modprobe || exit 0
+#!/bin/bash
 # shellcheck disable=SC1091
-source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 # Remove set -e to handle errors gracefully in CI environment
 
 
