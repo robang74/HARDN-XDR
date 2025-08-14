@@ -31,11 +31,15 @@ if [ "$DESKTOP_DETECTED" = "true" ]; then
 fi
 
 # --------- Set Default Mode ----------
-# AppArmor will run in enforce mode by default for maximum security
-# But use complain mode if desktop environment is detected for safety
-if [ "$DESKTOP_DETECTED" = "true" ]; then
+# STIG Compliance Enhancement: Support for enforce mode with selective complain mode
+# Check for STIG_COMPLIANT environment variable to force enforcement
+if [[ "${STIG_COMPLIANT:-false}" == "true" ]] || [[ "${FORCE_APPARMOR_ENFORCE:-false}" == "true" ]]; then
+    MODE="enforce"
+    HARDN_STATUS "info" "STIG compliance mode enabled - AppArmor will run in enforce mode for maximum security."
+elif [ "$DESKTOP_DETECTED" = "true" ]; then
     MODE="complain"
     HARDN_STATUS "info" "AppArmor configured to run in complain mode (desktop environment detected - safer mode)."
+    HARDN_STATUS "info" "To enable STIG compliance mode, set STIG_COMPLIANT=true or FORCE_APPARMOR_ENFORCE=true"
 else
     MODE="enforce"
     HARDN_STATUS "info" "AppArmor configured to run in enforce mode (default secure setting)."
@@ -252,6 +256,10 @@ if command -v aa-status &>/dev/null; then
     fi
 fi
 
+# --------- STIG Compliance Enhancements ----------
+# Add STIG-specific AppArmor hardening measures
+apply_stig_apparmor_enhancements
+
 # --------- Service Status Check ----------
 HARDN_STATUS "info" "Checking critical service status after AppArmor configuration..."
 
@@ -270,6 +278,233 @@ if command -v suricata &>/dev/null && systemctl is-enabled suricata 2>/dev/null;
         HARDN_STATUS "warning" "Suricata IDS may have issues - check logs if network monitoring fails."
     fi
 fi
+
+# --------- STIG AppArmor Enhancement Function ----------
+apply_stig_apparmor_enhancements() {
+    HARDN_STATUS "info" "Applying STIG-specific AppArmor enhancements..."
+    
+    local stig_config_dir="/etc/hardn-xdr/apparmor-stig"
+    mkdir -p "$stig_config_dir"
+    
+    # Create STIG-compliant AppArmor profiles for common services
+    create_stig_apparmor_profiles "$stig_config_dir"
+    
+    # Apply STIG-specific enforcement policies
+    if [[ "${STIG_COMPLIANT:-false}" == "true" ]] || [[ "${FORCE_APPARMOR_ENFORCE:-false}" == "true" ]]; then
+        apply_stig_enforcement_policies
+    fi
+    
+    # Document current AppArmor compliance status
+    document_apparmor_compliance "$stig_config_dir"
+    
+    HARDN_STATUS "info" "STIG AppArmor enhancements completed"
+}
+
+create_stig_apparmor_profiles() {
+    local config_dir="$1"
+    HARDN_STATUS "info" "Creating STIG-compliant AppArmor profiles..."
+    
+    # Create enhanced SSH profile
+    cat > "$config_dir/sshd-stig-profile" << 'EOF'
+# STIG-compliant SSH AppArmor profile
+# Based on DISA STIG requirements for SSH access controls
+
+#include <tunables/global>
+
+/usr/sbin/sshd {
+  #include <abstractions/authentication>
+  #include <abstractions/base>
+  #include <abstractions/consoles>
+  #include <abstractions/nameservice>
+  #include <abstractions/wutmp>
+  
+  capability sys_admin,
+  capability sys_chroot,
+  capability sys_resource,
+  capability sys_tty_config,
+  capability setgid,
+  capability setuid,
+  capability audit_control,
+  capability audit_write,
+  
+  # STIG requirement: Restrict file access
+  /etc/ssh/** r,
+  /etc/hosts.allow r,
+  /etc/hosts.deny r,
+  /var/log/auth.log w,
+  /var/log/secure w,
+  
+  # STIG requirement: Limit process execution
+  /bin/sh ix,
+  /usr/bin/passwd ix,
+  /usr/bin/sudo ix,
+  
+  # Deny dangerous operations
+  deny /etc/shadow w,
+  deny /etc/gshadow w,
+  deny /boot/** w,
+  deny /sys/kernel/security/** w,
+  
+  # Network restrictions
+  network inet stream,
+  network inet6 stream,
+  
+  # Process restrictions
+  ptrace (read, trace) peer=unconfined,
+}
+EOF
+
+    # Create enhanced web server profile template
+    cat > "$config_dir/web-server-stig-template" << 'EOF'
+# STIG-compliant web server AppArmor profile template
+# Customize for your specific web server (Apache, Nginx, etc.)
+
+#include <tunables/global>
+
+/usr/sbin/apache2 {
+  #include <abstractions/base>
+  #include <abstractions/nameservice>
+  
+  capability dac_override,
+  capability setgid,
+  capability setuid,
+  
+  # STIG requirement: Restrict document root access
+  /var/www/html/** r,
+  /var/log/apache2/** w,
+  
+  # STIG requirement: Deny system file access
+  deny /etc/passwd r,
+  deny /etc/shadow r,
+  deny /home/** r,
+  deny /root/** r,
+  deny /tmp/** w,
+  deny /var/tmp/** w,
+  
+  # STIG requirement: Limit executable access
+  /usr/bin/php* ix,
+  /usr/lib/apache2/modules/** mr,
+  
+  # Network access
+  network inet stream,
+  network inet6 stream,
+}
+EOF
+
+    HARDN_STATUS "info" "STIG AppArmor profiles created in $config_dir"
+}
+
+apply_stig_enforcement_policies() {
+    HARDN_STATUS "info" "Applying STIG enforcement policies..."
+    
+    # Get list of profiles currently in complain mode
+    local complain_profiles=()
+    if command -v aa-status >/dev/null 2>&1; then
+        while IFS= read -r line; do
+            if [[ $line =~ ^[[:space:]]*([^[:space:]]+)[[:space:]]+\(complain\) ]]; then
+                complain_profiles+=("${BASH_REMATCH[1]}")
+            fi
+        done < <(aa-status 2>/dev/null | grep "(complain)" || true)
+    fi
+    
+    # Create whitelist of profiles that MUST stay in complain mode for system stability
+    local always_complain=(
+        "/usr/sbin/gdm3"
+        "/usr/bin/gdm3"
+        "/usr/sbin/lightdm"
+        "/usr/sbin/sddm"
+        "/usr/sbin/xdm"
+    )
+    
+    # Selectively enforce profiles that are safe to enforce
+    local enforced_count=0
+    for profile in "${complain_profiles[@]}"; do
+        local should_complain=false
+        
+        # Check if this profile should remain in complain mode
+        for always_complain_profile in "${always_complain[@]}"; do
+            if [[ "$profile" == "$always_complain_profile" ]]; then
+                should_complain=true
+                break
+            fi
+        done
+        
+        # Enforce if it's safe to do so
+        if [[ "$should_complain" == false ]]; then
+            if timeout 10 aa-enforce "$profile" 2>/dev/null; then
+                HARDN_STATUS "info" "Enforced AppArmor profile: $(basename "$profile")"
+                ((enforced_count++))
+            else
+                HARDN_STATUS "warning" "Failed to enforce profile: $(basename "$profile")"
+            fi
+        else
+            HARDN_STATUS "info" "Keeping critical service in complain mode: $(basename "$profile")"
+        fi
+    done
+    
+    HARDN_STATUS "info" "STIG enforcement applied to $enforced_count profiles"
+}
+
+document_apparmor_compliance() {
+    local config_dir="$1"
+    HARDN_STATUS "info" "Documenting AppArmor compliance status..."
+    
+    cat > "$config_dir/apparmor-stig-compliance.txt" << EOF
+HARDN-XDR AppArmor STIG Compliance Report
+========================================
+Generated: $(date)
+
+STIG Requirements Addressed:
+- AC-3: Access Enforcement via mandatory access controls
+- AC-6: Least Privilege through profile restrictions  
+- CM-7: Least Functionality by restricting application capabilities
+- SI-3: Malicious Code Protection through application sandboxing
+
+Current AppArmor Status:
+EOF
+
+    # Add current status information
+    if command -v aa-status >/dev/null 2>&1; then
+        echo "" >> "$config_dir/apparmor-stig-compliance.txt"
+        echo "Profiles in Enforce Mode:" >> "$config_dir/apparmor-stig-compliance.txt"
+        aa-status 2>/dev/null | grep "(enforce)" | head -10 >> "$config_dir/apparmor-stig-compliance.txt" || true
+        
+        echo "" >> "$config_dir/apparmor-stig-compliance.txt"
+        echo "Profiles in Complain Mode:" >> "$config_dir/apparmor-stig-compliance.txt"
+        aa-status 2>/dev/null | grep "(complain)" | head -10 >> "$config_dir/apparmor-stig-compliance.txt" || true
+        
+        echo "" >> "$config_dir/apparmor-stig-compliance.txt"
+        echo "Unconfined Processes:" >> "$config_dir/apparmor-stig-compliance.txt"
+        aa-status 2>/dev/null | grep "processes are unconfined" >> "$config_dir/apparmor-stig-compliance.txt" || true
+    fi
+    
+    cat >> "$config_dir/apparmor-stig-compliance.txt" << 'EOF'
+
+STIG Compliance Recommendations:
+1. Regularly review and update AppArmor profiles
+2. Test profile changes in complain mode before enforcement
+3. Monitor AppArmor logs for policy violations
+4. Implement custom profiles for organization-specific applications
+5. Regular compliance validation using OpenSCAP scans
+
+STIG Controls Mapped:
+- RHEL-08-010370: Mandatory access control policy implementation
+- RHEL-08-010371: Mandatory access control policy enforcement
+- RHEL-08-010372: Application restrictions via MAC policies
+
+For enhanced STIG compliance, run AppArmor in enforce mode:
+export STIG_COMPLIANT=true
+or
+export FORCE_APPARMOR_ENFORCE=true
+
+Monitoring Commands:
+- View current status: aa-status
+- Check logs: grep apparmor /var/log/syslog
+- Test profile: aa-complain <profile> && aa-enforce <profile>
+EOF
+
+    HARDN_STATUS "info" "AppArmor compliance documentation saved to $config_dir/apparmor-stig-compliance.txt"
+}
 
 HARDN_STATUS "pass" "AppArmor module completed in $MODE mode."
 
