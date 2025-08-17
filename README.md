@@ -2,8 +2,9 @@
 ![hardn](docs/hardn.jpeg)
 
 **Linux Security Hardening Extended Detection and Response**
+- [![ci](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenSource-For-Freedom/HARDN-XDR/actions/workflows/ci.yml)
 
-HARDN-XDR is a comprehensive Debian-based security hardening platform designed for government and enterprise compliance standards. It provides automated system hardening, malware detection, and continuous compliance validation through 47+ security modules.
+- **HARDN-XDR** is a comprehensive Debian-based security hardening platform designed for government and enterprise compliance standards. It provides automated system hardening, malware detection, and continuous compliance validation through 47+ security modules.
 
 ## Features
 
