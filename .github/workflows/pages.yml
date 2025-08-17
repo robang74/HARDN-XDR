@@ -1,0 +1,113 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '0 5 * * 5'  # Weekly traffic badge updates (Fridays at 5 AM UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Generate traffic badges
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p public/badges
+          
+          # Generate traffic badge JSONs using GitHub API
+          VIEW_JSON=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/${{ github.repository }}/traffic/views || echo '{"count": 0, "uniques": 0}')
+
+          CLONE_JSON=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/${{ github.repository }}/traffic/clones || echo '{"count": 0, "uniques": 0}')
+
+          VIEW_COUNT=$(echo "$VIEW_JSON" | jq -r '.count // 0')
+          VIEW_UNIQUES=$(echo "$VIEW_JSON" | jq -r '.uniques // 0')
+          CLONE_COUNT=$(echo "$CLONE_JSON" | jq -r '.count // 0')
+          CLONE_UNIQUES=$(echo "$CLONE_JSON" | jq -r '.uniques // 0')
+
+          # Determine badge colors based on traffic
+          if [ "$VIEW_COUNT" -ge 200 ]; then VIEW_COLOR="green"
+          elif [ "$VIEW_COUNT" -ge 50 ]; then VIEW_COLOR="orange"
+          else VIEW_COLOR="red"
+          fi
+
+          if [ "$CLONE_COUNT" -ge 100 ]; then CLONE_COLOR="blue"
+          elif [ "$CLONE_COUNT" -ge 20 ]; then CLONE_COLOR="yellow"
+          else CLONE_COLOR="red"
+          fi
+
+          # Create badge JSON files for shields.io
+          cat <<EOF > public/badges/traffic-views.json
+          {
+            "schemaVersion": 1,
+            "label": "views",
+            "message": "$VIEW_COUNT / $VIEW_UNIQUES",
+            "color": "$VIEW_COLOR"
+          }
+          EOF
+
+          cat <<EOF > public/badges/traffic-clones.json
+          {
+            "schemaVersion": 1,
+            "label": "clones",
+            "message": "$CLONE_COUNT / $CLONE_UNIQUES",
+            "color": "$CLONE_COLOR"
+          }
+          EOF
+          
+          echo "Generated traffic badges: Views($VIEW_COUNT/$VIEW_UNIQUES), Clones($CLONE_COUNT/$CLONE_UNIQUES)"
+        
+      - name: Build Next.js site
+        run: npm run build
+        
+      - name: Copy traffic badges to docs
+        run: |
+          # Copy traffic badges to the built site
+          mkdir -p docs/badges
+          cp public/badges/*.json docs/badges/
+          
+          # Create .nojekyll file for GitHub Pages
+          touch docs/.nojekyll
+          
+          echo "Traffic badges copied to docs/badges/"
+          ls -la docs/badges/
+        
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './docs'
+          
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
