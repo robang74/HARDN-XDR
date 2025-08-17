@@ -35,7 +35,7 @@ jobs:
             package-lock.json
         continue-on-error: false
 
-              - name: Setup Next.js if components exist
+      - name: Setup Next.js if components exist
         run: |
           # Check if we have Next.js components
           if [ -d "pages" ] || [ -d "components" ] || [ -f "next.config.js" ]; then
@@ -44,7 +44,7 @@ jobs:
             # Create package.json if it doesn't exist
             if [ ! -f package.json ]; then
               echo "Creating package.json for Next.js build..."
-              cat <<EOF > package.json
+            cat <<EOF > package.json
           {
             "name": "hardn-xdr-platform",
             "version": "1.0.0",
@@ -69,7 +69,7 @@ jobs:
             }
           }
           EOF
-            fi
+          fi
 
             echo "NEXT_JS_ENABLED=true" >> $GITHUB_ENV
           else
@@ -143,14 +143,14 @@ jobs:
           }
           EOF
 
-              - name: Build Next.js components
+      - name: Build Next.js components
         if: env.NEXT_JS_ENABLED == 'true'
         run: |
           echo "Building Next.js components..."
 
           # Build Next.js with error handling
           if npm run export; then
-            echo "✅ Next.js build successful"
+            echo " Next.js build successful"
 
             # Copy Next.js build output
             if [ -d "out" ]; then
@@ -164,10 +164,10 @@ jobs:
               echo "Next.js static files copied successfully"
               ls -la _site/
             else
-              echo "⚠️  Next.js out directory not found"
+              echo "  Next.js out directory not found"
             fi
           else
-            echo "❌ Next.js build failed, continuing with Jekyll only..."
+            echo " Next.js build failed, continuing with Jekyll only..."
             echo "NEXT_JS_BUILD_FAILED=true" >> $GITHUB_ENV
           fi
 
@@ -181,7 +181,7 @@ jobs:
           source: ./
           destination: ./_site
 
-              - name: Skip Jekyll (using Next.js static export)
+      - name: Skip Jekyll (using Next.js static export)
         if: env.NEXT_JS_ENABLED == 'true' && env.NEXT_JS_BUILD_FAILED != 'true'
         run: |
           echo "Using Next.js static export instead of Jekyll build"

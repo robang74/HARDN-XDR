@@ -343,15 +343,15 @@ jobs:
           echo "Deployment Type: ${{ matrix.deployment_type }}"
           echo "Test Status: ${{ steps.simulate.outcome }}"
           if [ "${{ steps.simulate.outcome }}" = "failure" ]; then
-            echo "❌ Test failed - this may be due to:"
+            echo " Test failed - this may be due to:"
             echo "  1. Temporary infrastructure issues (Ubuntu mirror sync)"
             echo "  2. Network connectivity problems"
             echo "  3. Docker/container environment issues"
             echo "  4. Actual code issues (less likely if builds passed)"
             echo ""
-            echo "ℹ️  If builds passed but deployment tests failed, this is likely infrastructure-related"
+            echo "ℹ  If builds passed but deployment tests failed, this is likely infrastructure-related"
           else
-            echo "✅ Test completed successfully"
+            echo " Test completed successfully"
           fi
 
       - name: Generate enhanced test report
@@ -403,10 +403,10 @@ jobs:
           # If builds succeeded, we prioritize that over deployment test issues
           # since deployment tests can fail due to infrastructure issues
           if [ "$build_success" = "success" ]; then
-            echo "✅ Builds succeeded - core functionality verified"
+            echo " Builds succeeded - core functionality verified"
             echo "passed=true" >> $GITHUB_OUTPUT
           else
-            echo "❌ Builds failed - this indicates code issues"
+            echo " Builds failed - this indicates code issues"
             echo "passed=false" >> $GITHUB_OUTPUT
           fi
 
