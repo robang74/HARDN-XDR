@@ -1,4 +1,5 @@
 # HARDN-XDR
+![hardn](docs/hardn.jpeg)
 
 **Linux Security Hardening Extended Detection and Response**
 
