@@ -57,7 +57,7 @@ The new design features a grey-tone cyber theme:
 
 ### Deployment
 
-The site automatically builds and deploys to GitHub Pages via the deployment workflow:
+The site automatically builds and deploys to GitHub Pages via the unified deployment workflow:
 
 ```bash
 # Triggered automatically on push to main, or manually via:
@@ -65,6 +65,14 @@ npm run build
 ```
 
 This generates static files in `/docs` that GitHub Pages serves at `https://opensource-for-freedom.github.io/HARDN-XDR/`.
+
+#### Traffic Badges
+
+The deployment workflow also generates repository traffic badges that are available at:
+- Views: `https://opensource-for-freedom.github.io/HARDN-XDR/badges/traffic-views.json`
+- Clones: `https://opensource-for-freedom.github.io/HARDN-XDR/badges/traffic-clones.json`
+
+These badges update weekly (Fridays at 5 AM UTC) and use the shields.io JSON format for display in README files or external monitoring systems.
 
 ## Project Structure
 
