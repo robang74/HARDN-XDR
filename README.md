@@ -1,36 +1,76 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HARDN-XDR
 
-## Getting Started
+Advanced Linux Security Hardening Platform with modern Next.js-powered GitHub Pages website.
 
-First, run the development server:
+## Website Development
+
+This repository includes a Next.js-based GitHub Pages website with:
+- **Grey Cyber Theme**: Professional stoic color scheme with cyber aesthetic
+- **Interactive Terminal Demo**: Live demonstration of HARDN-XDR capabilities
+- **Responsive Design**: Mobile-friendly layout using Tailwind CSS
+- **TypeScript**: Type-safe development experience
+- **Static Export**: Optimized for GitHub Pages deployment
+
+### Quick Start
 
 ```bash
+# Install dependencies
+npm install
+
+# Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Building for GitHub Pages
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Use the provided build script for GitHub Pages deployment:
 
-## Learn More
+```bash
+# Build and prepare for GitHub Pages
+./build-pages.sh
+```
 
-To learn more about Next.js, take a look at the following resources:
+This script:
+- Runs the Next.js build process
+- Creates the required `.nojekyll` file for GitHub Pages
+- Cleans up server-side files that shouldn't be in static export
+- Outputs static files to the `/docs` directory
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Manual Build
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Alternatively, you can build manually:
 
-## Deploy on Vercel
+```bash
+# Build the site
+npm run build
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# The static files will be in the /docs directory
+# Remember to add .nojekyll file for GitHub Pages
+echo "# Disable Jekyll processing" > docs/.nojekyll
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Website Features
+
+- **DISA STIG Compliance**: Government-grade security standards
+- **CIS Controls**: Industry-standard security benchmarks  
+- **FIPS 140-2**: Federal cryptographic standards
+- **Multi-Architecture**: AMD64 and ARM64 support
+- **Real-time Monitoring**: Matrix-themed compliance dashboard
+- **Automated Hardening**: 41+ security modules
+
+### Development
+
+The website is built with:
+- [Next.js 15.4.6](https://nextjs.org) - React framework
+- [Tailwind CSS 4](https://tailwindcss.com) - Utility-first CSS
+- [TypeScript](https://www.typescriptlang.org) - Type safety
+- Custom cyber theme with grey color palette
+
+### Deployment
+
+The site deploys automatically to GitHub Pages at:
+🌐 https://opensource-for-freedom.github.io/HARDN-XDR/
+
+For more details, see the [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying).
