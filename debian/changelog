@@ -1,3 +1,10 @@
+hardn (1.1.212) unstable; urgency=medium
+
+  * Refactored docs to support PLAYBOOK for project focused approach
+  * Complete whiptail elimination across all modules accept entry point to choose which modules to install for user input
+
+ -- Tim Burns <control@cybersynapse.ro>  Sun, Aug 16 2025 10:00:00 +0000
+
 hardn (1.1.202) unstable; urgency=medium
 
   * Changed default DNS provider to Cloudflare (1.1.1.1, 1.0.0.1)

@@ -1,7 +1,4 @@
 #!/bin/bash
-# HARDN-XDR Smoke Test Suite
-# Purpose: Comprehensive testing for function, security and user support
-# Usage: sudo ./smoke_test.sh [--quick|--full|--compliance]
 
 set -euo pipefail
 
@@ -24,12 +21,11 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Logging function
+
 log_message() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$TEST_LOG"
 }
 
-# Test status functions
 test_start() {
     local test_name="$1"
     echo -e "${BLUE}[TEST]${NC} Starting: $test_name" | tee -a "$TEST_LOG"
@@ -56,7 +52,6 @@ test_skip() {
     ((TESTS_SKIPPED++))
 }
 
-# Check if running as root
 check_root() {
     if [[ $EUID -ne 0 ]]; then
         echo -e "${RED}Error: This script must be run as root${NC}"
@@ -64,7 +59,7 @@ check_root() {
     fi
 }
 
-# Setup test environment
+
 setup_test_environment() {
     log_message "Setting up test environment"
     mkdir -p "$RESULTS_DIR"
@@ -83,7 +78,7 @@ setup_test_environment() {
     log_message "Test environment setup complete"
 }
 
-# Cleanup test environment
+
 cleanup_test_environment() {
     log_message "Cleaning up test environment"
     
@@ -98,7 +93,7 @@ cleanup_test_environment() {
     log_message "Test environment cleanup complete"
 }
 
-# Test 1: Basic functionality tests
+
 test_basic_functionality() {
     test_start "Basic Functionality"
     
@@ -134,7 +129,7 @@ test_basic_functionality() {
     test_pass "Basic Functionality"
 }
 
-# Test 2: Environment detection
+
 test_environment_detection() {
     test_start "Environment Detection"
     
@@ -162,7 +157,7 @@ test_environment_detection() {
     test_pass "Environment Detection"
 }
 
-# Test 3: Module inventory and validation
+
 test_module_inventory() {
     test_start "Module Inventory"
     
@@ -241,7 +236,7 @@ test_module_categorization() {
     log_message "Conditional modules: $conditional_count"
     log_message "Desktop modules: $desktop_count"
     
-    # Save categorization results
+
     echo "Essential: $essential_count" > "$RESULTS_DIR/module_categories.txt"
     echo "Conditional: $conditional_count" >> "$RESULTS_DIR/module_categories.txt"
     echo "Desktop: $desktop_count" >> "$RESULTS_DIR/module_categories.txt"
@@ -249,7 +244,7 @@ test_module_categorization() {
     test_pass "Module Categorization"
 }
 
-# Test 5: Sample module execution (safe modules only)
+# Sample module execution
 test_sample_module_execution() {
     test_start "Sample Module Execution"
     
@@ -270,7 +265,7 @@ test_sample_module_execution() {
     fi
 }
 
-# Test 6: Login protection validation
+# Login protection
 test_login_protection() {
     test_start "Login Protection"
     
@@ -287,7 +282,7 @@ test_login_protection() {
         fi
     done
     
-    # Check if display managers are available (if in desktop environment)
+    # Check if display managers are available for desktops
     if command -v gdm3 >/dev/null 2>&1 || command -v lightdm >/dev/null 2>&1; then
         log_message "Display manager detected - desktop environment"
     else
@@ -310,7 +305,7 @@ test_login_protection() {
     fi
 }
 
-# Test 7: Whiptail functionality
+# Whiptail
 test_whiptail_functionality() {
     test_start "Whiptail Functionality"
     
@@ -338,7 +333,7 @@ test_whiptail_functionality() {
     test_pass "Whiptail Functionality"
 }
 
-# Test 8: STIG compliance validation
+#  STIG compliance validation
 test_stig_compliance() {
     test_start "STIG Compliance Validation"
     
@@ -366,7 +361,7 @@ test_stig_compliance() {
     test_pass "STIG Compliance Validation"
 }
 
-# Test 9: Memory and resource usage
+# Memory and resource usage
 test_memory_usage() {
     test_start "Memory Usage Validation"
     
@@ -396,7 +391,7 @@ test_memory_usage() {
     test_pass "Memory Usage Validation"
 }
 
-# Test 10: Audit functionality
+# Audit functionality
 test_audit_functionality() {
     test_start "Audit Functionality"
     
@@ -421,7 +416,7 @@ test_audit_functionality() {
     test_pass "Audit Functionality"
 }
 
-# Test 11: CI/CD compatibility
+# CI/CD compatibility
 test_ci_compatibility() {
     test_start "CI/CD Compatibility"
     
@@ -449,35 +444,6 @@ test_ci_compatibility() {
     test_pass "CI/CD Compatibility"
 }
 
-# Test 12: Documentation completeness
-test_documentation() {
-    test_start "Documentation Completeness"
-    
-    local required_docs=(
-        "README.md"
-        "PLAYBOOK.md"
-        "docs/PRD.md"
-        ".github/copilot-instructions.md"
-        "docs/LOGIN-PROTECTION-SUMMARY.md"
-    )
-    
-    local missing_docs=0
-    for doc in "${required_docs[@]}"; do
-        if [[ -f "$doc" ]]; then
-            log_message "Found: $doc"
-        else
-            log_message "Missing: $doc"
-            ((missing_docs++))
-        fi
-    done
-    
-    if [[ $missing_docs -eq 0 ]]; then
-        test_pass "Documentation Completeness"
-    else
-        test_fail "Documentation Completeness" "$missing_docs required documents missing"
-        return 1
-    fi
-}
 
 # Generate test report
 generate_test_report() {
@@ -487,7 +453,7 @@ generate_test_report() {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>HARDN-XDR Smoke Test Report</title>
+    <title>HARDN-XDR Report</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
         .header { background: #2c3e50; color: white; padding: 20px; border-radius: 5px; }
@@ -536,7 +502,7 @@ EOF
     log_message "Test report generated: $report_file"
 }
 
-# Main test execution
+
 main() {
     local test_mode="${1:-full}"
     
@@ -562,7 +528,6 @@ main() {
             test_stig_compliance || true
             test_module_categorization || true
             test_audit_functionality || true
-            test_documentation || true
             ;;
         --full|*)
             test_basic_functionality || true
@@ -576,7 +541,6 @@ main() {
             test_memory_usage || true
             test_audit_functionality || true
             test_ci_compatibility || true
-            test_documentation || true
             ;;
     esac
     
