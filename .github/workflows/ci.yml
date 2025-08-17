@@ -22,22 +22,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js (if needed)
-        uses: actions/setup-node@v4
-        if: hashFiles('package.json') != ''
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install Node.js dependencies
-        if: hashFiles('package.json') != ''
-        run: |
-          if [ -f "package-lock.json" ]; then
-            npm ci
-          else
-            npm install --no-package-lock
-          fi
-
       - name: Fetch tags
         run: git fetch --tags
 
