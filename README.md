@@ -6,13 +6,13 @@ HARDN-XDR is a comprehensive Debian-based security hardening platform designed f
 
 ## Features
 
-### 🔒 Security Compliance
+### Security Compliance
 - **DISA STIG**: Defense Information Systems Agency Security Technical Implementation Guides
 - **CIS Controls**: Center for Internet Security benchmarks and controls
 - **FIPS 140-2**: Federal cryptographic standards compliance
 - **Debian Security**: Distribution-specific security hardening
 
-### 🛡️ Security Modules (47+)
+### Security Modules (47+)
 - **System Hardening**: Kernel security, shared memory protection, core dumps
 - **Network Security**: UFW firewall, Fail2Ban, SSH hardening, DNS security
 - **Access Control**: Credential protection, SELinux/AppArmor, audit system
@@ -20,7 +20,7 @@ HARDN-XDR is a comprehensive Debian-based security hardening platform designed f
 - **File Integrity**: AIDE, debsums, file permissions, deleted file monitoring
 - **Compliance Auditing**: Lynis integration, STIG validation, compliance reporting
 
-### 🏗️ Architecture Support
+### Architecture Support
 - **Multi-Architecture**: Native AMD64 and ARM64 support
 - **Container-First**: Optimized for Docker, LXC, and VM environments
 - **Desktop Support**: GNOME, KDE, XFCE hardening modules
@@ -30,14 +30,14 @@ HARDN-XDR is a comprehensive Debian-based security hardening platform designed f
 
 ### Installation
 
-#### From Debian Package
+#### From Package
 ```bash
 # Download the latest release
 wget https://github.com/OpenSource-For-Freedom/HARDN-XDR/releases/latest/download/hardn_1.1.63_all.deb
 
 # Install the package
 sudo dpkg -i hardn_1.1.63_all.deb
-sudo apt-get install -f  # Fix any dependency issues
+sudo apt-get install -f  # Fix dependencies
 ```
 
 #### From Source
@@ -59,10 +59,10 @@ sudo hardn-xdr
 # Run in headless/CI mode
 sudo SKIP_WHIPTAIL=1 ./hardn-xdr
 
-# Run compliance audit and generate dashboard
+# Run compliance audit and generate dashboard pre deployment
 sudo ./hardn_audit.sh
 
-# Run comprehensive smoke test
+# Run comprehensive system compnents "smoke test"
 sudo ./smoke_test.sh --full
 ```
 
@@ -161,29 +161,6 @@ cp src/setup/modules/template.sh src/setup/modules/new_module.sh
 # - Add proper error handling
 # - Include STIG/CIS compliance documentation
 ```
-
-## Website and Demo
-
-🌐 **Live Demo**: https://opensource-for-freedom.github.io/HARDN-XDR/
-
-The project includes a Next.js-powered website with:
-- Interactive terminal demonstration
-- Security feature showcase
-- Grey cyber theme design
-- Responsive mobile layout
-
-### Website Development
-```bash
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-
-# Build for GitHub Pages
-./build-pages.sh
-```
-
 ## License
 
 This project is licensed under the terms specified in the [LICENSE](LICENSE) file.
