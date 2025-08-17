@@ -282,14 +282,43 @@ jobs:
               echo "${skip_count:-0}" > /var/log/hardn-ci-'${{ matrix.distro }}'-'${{ matrix.deployment_type }}'/skip_count.txt
               echo "$critical_failures" > /var/log/hardn-ci-'${{ matrix.distro }}'-'${{ matrix.deployment_type }}'/critical_failures.txt
 
-              # Set appropriate permissions for log files
-              find /var/log/hardn-ci-'${{ matrix.distro }}'-'${{ matrix.deployment_type }}' -type f -exec chmod 644 {} \;
-              find /var/log/hardn-ci-'${{ matrix.distro }}'-'${{ matrix.deployment_type }}' -type d -exec chmod 755 {} \;
+              # Set appropriate permissions for log files (both container and host mount)
+              find /var/log/hardn-ci-'${{ matrix.distro }}'-'${{ matrix.deployment_type }}' -type f -exec chmod 644 {} \; 2>/dev/null || true
+              find /var/log/hardn-ci-'${{ matrix.distro }}'-'${{ matrix.deployment_type }}' -type d -exec chmod 755 {} \; 2>/dev/null || true
+
+              # Also fix permissions on the mounted host directory
+              find /var/log/ -name "hardn-ci-*" -type f -exec chmod 644 {} \; 2>/dev/null || true
+              find /var/log/ -name "hardn-ci-*" -type d -exec chmod 755 {} \; 2>/dev/null || true
+
+              # Set ownership to allow host access (using container user that matches host)
+              chown -R 1001:1001 /var/log/hardn-ci-'${{ matrix.distro }}'-'${{ matrix.deployment_type }}' 2>/dev/null || true
             '
 
-          # Copy logs and generate reports
+          # Fix permissions on host logbundle before copying
+          sudo find ./logbundle -type f -exec chmod 644 '{}' ';' 2>/dev/null || true
+          sudo find ./logbundle -type d -exec chmod 755 '{}' ';' 2>/dev/null || true
+          sudo chown -R $USER:$USER ./logbundle 2>/dev/null || true
+
+          # Copy logs and generate reports with better error handling
           mkdir -p release_assets/hardn-logs-${{ matrix.arch }}-${{ matrix.distro }}-${{ matrix.deployment_type }}
-          cp -r ./logbundle/* release_assets/hardn-logs-${{ matrix.arch }}-${{ matrix.distro }}-${{ matrix.deployment_type }}/ || true
+
+          # Copy files individually with error handling
+          if [ -d "./logbundle" ]; then
+            for item in ./logbundle/*; do
+              if [ -e "$item" ]; then
+                cp -r "$item" release_assets/hardn-logs-${{ matrix.arch }}-${{ matrix.distro }}-${{ matrix.deployment_type }}/ 2>/dev/null || {
+                  echo "Warning: Could not copy $item"
+                  # Try with sudo as fallback
+                  sudo cp -r "$item" release_assets/hardn-logs-${{ matrix.arch }}-${{ matrix.distro }}-${{ matrix.deployment_type }}/ 2>/dev/null || echo "Failed to copy $item even with sudo"
+                }
+              fi
+            done
+
+            # Fix ownership of copied files
+            sudo chown -R $USER:$USER release_assets/hardn-logs-${{ matrix.arch }}-${{ matrix.distro }}-${{ matrix.deployment_type }}/ 2>/dev/null || true
+          else
+            echo "Warning: ./logbundle directory does not exist"
+          fi
 
           # Analyze test results
           log_dir="release_assets/hardn-logs-${{ matrix.arch }}-${{ matrix.distro }}-${{ matrix.deployment_type }}/hardn-ci-${{ matrix.distro }}-${{ matrix.deployment_type }}"
@@ -357,7 +386,22 @@ jobs:
       - name: Generate enhanced test report
         run: |
           mkdir -p release_assets/hardn-logs-zip
-          zip -r release_assets/hardn-logs-zip/hardn_logs_bundle_${{ matrix.arch }}_${{ matrix.distro }}_${{ matrix.deployment_type }}.zip release_assets/hardn-logs-${{ matrix.arch }}-${{ matrix.distro }}-${{ matrix.deployment_type }}
+          # Ensure proper permissions before zipping
+          find release_assets/hardn-logs-${{ matrix.arch }}-${{ matrix.distro }}-${{ matrix.deployment_type }} -type f -exec chmod 644 {} \; 2>/dev/null || true
+          find release_assets/hardn-logs-${{ matrix.arch }}-${{ matrix.distro }}-${{ matrix.deployment_type }} -type d -exec chmod 755 {} \; 2>/dev/null || true
+
+          # Create zip file
+          if [ -d "release_assets/hardn-logs-${{ matrix.arch }}-${{ matrix.distro }}-${{ matrix.deployment_type }}" ]; then
+            zip -r release_assets/hardn-logs-zip/hardn_logs_bundle_${{ matrix.arch }}_${{ matrix.distro }}_${{ matrix.deployment_type }}.zip release_assets/hardn-logs-${{ matrix.arch }}-${{ matrix.distro }}-${{ matrix.deployment_type }} 2>/dev/null || {
+              echo "Warning: Could not create zip file, trying alternative method"
+              cd release_assets/hardn-logs-${{ matrix.arch }}-${{ matrix.distro }}-${{ matrix.deployment_type }} && zip -r ../hardn-logs-zip/hardn_logs_bundle_${{ matrix.arch }}_${{ matrix.distro }}_${{ matrix.deployment_type }}.zip . && cd ../..
+            }
+          else
+            echo "Warning: Log directory does not exist, creating empty zip"
+            touch empty_logs.txt
+            zip release_assets/hardn-logs-zip/hardn_logs_bundle_${{ matrix.arch }}_${{ matrix.distro }}_${{ matrix.deployment_type }}.zip empty_logs.txt
+            rm empty_logs.txt
+          fi
           
           # Create test summary report
           log_dir="release_assets/hardn-logs-${{ matrix.arch }}-${{ matrix.distro }}-${{ matrix.deployment_type }}/hardn-ci-${{ matrix.distro }}-${{ matrix.deployment_type }}"
