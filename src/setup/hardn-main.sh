@@ -185,13 +185,13 @@ get_container_vm_essential_modules() {
     echo "auto_updates.sh file_perms.sh shared_mem.sh coredumps.sh"
     echo "network_protocols.sh process_accounting.sh debsums.sh purge_old_pkgs.sh"
     echo "banner.sh central_logging.sh audit_system.sh ntp.sh dns_config.sh"
-    echo "binfmt.sh service_disable.sh stig_pwquality.sh pakos_config.sh"
+    echo "binfmt.sh service_disable.sh stig_pwquality.sh pakos_config.sh memory_optimization.sh"
 }
 
 # Container/VM conditional modules (performance vs security trade-off)
 get_container_vm_conditional_modules() {
     echo "ufw.sh fail2ban.sh selinux.sh apparmor.sh suricata.sh yara.sh"
-    echo "rkhunter.sh chkrootkit.sh unhide.sh secure_net.sh"
+    echo "rkhunter.sh chkrootkit.sh unhide.sh secure_net.sh lynis_audit.sh"
 }
 
 # Desktop-focused modules (skip in container/VM environments for performance)
