@@ -1,22 +1,18 @@
-# Sample workflow for building and deploying a Jekyll site to GitHub Pages
-name: Deploy Jekyll with GitHub Pages dependencies preinstalled
+# Jekyll + Next.js hybrid workflow for GitHub Pages
+name: Deploy Jekyll with Next.js Integration
 
 on:
-  # Runs on pushes targeting the default branch
   push:
     branches: ["main"]
-
-  # Allows you to run this workflow manually from the Actions tab
+  schedule:
+    - cron: '0 5 * * 5'  # Weekly traffic badge updates (Fridays at 5 AM UTC)
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
   group: "pages"
   cancel-in-progress: false
@@ -28,13 +24,130 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Create package.json if not exists
+        run: |
+          if [ ! -f package.json ]; then
+            cat <<EOF > package.json
+          {
+            "name": "hardn-xdr-docs",
+            "version": "1.0.0",
+            "description": "HARDN-XDR Documentation Site",
+            "scripts": {
+              "dev": "next dev",
+              "build": "next build && next export",
+              "start": "next start"
+            },
+            "dependencies": {
+              "next": "^14.0.0",
+              "react": "^18.0.0",
+              "react-dom": "^18.0.0"
+            },
+            "devDependencies": {
+              "@types/node": "^20.0.0",
+              "@types/react": "^18.0.0",
+              "@types/react-dom": "^18.0.0",
+              "typescript": "^5.0.0"
+            }
+          }
+          EOF
+          fi
+
+      - name: Install Node.js dependencies
+        run: npm install || npm ci
+
+      - name: Generate traffic badges
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p _site/badges
+
+          # Generate traffic badge JSONs using GitHub API
+          VIEW_JSON=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/${{ github.repository }}/traffic/views || echo '{"count": 0, "uniques": 0}')
+
+          CLONE_JSON=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/${{ github.repository }}/traffic/clones || echo '{"count": 0, "uniques": 0}')
+
+          VIEW_COUNT=$(echo "$VIEW_JSON" | jq -r '.count // 0')
+          VIEW_UNIQUES=$(echo "$VIEW_JSON" | jq -r '.uniques // 0')
+          CLONE_COUNT=$(echo "$CLONE_JSON" | jq -r '.count // 0')
+          CLONE_UNIQUES=$(echo "$CLONE_JSON" | jq -r '.uniques // 0')
+
+          # Determine badge colors
+          if [ "$VIEW_COUNT" -ge 200 ]; then VIEW_COLOR="green"
+          elif [ "$VIEW_COUNT" -ge 50 ]; then VIEW_COLOR="orange"
+          else VIEW_COLOR="red"
+          fi
+
+          if [ "$CLONE_COUNT" -ge 100 ]; then CLONE_COLOR="blue"
+          elif [ "$CLONE_COUNT" -ge 20 ]; then CLONE_COLOR="yellow"
+          else CLONE_COLOR="red"
+          fi
+
+          # Create badge JSON files
+          cat <<EOF > _site/badges/traffic-views.json
+          {
+            "schemaVersion": 1,
+            "label": "views",
+            "message": "$VIEW_COUNT / $VIEW_UNIQUES",
+            "color": "$VIEW_COLOR"
+          }
+          EOF
+
+          cat <<EOF > _site/badges/traffic-clones.json
+          {
+            "schemaVersion": 1,
+            "label": "clones", 
+            "message": "$CLONE_COUNT / $CLONE_UNIQUES",
+            "color": "$CLONE_COLOR"
+          }
+          EOF
+
+      - name: Build Next.js components (if exists)
+        run: |
+          if [ -f "next.config.js" ] || [ -f "next.config.mjs" ] || [ -d "pages" ] || [ -d "app" ]; then
+            echo "Next.js setup detected, building..."
+            npm run export || echo "Next.js build failed, continuing with Jekyll only"
+            # Copy Next.js build output to Jekyll root (replacing Jekyll for hybrid approach)
+            if [ -d "out" ]; then
+              echo "Copying Next.js static export to site root..."
+              cp -r out/* ./ || true
+              # Ensure Jekyll doesn't process Next.js files
+              touch .nojekyll
+            fi
+          else
+            echo "No Next.js setup detected, proceeding with Jekyll only"
+          fi
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
+
       - name: Build with Jekyll
         uses: actions/jekyll-build-pages@v1
         with:
           source: ./
           destination: ./_site
+
+      - name: Post-process site
+        run: |
+          # Ensure badges directory exists in final site
+          mkdir -p _site/badges
+
+          # Copy any additional assets
+          if [ -d "assets/next" ]; then
+            cp -r assets/next/* _site/ || true
+          fi
+
+          echo "Site build completed"
+          ls -la _site/
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
 

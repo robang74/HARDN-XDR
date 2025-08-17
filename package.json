@@ -1,0 +1,28 @@
+{
+  "name": "hardn-xdr-platform",
+  "version": "1.0.0",
+  "description": "HARDN-XDR Security Platform - Deployment Showcase",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "export": "next build && next export",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "^14.0.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.42",
+    "@types/react-dom": "^18.2.17",
+    "eslint": "^8.55.0",
+    "eslint-config-next": "^14.0.4",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
