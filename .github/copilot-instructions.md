@@ -9,10 +9,12 @@ HARDN-XDR is a Debian-based security hardening solution focused on government an
 ### Main Components
 - **hardn-xdr**: Main executable wrapper script
 - **src/setup/hardn-main.sh**: Core hardening orchestration script
-- **src/setup/modules/**: 41 individual security hardening modules
+- **src/setup/modules/**: 47 individual security hardening modules (including Lynis integration)
 - **hardn_audit.sh**: Compliance auditing and dashboard generation
 - **frontend/dashboard/**: Matrix-themed compliance reporting dashboard
 - **.github/workflows/ci.yml**: Multi-architecture CI/CD pipeline
+- **smoke_test.sh**: Comprehensive smoke testing framework
+- **docs/PRD.md**: Product Requirements Document
 
 ### Key Technologies
 - **Shell Scripting**: Primary language for system hardening
@@ -150,6 +152,7 @@ fi
 - `yara.sh`: Malware signature detection
 - `behavioral_analysis.sh`: Behavioral monitoring
 - `unhide.sh`: Hidden process detection
+- `lynis_audit.sh`: Comprehensive security auditing and STIG compliance validation
 
 ### File Integrity
 - `aide.sh`: Advanced Intrusion Detection Environment
@@ -184,6 +187,8 @@ fi
 3. Implement both interactive and headless modes
 4. Add comprehensive error handling
 5. Update documentation and module lists
+6. Ensure STIG/DISA/Lynis compliance validation
+7. Add to appropriate module category (Essential/Conditional/Desktop)
 
 ### When Fixing Existing Issues
 1. Understand the security implications
@@ -191,6 +196,8 @@ fi
 3. Maintain backward compatibility
 4. Document changes in compliance context
 5. Update relevant tests
+6. Run smoke tests to validate changes
+7. Ensure login protection is maintained
 
 ### Security Considerations
 - **Never hardcode secrets**: Use environment variables or secure input
@@ -226,6 +233,30 @@ sudo ./hardn_audit.sh
 - `DEBIAN_FRONTEND=noninteractive`: Suppress debconf prompts
 - `CI=true`: Indicates CI environment
 - `GITHUB_ACTIONS=true`: GitHub Actions environment
+- `HARDN_CONTAINER_VM_MODE=1`: Force container/VM optimization mode
+
+## Quality Assurance
+
+### Smoke Testing Framework
+- **Purpose**: Validate function, security, and user support
+- **Location**: `./smoke_test.sh`
+- **Usage**: `sudo ./smoke_test.sh [--quick|--full|--compliance]`
+- **Coverage**: 12 comprehensive test categories
+- **Integration**: CI/CD compatible with automated reporting
+
+### Test Categories
+1. **Basic Functionality**: Core script execution and help
+2. **Environment Detection**: Container/VM/Physical detection
+3. **Module Inventory**: Validate all 47 modules present and functional
+4. **Module Categorization**: Essential/Conditional/Desktop groupings
+5. **Sample Execution**: Safe module execution testing
+6. **Login Protection**: Ensure user access remains intact
+7. **Whiptail Functionality**: Menu system and fallback modes
+8. **STIG Compliance**: Validate compliance validation framework
+9. **Memory Usage**: Resource consumption validation
+10. **Audit Functionality**: Compliance dashboard and reporting
+11. **CI/CD Compatibility**: Non-interactive mode validation
+12. **Documentation**: Required documentation completeness
 
 ## Integration Points
 
