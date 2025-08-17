@@ -1,17 +1,34 @@
 #!/usr/bin/env bash
 
+# Strict shell options for robustness
+set -euo pipefail
+
 HARDN_VERSION="1.1.63"
 export APT_LISTBUGS_FRONTEND=none
 
-# Auto-detect CI or headless environment
+# Logging setup
+HARDN_LOG_FILE="${HARDN_LOG_FILE:-/var/log/hardn-xdr.log}"
+
+# Simple logging function that logs to file if writable, otherwise stdout
+HARDN_LOG() {
+    local message="$(date '+%Y-%m-%d %H:%M:%S') - $*"
+    if [[ -w "$(dirname "$HARDN_LOG_FILE")" ]] 2>/dev/null; then
+        echo "$message" >> "$HARDN_LOG_FILE"
+    else
+        echo "$message"
+    fi
+}
+
+# Auto-detect CI 
 if [[ -n "$CI" || -n "$GITHUB_ACTIONS" || -n "$GITLAB_CI" || ! -t 0 ]]; then
     export SKIP_WHIPTAIL=1
     echo "[INFO] CI environment detected, running in non-interactive mode"
+    HARDN_LOG "CI environment detected, running in non-interactive mode"
 fi
 
 
 if [ -f /usr/lib/hardn-xdr/src/setup/hardn-common.sh ]; then
-    # shellcheck source=src/setup/hardn-common.sh
+ 
     source /usr/lib/hardn-xdr/src/setup/hardn-common.sh
 elif [ -f "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/hardn-common.sh" ]; then
     # Development/CI fallback
@@ -20,7 +37,7 @@ else
     echo "[ERROR] hardn-common.sh not found at expected paths!"
     echo "[INFO] Using basic fallback functions for CI environment"
     
-    # Basic fallback functions for CI
+    # Basic fallback for CI
     HARDN_STATUS() { echo "$(date '+%Y-%m-%d %H:%M:%S') - [$1] $2"; }
     check_root() { [[ $EUID -eq 0 ]]; }
     is_installed() { command -v "$1" >/dev/null 2>&1 || dpkg -s "$1" >/dev/null 2>&1; }
@@ -58,7 +75,7 @@ show_system_info() {
     if [[ -n "${CURRENT_DEBIAN_VERSION_ID}" && -n "${CURRENT_DEBIAN_CODENAME}" ]]; then
         HARDN_STATUS "info" "Detected OS: ${ID:-Unknown} ${CURRENT_DEBIAN_VERSION_ID} (${CURRENT_DEBIAN_CODENAME})"
         
-        # Special message for PakOS
+        # Special message PakOS
         if [[ "${PAKOS_DETECTED:-0}" == "1" ]]; then
             HARDN_STATUS "info" "PakOS Support: Enabled (Debian-derivative compatibility mode)"
         fi
@@ -114,11 +131,35 @@ install_package_dependencies() {
     fi
 }
 
+list_available_modules() {
+    # Discover all available module scripts dynamically
+    local DEFAULT_DIR="/usr/lib/hardn-xdr/src/setup/modules"
+    local CONFIG_DIR="${HARDN_MODULE_DIR:-$DEFAULT_DIR}"
+    local FALLBACK_DIR="${SCRIPT_DIR}/modules"
+
+    # Try primary directory first
+    if [[ -d "$CONFIG_DIR" ]]; then
+        find "$CONFIG_DIR" -type f -name "*.sh" -exec basename {} \; | sort
+        return
+    fi
+
+    # Try fallback directory
+    if [[ -d "$FALLBACK_DIR" ]]; then
+        HARDN_STATUS "info" "Using fallback module directory: $FALLBACK_DIR"
+        find "$FALLBACK_DIR" -type f -name "*.sh" -exec basename {} \; | sort
+        return
+    fi
+
+    # Use static fallback list as last resort
+    HARDN_STATUS "warning" "No module directory found. Using static fallback list."
+    HARDN_LOG "Module directory not found: $CONFIG_DIR or $FALLBACK_DIR. Using fallback list."
+    echo -e "auditd.sh\nkernel_sec.sh\nsshd.sh\naide.sh\nufw.sh\nfail2ban.sh"
+}
+
 print_ascii_banner() {
    # Declaring and assigning terminal width and banner separately to avoid masking return variables
    # https://github.com/koalaman/shellcheck/wiki/SC2155
     export TERM=xterm
-    local terminal_width
           terminal_width=$(tput cols)
     local banner
           banner=$(cat << "EOF"
@@ -151,28 +192,41 @@ EOF
 
 run_module() {
     local module_file="$1"
+    local module_dir="${HARDN_MODULE_DIR:-/usr/lib/hardn-xdr/src/setup/modules}"
     local module_paths=(
-        "/usr/lib/hardn-xdr/src/setup/modules/$module_file"
+        "$module_dir/$module_file"
         "${SCRIPT_DIR}/modules/$module_file"
     )
 
     for module_path in "${module_paths[@]}"; do
         if [[ -f "$module_path" ]]; then
-            HARDN_STATUS "info" "Executing module: ${module_file} from ${module_path}"
-            # shellcheck source=src/setup/modules/aide.sh
-            source "$module_path" >/dev/null 2>&1
-            local source_result=$?
+            # Validate path is within expected directories for security
+            local real_path
+            real_path="$(realpath "$module_path" 2>/dev/null)" || continue
+            if [[ "$real_path" == "$module_dir"/* ]] || [[ "$real_path" == "${SCRIPT_DIR}/modules"/* ]]; then
+                HARDN_STATUS "info" "Executing module: ${module_file} from ${module_path}"
+                HARDN_LOG "Executing module: ${module_file} from ${module_path}"
+                # shellcheck source=src/setup/modules/aide.sh
+                source "$module_path"
+                local source_result=$?
 
-            if [[ $source_result -eq 0 ]]; then
-                return 0
+                if [[ $source_result -eq 0 ]]; then
+                    HARDN_LOG "Module completed successfully: $module_file"
+                    return 0
+                else
+                    HARDN_STATUS "error" "Module execution failed: $module_path"
+                    HARDN_LOG "Module execution failed: $module_path (exit code: $source_result)"
+                    return 1
+                fi
             else
-                HARDN_STATUS "error" "Module execution failed: $module_path"
-                return 1
+                HARDN_STATUS "warning" "Module path validation failed: $module_path"
+                HARDN_LOG "Module path validation failed: $module_path"
             fi
         fi
     done
 
     HARDN_STATUS "error" "Module not found in any expected location: $module_file"
+    HARDN_LOG "Module not found: $module_file"
     for path in "${module_paths[@]}"; do
         HARDN_STATUS "error" "  - $path"
     done
@@ -348,7 +402,7 @@ main_menu() {
             fi
         done
         
-        # Desktop modules (discouraged)
+        # Desktop modules
         readarray -t desktop < <(get_desktop_focused_modules | tr ' ' '\n')
         for module in "${desktop[@]}"; do
             if [[ -n "$module" ]]; then
@@ -408,21 +462,27 @@ main_menu() {
 
 # main
 main() {
+    HARDN_LOG "HARDN-XDR v${HARDN_VERSION} started"
+
     print_ascii_banner
     show_system_info
     check_root
 
     if [[ "$SKIP_WHIPTAIL" == "1" || "$AUTO_MODE" == "true" ]]; then
         HARDN_STATUS "info" "Running in non-interactive mode"
+        HARDN_LOG "Running in non-interactive mode"
         update_system_packages
         install_package_dependencies
         setup_security_modules
         cleanup
+        HARDN_LOG "HARDN-XDR non-interactive execution completed"
         return 0
     fi
 
+    HARDN_LOG "Running in interactive mode"
     welcomemsg
     main_menu
+    HARDN_LOG "HARDN-XDR interactive execution completed"
 }
 
 # Entry

@@ -1,13 +1,12 @@
 #!/bin/bash
 
 # HARDN-XDR Unified Security Compliance Scanner
-# Based on Red Hat Security Hardening Documentation
+# Based on Red Hat Security Documentation
 # Supports: DISA STIG, OpenSCAP, FIPS 140-2, CIS, and Debian Security Standards
 # Reference: https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html/security_hardening/scanning-the-system-for-configuration-compliance
 
 # set -e
 
-# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
