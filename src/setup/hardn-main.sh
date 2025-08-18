@@ -257,7 +257,7 @@ get_desktop_focused_modules() {
 
 # Legacy full module list for backwards compatibility
 get_full_module_list() {
-    echo "ufw.sh fail2ban.sh sshd.sh auditd.sh kernel_sec.sh"
+    echo "ufw.sh ubuntu_fips.sh fail2ban.sh sshd.sh auditd.sh kernel_sec.sh"
     echo "stig_pwquality.sh aide.sh rkhunter.sh chkrootkit.sh"
     echo "auto_updates.sh central_logging.sh audit_system.sh ntp.sh"
     echo "debsums.sh yara.sh suricata.sh firejail.sh selinux.sh"
