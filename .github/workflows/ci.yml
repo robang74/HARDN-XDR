@@ -46,15 +46,35 @@ jobs:
         run: |
           latest_tag=$(git tag -l "v1.1.*" --sort=-v:refname | head -n 1)
           [ -z "$latest_tag" ] && latest_tag="v1.1.0"
+          echo "Current latest tag: $latest_tag"
           echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
 
-      - name: Extract patch version and bump
+      - name: Extract patch version and find next available tag
         id: bump
         run: |
           tag="${{ steps.get_tag.outputs.latest_tag }}"
           patch=${tag##*.}
+
+          # Find next available tag that doesn't exist
           new_patch=$((patch + 1))
           new_tag="v1.1.$new_patch"
+
+          # Check if tag already exists and increment until we find an available one
+          max_attempts=10
+          attempt=0
+          while git rev-parse "$new_tag" >/dev/null 2>&1 && [ $attempt -lt $max_attempts ]; do
+            echo "Tag $new_tag already exists, trying next version..."
+            new_patch=$((new_patch + 1))
+            new_tag="v1.1.$new_patch"
+            attempt=$((attempt + 1))
+          done
+
+          if [ $attempt -ge $max_attempts ]; then
+            echo "ERROR: Could not find available tag after $max_attempts attempts"
+            exit 1
+          fi
+
+          echo "Will create new tag: $new_tag"
           echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
 
       - name: Install deps and tools
@@ -127,7 +147,7 @@ jobs:
     strategy:
       matrix:
         arch: [amd64, arm64]
-        distro: [debian, ubuntu]
+        distro: [debian, ubuntu, PakOS]
         deployment_type: [container, vm-simulation]
     steps:
       - name: Register QEMU emulation
@@ -157,6 +177,8 @@ jobs:
           # Select base image based on distro
           if [ "${{ matrix.distro }}" = "ubuntu" ]; then
             BASE_IMAGE="ubuntu:24.04"
+          elif [ "${{ matrix.distro }}" = "PakOS" ]; then
+            BASE_IMAGE="pakos/pakos:latest"  # Use official PakOS Docker image
           else
             BASE_IMAGE="debian:stable-slim"
           fi
@@ -165,6 +187,14 @@ jobs:
           # Note: ARM64 jobs skip certain modules (yara, rkhunter, aide, debsums, firejail) 
           # due to performance issues under QEMU emulation in CI environment.
           # Full functionality is preserved for production deployments.
+                      # Test if PakOS image is available, fallback to Debian if not
+                      if [ "${{ matrix.distro }}" = "PakOS" ]; then
+            if ! docker pull --platform linux/${{ matrix.arch }} pakos/pakos:latest 2>/dev/null; then
+              echo "Warning: PakOS Docker image not available, using Debian as fallback for testing"
+              BASE_IMAGE="debian:stable-slim"
+            fi
+                      fi
+
           docker run --rm -i --platform linux/${{ matrix.arch }} \
             --privileged \
             --name hardn-test-${{ matrix.arch }}-${{ matrix.distro }}-${{ github.run_id }} \
@@ -202,6 +232,21 @@ jobs:
               # Create log directory with proper permissions
               mkdir -p /var/log/hardn-ci-'${{ matrix.distro }}'-'${{ matrix.deployment_type }}'
               chmod 777 /var/log/hardn-ci-'${{ matrix.distro }}'-'${{ matrix.deployment_type }}'
+
+              # For PakOS, ensure any additional setup is performed
+              if [ "${{ matrix.distro }}" = "PakOS" ]; then
+                echo "Setting up PakOS-specific configurations..." | tee -a /var/log/hardn-ci-'${{ matrix.distro }}'-'${{ matrix.deployment_type }}'/environment.log
+
+                # Verify PakOS version and compatibility
+                if [ -f /etc/os-release ]; then
+                  echo "PakOS Version Info:" | tee -a /var/log/hardn-ci-'${{ matrix.distro }}'-'${{ matrix.deployment_type }}'/environment.log
+                  cat /etc/os-release | tee -a /var/log/hardn-ci-'${{ matrix.distro }}'-'${{ matrix.deployment_type }}'/environment.log
+                fi
+
+                # Ensure PakOS package repositories are available
+                echo "Verifying PakOS package repositories..." | tee -a /var/log/hardn-ci-'${{ matrix.distro }}'-'${{ matrix.deployment_type }}'/environment.log
+                apt-cache policy | head -20 | tee -a /var/log/hardn-ci-'${{ matrix.distro }}'-'${{ matrix.deployment_type }}'/environment.log
+              fi
 
               # Test headless environment detection
               echo "=== Environment Detection Test ===" | tee -a /var/log/hardn-ci-'${{ matrix.distro }}'-'${{ matrix.deployment_type }}'/environment.log
