@@ -38,7 +38,7 @@
 wget https://github.com/OpenSource-For-Freedom/HARDN-XDR/releases/latest/download/hardn_1.1.63_all.deb
 
 # Install the package
-sudo dpkg -i hardn_1.1.63_all.deb
+sudo dpkg -i hardn_1.1.***_all.deb
 sudo apt-get install -f  # Fix dependencies
 ```
 
