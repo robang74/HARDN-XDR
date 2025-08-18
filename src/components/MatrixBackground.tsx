@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-
+// the mox background 
 export default function MatrixBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
