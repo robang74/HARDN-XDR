@@ -70,11 +70,7 @@ sudo ./smoke_test.sh --full
 
 ## System Requirements
 
-<<<<<<< HEAD
-- **OS**: Debian 12+ (Bookworm), Ubuntu 24.04+ (Noble), or compatible derivatives
-=======
 - **OS**: Debian 12+ (Bookworm), Ubuntu 24.04+ (Noble), PakOS 2023.1+ (Falcon), and other Debian-based distributions with systemd, kernel 5.10+ and apt package manager.
->>>>>>> e152cce2a5b331afc92dc9c15a78320afcf29a20
 - **Architecture**: AMD64 or ARM64
 - **Memory**: 2GB+ recommended (1GB minimum with memory optimization)
 - **Storage**: 500MB free space for full installation
@@ -124,11 +120,6 @@ sudo ./hardn_audit.sh
 ## Documentation
 
 - **[Product Requirements Document](docs/PRD.md)** - Comprehensive project overview
-<<<<<<< HEAD
-- **[Copilot Instructions](.github/copilot-instructions.md)** - Development guidelines
-- **[Implementation Summary](IMPLEMENTATION_SUMMARY.md)** - Recent updates and features
-=======
->>>>>>> e152cce2a5b331afc92dc9c15a78320afcf29a20
 - **[Maintenance Playbook](PLAYBOOK.md)** - Operations and troubleshooting
 
 ## Testing and Quality Assurance
@@ -178,8 +169,3 @@ This project is licensed under the terms specified in the [LICENSE](LICENSE) fil
 
 - **Issues**: [GitHub Issues](https://github.com/OpenSource-For-Freedom/HARDN-XDR/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/OpenSource-For-Freedom/HARDN-XDR/discussions)
-- **Security**: For security issues, please follow responsible disclosure practices
-
----
-
-**HARDN-XDR** - Securing Linux systems with government-grade compliance standards.
