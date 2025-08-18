@@ -123,10 +123,10 @@ export default function TerminalDemo() {
           <div className="terminal-content p-6 min-h-[400px] font-mono text-sm leading-relaxed">
             <div ref={terminalRef} className="text-blue-200">
               <div>root@hardn-xdr:~# hardn-xdr --version</div>
-              <div>HARDN-XDR v2.0.0 - Linux Security Hardening Platform</div>
+              <div>HARDN-XDR v2.0.0 - Advanced Unix Security Platform</div>
               <div>Architecture: Multi-platform (AMD64/ARM64)</div>
               <div>Compliance: DISA STIG | CIS Controls | FIPS 140-2</div>
-              <div>Status: Ready for demonstration</div>
+              <div>Status: Ready for deployment</div>
               <div><br /></div>
               <div>root@hardn-xdr:~# <span className="cursor">█</span></div>
             </div>
