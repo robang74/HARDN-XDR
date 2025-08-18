@@ -1,5 +1,5 @@
 # Jekyll + Next.js hybrid workflow for GitHub Pages
-name: Deploy Jekyll with Next.js Integration
+name: Deploy Jekyll -> Next.js 
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write   # Needed so CI can commit/push updated lockfile
   pages: write
   id-token: write
 
@@ -18,81 +18,92 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # 1) Ensure package-lock.json matches package.json
+  lockfile:
+    runs-on: ubuntu-latest
+    outputs:
+      pushed: ${{ steps.maybe_push.outputs.pushed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Regenerate lockfile from package.json
+        run: |
+          set -e
+          if [ ! -f package.json ]; then
+            echo "ERROR: package.json not found. Cannot generate lockfile."
+            exit 1
+          fi
+
+          echo "Node: $(node -v) | npm: $(npm -v)"
+          rm -rf node_modules package-lock.json
+          npm cache verify
+
+          # Generate a lockfile strictly from package.json
+          npm install --package-lock-only
+
+          # Sanity check: ensure npm ci works
+          rm -rf node_modules
+          npm ci
+
+      - name: Commit & push lockfile if changed
+        id: maybe_push
+        run: |
+          set -e
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git status --porcelain | grep -q "package-lock.json"; then
+            git add package-lock.json
+            git commit -m "chore(lock): sync package-lock.json with package.json"
+            git push
+            echo "pushed=true" >> "$GITHUB_OUTPUT"
+            echo "Lockfile updated and pushed. Stopping this run."
+          else
+            echo "No lockfile changes."
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # 2) Build job (only if lockfile job didn't push new changes)
   build:
+    needs: lockfile
+    if: needs.lockfile.outputs.pushed != 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # --- Detect Node needs & Next presence early ---
       - name: Detect Node/Next presence
-        id: detect
         run: |
           needs_node=false
           next_enabled=false
-
-          # If either package.json OR package-lock.json exists, we need Node.
-          if [ -f package.json ] || [ -f package-lock.json ]; then
-            needs_node=true
-          fi
-
-          # Detect Next components
-          if [ -d "pages" ] || [ -d "components" ] || [ -f "next.config.js" ]; then
-            next_enabled=true
-          fi
-
+          if [ -f package.json ] || [ -f package-lock.json ]; then needs_node=true; fi
+          if [ -d "pages" ] || [ -d "components" ] || [ -f "next.config.js" ]; then next_enabled=true; fi
           echo "NEEDS_NODE=$needs_node" >> "$GITHUB_ENV"
           echo "NEXT_JS_ENABLED=$next_enabled" >> "$GITHUB_ENV"
-
-          echo "Detected: NEEDS_NODE=$needs_node, NEXT_JS_ENABLED=$next_enabled"
 
       - name: Setup Node.js
         if: env.NEEDS_NODE == 'true'
         uses: actions/setup-node@v4
         with:
-          node-version: '20'   # Next 14.x requires >=18.17
+          node-version: '20'
           cache: 'npm'
           cache-dependency-path: |
-            package-lock.json
             package.json
+            package-lock.json
 
-      - name: Ensure package.json exists if Next is enabled (bootstrap)
-        if: env.NEXT_JS_ENABLED == 'true' && !exists('package.json')
-        run: |
-          echo "Bootstrapping minimal package.json..."
-          cat > package.json <<'EOF'
-          {
-            "name": "hardn-xdr-platform",
-            "version": "1.0.0",
-            "private": true,
-            "scripts": {
-              "dev": "next dev",
-              "build": "next build",
-              "export": "next build && next export",
-              "start": "next start"
-            },
-            "dependencies": {
-              "next": "^14.2.31",
-              "react": "^18.3.1",
-              "react-dom": "^18.3.1"
-            }
-          }
-          EOF
-
-      - name: Install Node dependencies
+      - name: Install Node.js dependencies
         if: env.NEEDS_NODE == 'true'
-        run: |
-          if [ -f package-lock.json ]; then
-            echo "Using npm ci (lockfile present)..."
-            npm ci
-          elif [ -f package.json ]; then
-            echo "Using npm install (no lockfile)..."
-            npm install --no-package-lock
-          else
-            echo "No package manifest; skipping npm install."
-          fi
+        run: npm ci
 
-      - name: Verify Next CLI (if Next enabled)
+      - name: Verify Next.js CLI
         if: env.NEXT_JS_ENABLED == 'true'
         run: npx --yes next --version
 
@@ -101,12 +112,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p _site/badges
-
           VIEW_JSON=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             https://api.github.com/repos/${{ github.repository }}/traffic/views || echo '{"count":0,"uniques":0}')
           CLONE_JSON=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             https://api.github.com/repos/${{ github.repository }}/traffic/clones || echo '{"count":0,"uniques":0}')
-
           VIEW_COUNT=$(echo "$VIEW_JSON" | jq -r '.count // 0')
           VIEW_UNIQUES=$(echo "$VIEW_JSON" | jq -r '.uniques // 0')
           CLONE_COUNT=$(echo "$CLONE_JSON" | jq -r '.count // 0')
@@ -114,17 +123,16 @@ jobs:
 
           if [ "$VIEW_COUNT" -ge 200 ]; then VIEW_COLOR="green"
           elif [ "$VIEW_COUNT" -ge 50 ]; then VIEW_COLOR="orange"
-          else VIEW_COLOR="red"
-          fi
+          else VIEW_COLOR="red"; fi
 
           if [ "$CLONE_COUNT" -ge 100 ]; then CLONE_COLOR="blue"
           elif [ "$CLONE_COUNT" -ge 20 ]; then CLONE_COLOR="yellow"
-          else CLONE_COLOR="red"
-          fi
+          else CLONE_COLOR="red"; fi
 
           cat > _site/badges/traffic-views.json <<EOF
           { "schemaVersion":1,"label":"views","message":"$VIEW_COUNT / $VIEW_UNIQUES","color":"$VIEW_COLOR" }
           EOF
+
           cat > _site/badges/traffic-clones.json <<EOF
           { "schemaVersion":1,"label":"clones","message":"$CLONE_COUNT / $CLONE_UNIQUES","color":"$CLONE_COLOR" }
           EOF
@@ -143,7 +151,6 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      # Only build Jekyll if we did NOT just export Next successfully
       - name: Build with Jekyll
         if: steps.nextexport.outputs.exported != 'true'
         uses: actions/jekyll-build-pages@v1
@@ -154,20 +161,20 @@ jobs:
       - name: Post-process site
         run: |
           mkdir -p _site/badges
-          if [ -d "assets/next" ]; then
-            cp -r assets/next/* _site/ || true
-          fi
-          echo "Final _site contents:" && ls -la _site/ || true
+          if [ -d "assets/next" ]; then cp -r assets/next/* _site/ || true; fi
+          ls -la _site/ || true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
 
+  # 3) Deploy job (only runs if lockfile job didn’t push)
   deploy:
+    needs: build
+    if: needs.lockfile.outputs.pushed != 'true'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    needs: build
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
