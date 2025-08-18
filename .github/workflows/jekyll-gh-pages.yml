@@ -1,5 +1,5 @@
 # Jekyll + Next.js hybrid workflow for GitHub Pages
-name: Deploy Jekyll -> Next.js 
+name: Deploy Jekyll -> Next.js
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write   # Needed so CI can commit/push updated lockfile
+  contents: write   # Needed so CI can open PRs
   pages: write
   id-token: write
 
@@ -21,8 +21,6 @@ jobs:
   # 1) Ensure package-lock.json matches package.json
   lockfile:
     runs-on: ubuntu-latest
-    outputs:
-      pushed: ${{ steps.maybe_push.outputs.pushed }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -34,7 +32,7 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Regenerate lockfile from package.json
+      - name: Regenerate lockfile
         run: |
           set -e
           if [ ! -f package.json ]; then
@@ -46,35 +44,28 @@ jobs:
           rm -rf node_modules package-lock.json
           npm cache verify
 
-          # Generate a lockfile strictly from package.json
+          # Generate lockfile from package.json
           npm install --package-lock-only
 
-          # Sanity check: ensure npm ci works
+          # Sanity check
           rm -rf node_modules
           npm ci
 
-      - name: Commit & push lockfile if changed
-        id: maybe_push
-        run: |
-          set -e
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Create Pull Request with updated lockfile
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: chore/update-lockfile
+          commit-message: "chore(lock): sync package-lock.json with package.json"
+          title: "chore(lock): sync package-lock.json with package.json"
+          body: |
+            This PR updates **package-lock.json** to match the current **package.json**.
+            Generated automatically by CI.
+          labels: dependencies
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-          if git status --porcelain | grep -q "package-lock.json"; then
-            git add package-lock.json
-            git commit -m "chore(lock): sync package-lock.json with package.json"
-            git push
-            echo "pushed=true" >> "$GITHUB_OUTPUT"
-            echo "Lockfile updated and pushed. Stopping this run."
-          else
-            echo "No lockfile changes."
-            echo "pushed=false" >> "$GITHUB_OUTPUT"
-          fi
-
-  # 2) Build job (only if lockfile job didn't push new changes)
+  # 2) Build job (runs only on main branch pushes, after lockfile is correct)
   build:
-    needs: lockfile
-    if: needs.lockfile.outputs.pushed != 'true'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -167,10 +158,10 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
 
-  # 3) Deploy job (only runs if lockfile job didn’t push)
+  # 3) Deploy job
   deploy:
     needs: build
-    if: needs.lockfile.outputs.pushed != 'true'
+    if: github.ref == 'refs/heads/main'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
