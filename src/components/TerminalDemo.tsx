@@ -10,7 +10,7 @@ const demoScripts: DemoScript = {
   scan: [
     'root@hardn-xdr:~# hardn-xdr --scan --verbose',
     'Initializing HARDN-XDR security scan...',
-    'Loading 41 security modules...',
+    'Loading 47 security modules...',
     '[✓] DISA STIG compliance check',
     '[✓] CIS Controls validation', 
     '[✓] FIPS 140-2 cryptographic validation',
