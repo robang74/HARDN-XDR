@@ -1,6 +1,5 @@
 #!/bin/bash
-# Source common functions with fallback for development/CI environments
-# Source common functions with fallback for development/CI environments
+
 source "/usr/lib/hardn-xdr/src/setup/hardn-common.sh" 2>/dev/null || \
 source "$(dirname "$(dirname "$(realpath "${BASH_SOURCE[0]}")")")/hardn-common.sh" 2>/dev/null || {
     echo "Warning: Could not source hardn-common.sh, using basic functions"
@@ -195,7 +194,7 @@ fi
 if [ -t 0 ] && [ -t 1 ] && [ -z "$HARDN_SKIP_PASSWORD_HELP" ] && [ -z "$CI" ]; then
     echo ""
     echo "================================================================"
-    echo "        INTERACTIVE PASSWORD CHANGE ASSISTANCE"
+    echo "        INTERACTIVE PASSWORD ASSISTANCE"
     echo "================================================================"
     echo ""
     echo "STIG password requirements recommend the following:"
@@ -221,9 +220,9 @@ if [ -t 0 ] && [ -t 1 ] && [ -z "$HARDN_SKIP_PASSWORD_HELP" ] && [ -z "$CI" ]; t
         echo "• Must contain: $ocredit special character(s)"
         echo ""
         echo "EXAMPLES OF STRONG PASSWORDS:"
-        echo "• MyP@ssw0rd2024! (15 chars, mixed case, digits, symbols)"
-        echo "• Secure#Login99 (15 chars, mixed case, digits, symbols)"
-        echo "• Admin2024@Safe (15 chars, mixed case, digits, symbols)"
+        echo "• MyP@s-!0rd2024! (15 chars, mixed case, digits, symbols)"
+        echo "• S3cure#Logi-n99 (15 chars, mixed case, digits, symbols)"
+        echo "• Ad_in20-24@Safe (15 chars, mixed case, digits, symbols)"
         echo ""
         echo "The system will now run the standard 'passwd' command."
         echo "Enter a password that meets the above requirements."
