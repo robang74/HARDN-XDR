@@ -6,14 +6,11 @@
 #   - No-ops on non-Ubuntu.
 #   - In CI / non-interactive (SKIP_WHIPTAIL=1), only enforces if HARDN_ENFORCE_FIPS=1.
 #   - Writes a JSON compliance record and a reboot flag if changes require reboot.
-#
+#MUSTA: Must have Ubuntu-1 lifense with Fips Certificate installed. 
 # Env flags:
 #   SKIP_WHIPTAIL=1         # Non-interactive (auto mode)
 #   HARDN_ENFORCE_FIPS=1    # Enforce FIPS mode if non-compliant
 #
-# Exit/return policy:
-#   The script NEVER exits the parent process; it returns gracefully to allow other modules to continue.
-
 set -Euo pipefail
 
 # Load shared utilities
