@@ -165,6 +165,10 @@ cp src/setup/modules/template.sh src/setup/modules/new_module.sh
 
 This project is licensed under the terms specified in the [LICENSE](LICENSE) file.
 
+## Project Partners
+
+![cyber](docs/cybersynapse.png)
+
 ## Support
 
 - **Issues**: [GitHub Issues](https://github.com/OpenSource-For-Freedom/HARDN-XDR/issues)
