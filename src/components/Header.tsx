@@ -6,10 +6,10 @@ export default function Header() {
           HARDN-XDR
         </h1>
         <p className="text-xl md:text-2xl text-gray-300 mb-6 font-semibold tracking-wide">
-          Advanced Linux Security Hardening Platform
+          Advanced Linux IP/IDS Platform
         </p>
         <p className="text-lg text-gray-400 leading-relaxed max-w-3xl mx-auto">
-          Government-grade security compliance for Debian-based systems with DISA STIG, CIS Controls, and FIPS 140-2 compliance
+          Goverment security compliance for Debian-based systems with DISA STIG, CIS Controls, and FIPS 140-2 compliance
         </p>
       </div>
     </header>
